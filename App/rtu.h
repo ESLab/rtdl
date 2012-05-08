@@ -41,7 +41,7 @@
 typedef enum {
   cp_req_rtu,
   cp_req_tm
-} cp_req_t ;
+} cp_req_t;
 
 typedef void (*request_hook_fn_t)(cp_req_t req_type);
 
