@@ -46,25 +46,25 @@ int link_and_start(Elf32_Ehdr *elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **other_el
 {
 
 	if (check_elf_magic(elfh))
-		printf("ELF magic checks out for task \"%s\".\n", name);
+		INFO_MSG("ELF magic checks out for task \"%s\".\n", name);
 	else {
-		printf("Wrong ELF magic for task \"%s\".\n", name);
+		ERROR_MSG("Wrong ELF magic for task \"%s\".\n", name);
 		return 0;
 	}
 
 	Elf32_Sym *entry_sym = find_symbol("_start", elfh);
 
-	if (entry_sym != NULL)
-		printf("Found entry sym for task \"%s\"\n", name);
+	if (entry_sym != NULL) 
+		INFO_MSG("Found entry sym for task \"%s\"\n", name);
 	else {
-		printf("Did not find entry sym for task \"%s\"\n", name);
+		ERROR_MSG("Did not find entry sym for task \"%s\"\n", name);
 		return 0;
 	}
 
 	if (link_relocations(elfh, sys_elfh, other_elfhs)) {
-		printf("Relocation successful\n");
+		INFO_MSG("Relocation successful\n");
 	} else {
-		printf("Relocation failed\n");
+		ERROR_MSG("Relocation failed\n");
 		return 0;
 	}
 
@@ -76,7 +76,7 @@ int link_and_start(Elf32_Ehdr *elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **other_el
 		    APPLICATION_TASK_PRIORITY, &th);
 
 	if (!migrator_register(name, elfh, th)) {
-		printf("Failed to register task \"%s\" to the migrator\n", name);
+		ERROR_MSG("Failed to register task \"%s\" to the migrator\n", name);
 		return 0;
 	}
 
@@ -101,9 +101,9 @@ int main()
 	Elf32_Ehdr *sys_elfh = (Elf32_Ehdr *)&_system_elf_start;
 
 	if (check_elf_magic(sys_elfh))
-		printf("System ELF magic checks out @ 0x%x\n", (u_int32_t)sys_elfh);
+		INFO_MSG("System ELF magic checks out @ 0x%x\n", (u_int32_t)sys_elfh);
 	else {
-		printf("Wrong System ELF magic @ 0x%x\n", (u_int32_t)sys_elfh);
+		ERROR_MSG("Wrong System ELF magic @ 0x%x\n", (u_int32_t)sys_elfh);	
 		goto exit;
 	}
 
@@ -121,14 +121,14 @@ int main()
 	 */
 
 	if (!migrator_start()) {
-		printf("ERROR: Could not start migrator.\n");
+		ERROR_MSG("Could not start migrator.\n");
 	}
-
-	printf("Starting scheduler\n");
+	
+	INFO_MSG("Starting scheduler\n");
 	vTaskStartScheduler();
 
 exit:
-	printf("Going into infinite loop...\n");
+	INFO_MSG("Going into infinite loop...\n");
 	while(1)
 		;
 }

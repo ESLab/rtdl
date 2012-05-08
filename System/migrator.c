@@ -78,7 +78,7 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	 */
 
 	if (!check_elf_magic(new_sw)) {
-		printf("MIGRATOR: elf magic on new software does not check out.\n");
+		ERROR_MSG("MIGRATOR: elf magic on new software does not check out.\n");
 		return;
 	}
 
@@ -86,7 +86,7 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	Elf32_Ehdr *sys_elfh = (Elf32_Ehdr *)&_system_elf_start;
 
 	if (new_entry_sym == NULL) {
-		printf("MIGRATOR: could not find entry symbol for new software for task \"%s\"\n", rc->name);
+		ERROR_MSG("MIGRATOR: could not find entry symbol for new software for task \"%s\"\n", rc->name);
 		return;
 	}
 
@@ -95,7 +95,7 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	 */
 
 	if (!link_relocations(new_sw, sys_elfh, NULL)) {
-		printf("MIGRATOR: could not run-time link new software for task \"%s\"\n", rc->name);
+		ERROR_MSG("MIGRATOR: could not run-time link new software for task \"%s\"\n", rc->name);
 		return;
 	}
 
@@ -111,12 +111,12 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	 */
 
 	if (old_rtu == NULL || new_rtu == NULL) {
-		printf("MIGRATOR: could not find \"" RTU_DATA_SECTION_NAME "\" sections in elfs\n");
+		ERROR_MSG("MIGRATOR: could not find \"" RTU_DATA_SECTION_NAME "\" sections in elfs\n");
 		return;
 	}
 
 	if (old_rtu->sh_size != new_rtu->sh_size) {
-		printf("MIGRATOR: size mismatch in \"" RTU_DATA_SECTION_NAME "\" sections between software versions.\n");
+		ERROR_MSG("MIGRATOR: size mismatch in \"" RTU_DATA_SECTION_NAME "\" sections between software versions.\n");
 		return;
 	}
 
@@ -163,17 +163,17 @@ void migrator_task(void *arg)
 	
 		if ((rc = find_register_cons("rtuapp"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			printf("Calling request hook.\n");
+			INFO_MSG("Calling request hook.\n");
 			(rc->request_hook)(cp_req_rtu);
-			printf("Returned from request hook.\n");
+			INFO_MSG("Returned from request hook.\n");
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			printf("BOO!\n");
+			DEBUG_MSG("BOO!\n");
 			
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv2_elf_start;
 			
-			printf("Starting runtime update.\n");
+			INFO_MSG("Starting runtime update.\n");
 			runtime_update(rc, new_sw);
-			printf("Runtime update complete.\n");
+			INFO_MSG("Runtime update complete.\n");
 			xSemaphoreGive(migrator_semaphore);
 		}
 
@@ -181,17 +181,17 @@ void migrator_task(void *arg)
 	
 		if ((rc = find_register_cons("rtuapp"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			printf("Calling request hook.\n");
+			INFO_MSG("Calling request hook.\n");
 			(rc->request_hook)(cp_req_rtu);
-			printf("Returned from request hook.\n");
+			INFO_MSG("Returned from request hook.\n");
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			printf("BOO!\n");
+			DEBUG_MSG("BOO!\n");
 			
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv1_elf_start;
 			
-			printf("Starting runtime update.\n");
+			INFO_MSG("Starting runtime update.\n");
 			runtime_update(rc, new_sw);
-			printf("Runtime update complete.\n");
+			INFO_MSG("Runtime update complete.\n");
 			xSemaphoreGive(migrator_semaphore);
 		}
 	}
@@ -224,9 +224,9 @@ int migrator_start()
 		    configMINIMAL_STACK_SIZE, NULL, 3, &migrator_task_handle);
 
 	vSemaphoreCreateBinary(migrator_semaphore);
-	printf("migrator_semaphore @ 0x%x\n", (u_int32_t)&migrator_semaphore);
+	DEBUG_MSG("migrator_semaphore @ 0x%x\n", (u_int32_t)&migrator_semaphore);
 
-	printf("&migrator_task_handle = 0x%x\n", (u_int32_t)&migrator_task_handle);
+	DEBUG_MSG("migrator_task_handle @ 0x%x\n", (u_int32_t)&migrator_task_handle);
 
 	return 1;
 }
