@@ -25,24 +25,22 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include "FreeRTOS.h"
+#include <FreeRTOS.h>
 
-#include "task.h"
-#include "queue.h"
+#include <task.h>
+#include <queue.h>
 
-#include "types.h"
-
-#include "linker.h"
-#include "applications.h"
-#include "migrator.h"
-
-#include <stdio.h>
-#include <string.h>
-
-#include "pl011.h"
+#include <types.h>
+#include <linker.h>
+#include <applications.h>
+#include <migrator.h>
+#include <system.h>
+#include <pl011.h>
 
 #include <elf.h>
 
+#include <stdio.h>
+#include <string.h>
 
 int link_and_start(Elf32_Ehdr *elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **other_elfhs, const char *name)
 {

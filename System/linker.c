@@ -25,14 +25,14 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include "FreeRTOS.h"
+#include <FreeRTOS.h>
 
 #include <string.h>
 #include <stdio.h>
 
-#include "linker.h"
-
-#include "types.h"
+#include <types.h>
+#include <linker.h>
+#include <system.h>
 
 int check_elf_magic(Elf32_Ehdr *hdr)
 {

@@ -57,10 +57,10 @@
     licensing and training services.
 */
 
-#include "FreeRTOS.h"
-#include "serial.h"
+#include <FreeRTOS.h>
+#include <serial.h>
 
-#include "pl011.h"
+#include <pl011.h>
 
 xComPortHandle xSerialPortInitMinimal( unsigned long ulWantedBaud, unsigned portBASE_TYPE uxQueueLength )
 {

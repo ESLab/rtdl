@@ -35,8 +35,6 @@
 #include <rtu.h>
 #include <migrator.h>
 
-#include "rw_common.h"
-
 int _RTU_DATA_ state1 = 0;
 int _RTU_DATA_ state2 = 0;
 

@@ -28,8 +28,8 @@
 
 #include <stdarg.h>
 
-#include "FreeRTOS.h"
-#include "pl011.h"
+#include <FreeRTOS.h>
+#include <pl011.h>
 
 #define ADD_CARRIGE_RETURN
 

@@ -25,16 +25,16 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include "FreeRTOS.h"
+#include <FreeRTOS.h>
 
-#include "task.h"
-#include "queue.h"
+#include <task.h>
+#include <queue.h>
 
 #include <stdio.h>
 #include <string.h>
 
-#include "pl011.h"
-#include "serial.h"
+#include <pl011.h>
+#include <serial.h>
 
 static void prvSetupHardware( void );
 

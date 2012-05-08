@@ -59,10 +59,10 @@
 
 /* UART Driver for the PL011 Peripheral. */
 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "task.h"
-#include "semphr.h"
+#include <FreeRTOS.h>
+#include <queue.h>
+#include <task.h>
+#include <semphr.h>
 /*----------------------------------------------------------------------------*/
 
 #define UART_USE_INTERRUPT			1
