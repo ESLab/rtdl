@@ -50,11 +50,6 @@ n = ninja_syntax.Writer(fout)
 devkitdir = "/export/home/aton4/wlund/bin/devkitARM/bin/"
 sourcedir = "."
 
-# includedirs = [sourcedir + "/Demo",
-#                sourcedir + "/Demo/Common/include",
-#                sourcedir + "/Source/include",
-#                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9"]
-
 includedirs = [sourcedir + "/App",
                sourcedir + "/System",
                sourcedir + "/Source/include",
@@ -72,7 +67,7 @@ n.variable(key="cflags",
 n.rule(name = "cc",
        command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $cflags $in -o $out",
        description = "CC $out",
-       depfile = builddir + "$out.d")
+       depfile = "$out.d")
 
 n.rule(name = "link",
        command = "$cc $ldflags  $shared -o $out $in $libs",
@@ -98,16 +93,12 @@ freertos_files = ["Source/croutine.c",
                   "Source/portable/GCC/ARM_Cortex-A9/port.c",
                   "Source/portable/MemMang/heap_2.c"]
 
-# applications = { 'simple': ['App/simple.c', 'App/startup.S', 'App/printf-stdarg.c', 'App/pl011.c'],
-#                  'uart_out': ['App/uart.c', 'App/uart_out.c' ] }
-
 applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
                  'writer': ['App/app_startup.S', 'App/writer.c'],
                  'reader': ['App/app_startup.S', 'App/reader.c'],
                  'rtuappv1': ['App/app_startup.S', 'App/rtu_appv1.c'],
                  'rtuappv2': ['App/app_startup.S', 'App/rtu_appv2.c'] }
 
-#system_files = freertos_files + ['App/startup.S', 'App/printf-stdarg.c', 'App/serial.c', 'App/pl011.c']
 system_files = freertos_files + ['App/startup.S', 'System/main.c', 'System/linker.c',
                                  'System/migrator.c', 'System/printf-stdarg.c', 'System/serial.c', 
                                  'System/pl011.c']
@@ -123,15 +114,6 @@ for f in list(fs):
     n.build(outputs = get_object_file(f),
             rule = "cc",
             inputs = f)
-
-# systemso = "system.so"
-# n.build(outputs = systemso,
-#         rule = "link",
-#         inputs = map(lambda f: get_object_file(f), system_files),
-#         variables = {'shared': '-shared',
-#                      'ldflags': '-nostartfiles -fPIC -Wl,-T,App/plain.ld -mcpu=cortex-a9'},
-#         implicit = 'App/plain.ld')
-#                     'ldflags': '-nostartfiles -Wl,-T,App/plain.ld -mcpu=cortex-a9 -g3 -gdwarf-3'})
 
 systemelf = "system.elf"
 systembin = "system.bin"
@@ -183,7 +165,6 @@ n.build(outputs = systemext_elf,
         implicit = ["System/system_ext_.ld", "System/applications.ld", 
                     "system_elf_.ld"] + map(lambda a: a + ".ld", applications.keys()))
 
-
 n.build(outputs = systemextbin,
         rule = "objcopy",
         inputs = systemextelf,
@@ -192,38 +173,16 @@ n.build(outputs = systemextuimg,
         rule = "mkimage",
         inputs = systemextbin)
 
-
 for a in applications:
     elffile = a + ".elf"
     ldfile = a + ".ld"
     n.build(outputs = elffile,
             rule = "link",
             inputs = map(lambda f: get_object_file(f), applications[a]),
-#            variables = {'ldflags': '-nostartfiles -mcpucortex-a9 -g3 -fPIC -gdwarf-3 -Wl,--unresolved-symbols=ignore-all -nostdlib' })
             variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpucortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
             implicit = "App/app.ld")
-                         #'libs': 'system.so'},
-            #implicit = [systemso])
     n.build(outputs = ldfile,
             rule = "app_ld",
             inputs = elffile)
 
 n.default(systemextuimg)
-
-# for a in applications:
-#     elffile = a + ".elf"
-#     binfile = a + ".bin"
-#     uimgfile = a + ".uimg"
-#     n.build(outputs = elffile,
-#             rule = "link",
-#             inputs = map(lambda f: get_object_file(f), freertos_files + applications[a]),
-#             implicit = 'App/plain.ld',
-#             variables = {'ldflags': '-nostartfiles -Wl,-T,App/plain.ld -mcpu=cortex-a9 -g3 -gdwarf-3'})
-#     n.build(outputs = binfile,
-#             rule = "objcopy",
-#             inputs = elffile)
-#     n.build(outputs = uimgfile,
-#             rule = "mkimage",
-#             inputs = binfile)
-
-            
