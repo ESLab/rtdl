@@ -27,6 +27,7 @@
 ###################################################################################
 
 import sys
+import glob
 import ninja_syntax
 
 def get_basename(filename):
@@ -53,15 +54,19 @@ sourcedir = "."
 includedirs = [sourcedir,
                sourcedir + "/System/umm",
                sourcedir + "/Source/include",
-               sourcedir + "/Source/portable/GCC/ARM_Cortex-A9"]
+               sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
+               sourcedir + "/libdwarf"]
 
 n.variable(key="cc", value="arm-eabi-gcc")
 n.variable(key="ld", value="arm-eabi-ld")
 n.variable(key="objcopy", value="arm-eabi-objcopy")
 n.variable(key="mkimage", value="mkimage")
+
+# -Werror
+
 n.variable(key="cflags", 
            value=get_include_args(includedirs) + 
-           "-O0 -Wall -Werror -fmessage-length=0 " +
+           "-O0 -Wall -fmessage-length=0 " +
            "-mcpu=cortex-a9 -g3 -fno-builtin-printf -fPIC -DDEBUG -DINFO")
 
 n.rule(name = "cc",
@@ -70,7 +75,7 @@ n.rule(name = "cc",
        depfile = "$out.d")
 
 n.rule(name = "link",
-       command = "$cc $ldflags  $shared -o $out $in $libs",
+       command = "$cc $ldflags $shared -o $out $in $libs",
        description = "LINK $out")
 
 n.rule(name = "objcopy",
@@ -99,9 +104,14 @@ applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
                  'rtuappv1': ['App/app_startup.S', 'App/rtu_appv1.c'],
                  'rtuappv2': ['App/app_startup.S', 'App/rtu_appv2.c'] }
 
-system_files = freertos_files + ['App/startup.S', 'System/main.c', 'System/task_manager.c', 
-                                 'System/linker.c', 'System/migrator.c', 'System/printf-stdarg.c', 
-                                 'System/serial.c', 'System/pl011.c', 'System/umm/umm_malloc.c']
+libdwarf_files = glob.glob('libdwarf/*.c')
+
+system_files = \
+    libdwarf_files + \
+    freertos_files + \
+    ['App/startup.S', 'System/main.c', 'System/linker.c',
+     'System/migrator.c', 'System/printf-stdarg.c', 'System/serial.c',
+     'System/pl011.c', 'System/umm/umm_malloc.c']
 
 fs = set()
 for a in applications:
