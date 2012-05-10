@@ -29,17 +29,29 @@
 #define SYSTEM_H
 
 #ifdef DEBUG
+#ifdef SYSTEM_MODULE_NAME
+#define DEBUG_MSG(...) printf(SYSTEM_MODULE_NAME ": DEBUG>>> "  __VA_ARGS__)
+#else /* SYSTEM_MODULE_NAME */
 #define DEBUG_MSG(...) printf("DEBUG>>> "  __VA_ARGS__)
+#endif /* SYSTEM_MODULE_NAME */
 #else
 #define DEBUG_MSG(...)
 #endif
 
 #ifdef INFO
+#ifdef SYSTEM_MODULE_NAME
+#define INFO_MSG(...) printf(SYSTEM_MODULE_NAME ": INFO >>> " __VA_ARGS__)
+#else /* SYSTEM_MODULE_NAME */
 #define INFO_MSG(...) printf("INFO >>> " __VA_ARGS__)
+#endif /* SYSTEM_MODULE_NAME */
 #else
 #define INFO_MSG(...)
 #endif
 
+#ifdef SYSTEM_MODULE_NAME
+#define ERROR_MSG(...) printf(SYSTEM_MODULE_NAME ": ERROR>>> " __VA_ARGS__)
+#else /* SYSTEM_MODULE_NAME */
 #define ERROR_MSG(...) printf("ERROR>>> " __VA_ARGS__)
+#endif /* SYSTEM_MODULE_NAME */
 
 #endif /* SYSTEM_H */
