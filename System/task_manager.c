@@ -45,42 +45,47 @@
 
 #include <App/rtu.h>
 
-task_register_cons *task_register_list = NULL;
+SLIST_HEAD(task_register_list_t, task_register_cons_t) task_register_list =
+	SLIST_HEAD_INITIALIZER(task_register_list);
 
 int get_number_of_tasks()
 {
 	int i = 0;
-	task_register_cons *p = task_register_list;
-	while (p) {
+	struct task_register_cons_t *p;
+
+	SLIST_FOREACH(p, &task_register_list, tasks) {
 		i++;
-		p = p->next;
 	}
+
 	return i;
 }
 
 int get_elf_array(Elf32_Ehdr **array, int array_size)
 {
-	int i;
-	task_register_cons *p = task_register_list;
-	for (i = 0; i < array_size; i++) {
-		if (p == NULL) {
-			array[i] = NULL;
-			continue;
-		}
-		p = p->next;
-		array[i] = p->elfh;
+	int i = 0;
+	struct task_register_cons_t *p;
+
+	SLIST_FOREACH(p, &task_register_list, tasks) {
+		if (i > array_size)
+			break;
+		array[i++] = p->elfh;
 	}
+
+	for (; i < array_size; i++)
+		array[i] = NULL;
+
 	return 1;
 }
 
 task_register_cons *task_find(const char *name)
 {
-	task_register_cons *p = task_register_list;
-	while (p) {
+	struct task_register_cons_t *p;
+
+	SLIST_FOREACH(p, &task_register_list, tasks) {
 		if (strcmp(name, p->name) == 0)
 			break;
-		p = p->next;
 	}
+
 	return p;
 }
 
@@ -92,13 +97,13 @@ int task_link(task_register_cons *trc)
 		ERROR_MSG("Wrong ELF magic for task \"%s\".\n", trc->name);
 		return 0;
 	}
-	
+
 	int elf_array_size = get_number_of_tasks() + 1;
 	Elf32_Ehdr *elf_array[elf_array_size];
 	get_elf_array(elf_array, elf_array_size);
 
 	Elf32_Ehdr *sys_elfh  = (Elf32_Ehdr *)&_system_elf_start;
-	
+
 	if (link_relocations(trc->elfh, sys_elfh, elf_array)) {
 		INFO_MSG("Relocation successful\n");
 	} else {
@@ -112,25 +117,25 @@ int task_link(task_register_cons *trc)
 int task_start(task_register_cons *trc)
 {
 	Elf32_Sym *entry_sym = find_symbol("_start", trc->elfh);
-	
+
 	entry_ptr_t entry_point = get_entry_point(trc->elfh, entry_sym);
 
-	if (entry_sym != NULL) 
+	if (entry_sym != NULL)
 		INFO_MSG("Found entry sym for task \"%s\"\n", trc->name);
 	else {
 		ERROR_MSG("Did not find entry sym for task \"%s\"\n", trc->name);
 		return 0;
 	}
 
-	xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)trc->name, 
-		    configMINIMAL_STACK_SIZE, NULL, 
+	xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)trc->name,
+		    configMINIMAL_STACK_SIZE, NULL,
 		    APPLICATION_TASK_PRIORITY, &trc->task_handle);
 	return 1;
 }
 
 task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 {
-	task_register_cons *trc = 
+	struct task_register_cons_t *trc =
 		(task_register_cons *)pvPortMalloc(sizeof(task_register_cons));
 	if (trc == NULL) {
 		return NULL;
@@ -139,8 +144,7 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 	trc->name = name;
 	trc->elfh = elfh;
 	trc->task_handle = 0;
-	trc->next = task_register_list;
-	task_register_list = trc;
+	SLIST_INSERT_HEAD(&task_register_list, trc, tasks);
 
 	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", elfh);
 	if (request_hook_symbol) {

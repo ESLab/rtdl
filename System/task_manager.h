@@ -28,6 +28,7 @@
 #ifndef TASK_MANAGER_H
 #define TASK_MANAGER_H
 
+#include <System/queue.h>
 #include <System/elf.h>
 
 #include <App/rtu.h>
@@ -38,14 +39,14 @@ typedef struct task_section_cons_t {
 	size_t				 asize;
 	void				*amem;
 	struct task_section_cons_t	*next;
-} task_section_cons_t;
+} task_section_cons;
 
 typedef struct task_register_cons_t {
 	const char			*name;
 	Elf32_Ehdr			*elfh;
 	xTaskHandle			 task_handle;
 	request_hook_fn_t		 request_hook;
-	struct task_register_cons_t	*next;
+	SLIST_ENTRY(task_register_cons_t) tasks;
 } task_register_cons;
 
 task_register_cons	*task_find(const char *name);
