@@ -110,6 +110,96 @@ int task_link(task_register_cons *trc)
 		ERROR_MSG("Relocation failed\n");
 		return 0;
 	}
+int task_alloc(task_register_cons *trc)
+{
+	int i;
+	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)trc->elfh + trc->elfh->e_shoff);
+	u_int32_t alloc_size = 0;
+
+	/*
+	 * 1. Find out the size of the continous region that has to be
+	 *    allocated.
+	 */
+
+	for (i = 0; i < trc->elfh->e_shnum; i++) {
+		if (s[i].sh_flags & SHF_ALLOC) {
+			u_int32_t s_req = s[i].sh_addr + s[i].sh_size;
+			alloc_size = alloc_size > s_req ? alloc_size : s_req;
+		}
+	}
+	DEBUG_MSG("memory required for task \"%s\": %u\n", trc->name, alloc_size);
+
+	/*
+	 * 2. Allocate continous memory region and create section
+	 *    conses.
+	 */
+
+	Elf32_Shdr *section_hdr = (Elf32_Shdr *)((u_int32_t)trc->elfh + trc->elfh->e_shoff);
+	Elf32_Shdr *strtab_sect = &section_hdr[trc->elfh->e_shstrndx];
+
+	if (strtab_sect == NULL) {
+		ERROR_MSG("Found no .strtab in elfh for task \"%s\"\n", trc->name);
+		return 0;
+	}
+
+	u_int32_t cm_addr = (u_int32_t)pvPortMalloc(alloc_size);
+
+	if (cm_addr == 0) {
+		ERROR_MSG("Could not allocate memory for task \"%s\"\n", trc->name);
+		return 0;
+	}
+
+	trc->cont_mem = (void *)cm_addr;
+
+	SLIST_INIT(&trc->sections);
+
+	for (i = 0; i < trc->elfh->e_shnum; i++) {
+		if (s[i].sh_flags & SHF_ALLOC) {
+			struct task_section_cons_t *tsc =
+				(struct task_section_cons_t *)
+				pvPortMalloc(sizeof(task_section_cons));
+			tsc->name =
+				(char *)
+				((u_int32_t)trc->elfh + (u_int32_t)strtab_sect->sh_offset +
+				 s[i].sh_name);
+			DEBUG_MSG("Processing allocation for section \"%s\".\n", tsc->name);
+			tsc->section_index = i;
+			tsc->amem = (void *)(cm_addr + s[i].sh_addr);
+			SLIST_INSERT_HEAD(&trc->sections, tsc, sections);
+
+			if (s[i].sh_type == SHT_PROGBITS) {
+				/*
+				 * Copy the section if it contains data.
+				 */
+				memcpy(tsc->amem, (void *)((u_int32_t)trc->elfh +
+							   (u_int32_t)s[i].sh_offset),
+				       s[i].sh_size);
+			}
+		}
+	}
+
+	return 1;
+}
+
+int task_free(task_register_cons *trc)
+{
+	struct task_section_cons_t *p, *p_tmp;
+
+	/*
+	 * 1. Free each cons in the section list.
+	 */
+
+	SLIST_FOREACH_SAFE(p, &trc->sections, sections, p_tmp) {
+		SLIST_REMOVE(&trc->sections, p, task_section_cons_t, sections);
+		vPortFree(p);
+	}
+
+	/*
+	 * 2. Free the continous memory region.
+	 */
+
+	vPortFree(trc->cont_mem);
+	trc->cont_mem = NULL;
 
 	return 1;
 }
@@ -152,6 +242,10 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 		trc->request_hook = (request_hook_fn_t)((u_int32_t)elfh + (u_int32_t)request_hook_symbol->st_value);
 	} else
 		trc->request_hook = NULL;
+
+	trc->cont_mem = NULL;
+
+	SLIST_INIT(&trc->sections);
 
 	DEBUG_MSG("Number of tasks registered: %i\n", get_number_of_tasks());
 

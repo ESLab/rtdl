@@ -34,24 +34,28 @@
 #include <App/rtu.h>
 
 typedef struct task_section_cons_t {
-	const char			*name;
-	Elf32_Half			 section_index;
-	size_t				 asize;
-	void				*amem;
-	struct task_section_cons_t	*next;
+	const char      *name;
+	Elf32_Half       section_index;
+	void		*amem;
+	SLIST_ENTRY(task_section_cons_t) sections;
 } task_section_cons;
 
 typedef struct task_register_cons_t {
-	const char			*name;
-	Elf32_Ehdr			*elfh;
-	xTaskHandle			 task_handle;
-	request_hook_fn_t		 request_hook;
+	const char		*name;
+	Elf32_Ehdr		*elfh;
+	xTaskHandle		 task_handle;
+	request_hook_fn_t	 request_hook;
+	void                    *cont_mem;
+	SLIST_HEAD(task_section_list_t, task_section_cons_t) sections;
 	SLIST_ENTRY(task_register_cons_t) tasks;
 } task_register_cons;
 
 task_register_cons	*task_find(const char *name);
 int			 task_link(task_register_cons *trc);
+int			 task_alloc(task_register_cons *trc);
+int			 task_free(task_register_cons *trc);
 int			 task_start(task_register_cons *trc);
 task_register_cons	*task_register(const char *name, Elf32_Ehdr *elfh);
+void			*task_get_section(task_register_cons *trc, Elf32_Half section_index);
 
 #endif /* TASK_MANAGER_H */
