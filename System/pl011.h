@@ -28,8 +28,8 @@
 #ifndef _PL011_H_
 #define _PL011_H_
 
-extern void vUARTInitialise(unsigned long ulUARTPeripheral, unsigned long ulBaud, unsigned long ulQueueSize );
-extern portBASE_TYPE xUARTReceiveCharacter( unsigned long ulUARTPeripheral, signed char *pcChar, portTickType xDelay );
-extern portBASE_TYPE xUARTSendCharacter( unsigned long ulUARTPeripheral, signed char cChar, portTickType xDelay );
+extern void		vUARTInitialise(unsigned long ulUARTPeripheral, unsigned long ulBaud, unsigned long ulQueueSize );
+extern portBASE_TYPE	xUARTReceiveCharacter( unsigned long ulUARTPeripheral, signed char *pcChar, portTickType xDelay );
+extern portBASE_TYPE	xUARTSendCharacter( unsigned long ulUARTPeripheral, signed char cChar, portTickType xDelay );
 
 #endif /* _PL011_H_ */

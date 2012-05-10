@@ -36,8 +36,8 @@
 extern xTaskHandle      migrator_task_handle;
 extern xSemaphoreHandle migrator_semaphore;
 
-void migrator_task(void *arg);
-int migrator_register(const char *name, Elf32_Ehdr *elfh, xTaskHandle task_handle);
-int migrator_start();
+void	migrator_task(void *arg);
+int	migrator_register(const char *name, Elf32_Ehdr *elfh, xTaskHandle task_handle);
+int	migrator_start();
 
 #endif /* MIGRATOR_H */

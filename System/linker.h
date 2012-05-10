@@ -32,11 +32,11 @@
 
 typedef int (*entry_ptr_t) ();
 
-int check_elf_magic(Elf32_Ehdr *);
-Elf32_Shdr *find_section(char *, Elf32_Ehdr *);
-Elf32_Sym *find_symbol(char *, Elf32_Ehdr *);
-entry_ptr_t get_entry_point(Elf32_Ehdr *, Elf32_Sym *);
-int link_relocations(Elf32_Ehdr *, Elf32_Ehdr *, Elf32_Ehdr **);
-int free_relocations(Elf32_Ehdr *);
+int		 check_elf_magic(Elf32_Ehdr *);
+Elf32_Shdr	*find_section(char *, Elf32_Ehdr *);
+Elf32_Sym	*find_symbol(char *, Elf32_Ehdr *);
+entry_ptr_t	 get_entry_point(Elf32_Ehdr *, Elf32_Sym *);
+int		 link_relocations(Elf32_Ehdr *, Elf32_Ehdr *, Elf32_Ehdr **);
+int		 free_relocations(Elf32_Ehdr *);
 
 #endif /* _LINKER_H_ */
