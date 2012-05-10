@@ -28,7 +28,7 @@
 #ifndef _LINKER_H_
 #define _LINKER_H_
 
-#include <elf.h>
+#include <System/elf.h>
 
 typedef int (*entry_ptr_t) ();
 

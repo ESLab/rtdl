@@ -32,18 +32,18 @@
 #include <task.h>
 #include <semphr.h>
 
-#include <types.h>
-#include <linker.h>
-#include <migrator.h>
-#include <applications.h>
-#include <rtu.h>
-#include <system.h>
-#include <task_manager.h>
-
-#include <elf.h>
+#include <System/types.h>
+#include <System/linker.h>
+#include <System/migrator.h>
+#include <System/applications.h>
+#include <System/system.h>
+#include <System/task_manager.h>
+#include <System/elf.h>
 
 #include <stdio.h>
 #include <string.h>
+
+#include <App/rtu.h>
 
 task_register_cons *task_register_list = NULL;
 

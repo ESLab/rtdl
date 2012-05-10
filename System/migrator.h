@@ -31,7 +31,7 @@
 #include <task.h>
 #include <semphr.h>
 
-#include <elf.h>
+#include <System/elf.h>
 
 extern xTaskHandle      migrator_task_handle;
 extern xSemaphoreHandle migrator_semaphore;

@@ -32,15 +32,14 @@
 #include <task.h>
 #include <queue.h>
 
-#include <types.h>
-#include <linker.h>
-#include <applications.h>
-#include <migrator.h>
-#include <system.h>
-#include <task_manager.h>
-#include <pl011.h>
-
-#include <elf.h>
+#include <System/types.h>
+#include <System/linker.h>
+#include <System/applications.h>
+#include <System/migrator.h>
+#include <System/system.h>
+#include <System/task_manager.h>
+#include <System/pl011.h>
+#include <System/elf.h>
 
 #include <stdio.h>
 #include <string.h>

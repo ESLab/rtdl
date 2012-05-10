@@ -26,10 +26,11 @@
 #define putchar(c) outbyte(c)
 */
 
+#include <FreeRTOS.h>
+
 #include <stdarg.h>
 
-#include <FreeRTOS.h>
-#include <pl011.h>
+#include <System/pl011.h>
 
 #define ADD_CARRIGE_RETURN
 

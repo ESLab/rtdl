@@ -31,9 +31,8 @@
 
 #include <stdio.h>
 
-#include <rtu.h>
-
-#include "rw_common.h"
+#include <App/rtu.h>
+#include <App/rw_common.h>
 
 int _RTU_DATA_ writer_var = 0;
 

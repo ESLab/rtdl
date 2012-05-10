@@ -64,7 +64,7 @@
 #include <task.h>
 #include <semphr.h>
 
-#include <pl011.h>
+#include <System/pl011.h>
 /*----------------------------------------------------------------------------*/
 
 #define UART_USE_INTERRUPT			0

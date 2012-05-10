@@ -32,9 +32,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <types.h>
-#include <linker.h>
-#include <system.h>
+#include <System/types.h>
+#include <System/linker.h>
+#include <System/system.h>
 
 int check_elf_magic(Elf32_Ehdr *hdr)
 {

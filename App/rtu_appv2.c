@@ -32,10 +32,10 @@
 
 #include <stdio.h>
 
-#include <rtu.h>
-#include <migrator.h>
+#include <System/migrator.h>
 
-#include "rw_common.h"
+#include <App/rw_common.h>
+#include <App/rtu.h>
 
 int _RTU_DATA_ state1 = 0;
 int _RTU_DATA_ state2 = 0;

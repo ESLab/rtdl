@@ -28,9 +28,9 @@
 #ifndef TASK_MANAGER_H
 #define TASK_MANAGER_H
 
-#include <rtu.h>
+#include <System/elf.h>
 
-#include <elf.h>
+#include <App/rtu.h>
 
 typedef struct task_section_cons_t {
 	const char			*name;

@@ -50,8 +50,7 @@ n = ninja_syntax.Writer(fout)
 devkitdir = "/export/home/aton4/wlund/bin/devkitARM/bin/"
 sourcedir = "."
 
-includedirs = [sourcedir + "/App",
-               sourcedir + "/System",
+includedirs = [sourcedir,
                sourcedir + "/Source/include",
                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9"]
 

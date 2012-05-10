@@ -32,8 +32,8 @@
 
 #include <stdio.h>
 
-#include <rtu.h>
-#include <migrator.h>
+#include <App/rtu.h>
+#include <System/migrator.h>
 
 int _RTU_DATA_ state1 = 0;
 int _RTU_DATA_ state2 = 0;

@@ -58,9 +58,9 @@
 */
 
 #include <FreeRTOS.h>
-#include <serial.h>
 
-#include <pl011.h>
+#include <System/serial.h>
+#include <System/pl011.h>
 
 xComPortHandle xSerialPortInitMinimal( unsigned long ulWantedBaud, unsigned portBASE_TYPE uxQueueLength )
 {
