@@ -116,7 +116,7 @@ Elf32_Sym *find_symbol(char *name, Elf32_Ehdr *elf_h)
 
 	u_int32_t n = symtab_sect->sh_size / symtab_sect->sh_entsize;
 	INFO_MSG("Found %i entries in .symtab (sect at address 0x%x)\n", n, (unsigned int)syms);
-	
+
 	for (i = 0; i < n; i++) {
 		tname = get_shstr(elf_h, strtab_sect, syms[i].st_name);
 		if (strcmp(tname, name) == 0)
@@ -125,114 +125,72 @@ Elf32_Sym *find_symbol(char *name, Elf32_Ehdr *elf_h)
 	return NULL;
 }
 
-int set_and_allocate_bits_sections(Elf32_Ehdr *elfh)
-{
-	int i;
-	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)elfh + elfh->e_shoff);
-	for (i = 0; i < elfh->e_shnum; i++) {
-		/*
-		 * If the section is a NOBITS section, a.k.a. .bss,
-		 * allocate it. Setting the elf sh_addr, usually used
-		 * for virtual addresses to the allocated memory
-		 * region.
-		 *
-		 * WARNING: Ignoring section alignment here, and
-		 * possibly other attributes.
-		 */
-		
-		if (s[i].sh_type == SHT_NOBITS) {
-			u_int32_t allocated_section = (u_int32_t)pvPortMalloc(s[i].sh_size);
-			if (allocated_section == 0) {
-				ERROR_MSG("Could not allocate NOBITS section\n");
-				return 0;
-			}
-			s[i].sh_addr = allocated_section;
-		}
-		
-		/*
-		 * For PROGBITS segements, set the sh_addr field to
-		 * the correct (non-virtual) memory address.
-		 */
-
-		if (s[i].sh_type == SHT_PROGBITS) {
-			s[i].sh_addr = (u_int32_t)elfh + s[i].sh_offset;
-		}
-	}
-	return 1;
-}
-
-void free_bits_sections(Elf32_Ehdr *elfh)
-{
-	int i;
-	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)elfh + elfh->e_shoff);
-	for (i = 0; i < elfh->e_shnum; i++) {
-		if (s[i].sh_type == SHT_NOBITS) {
-			vPortFree((void *)s[i].sh_addr);
-		}
-	}
-}
-
-int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, Elf32_Ehdr **out_symbol_elfh,
-			 Elf32_Ehdr *app_elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **other_elfhs)
+int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_register_cons **out_symbol_trc,
+			 task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_cons *other_trcs)
 {
 	Elf32_Sym *final_symbol = NULL;
-	Elf32_Ehdr *final_symbol_elfh;
-	Elf32_Shdr *strtab_sect = find_section(".dynstr", app_elfh);
-	char *symbol_name = get_shstr(app_elfh, strtab_sect, in_symbol->st_name);
+	task_register_cons *final_symbol_trc;
+	Elf32_Shdr *strtab_sect = find_section(".dynstr", app_trc->elfh);
+	char *symbol_name = get_shstr(app_trc->elfh, strtab_sect, in_symbol->st_name);
 	INFO_MSG("Relocating symbol %s\n", symbol_name);
 
 	if (in_symbol->st_shndx == SHN_UNDEF) {
 		/*
 		 * Find the symbol elsewhere.
 		 */
-		
-		Elf32_Ehdr **elfp = other_elfhs;
 
-		if (elfp) {
-			while(*elfp) {
-				if (*elfp == app_elfh) {
-					elfp++;
+		if (other_trcs) {
+
+			struct task_register_cons_t *trcp;
+
+			SLIST_HEAD(task_register_list_t, task_register_cons_t)
+				trc_list = { other_trcs };
+
+			SLIST_FOREACH(trcp, &trc_list, tasks) {
+				if (trcp == app_trc)
 					continue;
-				}
-				final_symbol = find_symbol(symbol_name, *elfp);
-
+				find_symbol(symbol_name, trcp->elfh);
 				if (final_symbol->st_shndx == SHN_UNDEF)
 					final_symbol = NULL;
-
 				if (final_symbol != NULL) {
-					final_symbol_elfh = *elfp;
+					final_symbol_trc = trcp;
 					break;
 				}
-				elfp++;
 			}
 		}
 
 		if (final_symbol == NULL) {
 			final_symbol = find_symbol(symbol_name, sys_elfh);
-			final_symbol_elfh = sys_elfh;
+			/*
+			 * If the symbol is found in the system elfh,
+			 * let the symbol trc be NULL.
+			 */
+			final_symbol_trc = NULL;
 		}
 
 	} else {
-		final_symbol_elfh = app_elfh;
-		final_symbol = find_symbol(symbol_name, final_symbol_elfh);
+		final_symbol_trc = app_trc;
+		final_symbol = find_symbol(symbol_name, final_symbol_trc->elfh);
 	}
-			
+
 	if (final_symbol == NULL) {
 		ERROR_MSG("Could not link symbol \"%s\"\n", symbol_name);
 		return 0;
 	}
-	
+
 	*out_symbol = final_symbol;
-	*out_symbol_elfh = final_symbol_elfh;
+	*out_symbol_trc = final_symbol_trc;
 	return 1;
 }
 
-int link_relocations(Elf32_Ehdr *app_elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **other_elfhs)
+int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_cons *other_trcs)
 {
 	int i,j;
-	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)app_elfh + app_elfh->e_shoff);
-	Elf32_Shdr *app_symsect = find_section(".dynsym", app_elfh);
-	Elf32_Shdr *strtab_sect = find_section(".dynstr", app_elfh);
+	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)app_trc->elfh + app_trc->elfh);
+	Elf32_Shdr *app_symsect = find_section(".dynsym", app_trc->elfh);
+	Elf32_Shdr *strtab_sect = find_section(".dynstr", app_trc->elfh);
+	Elf32_Shdr *section_sect = (Elf32_Shdr *)((u_int32_t)app_trc->elfh + app_trc->elfh->e_shoff);
+
 
 	if (app_symsect == NULL) {
 		ERROR_MSG("Could not find the applications symtab.\n");
@@ -243,30 +201,20 @@ int link_relocations(Elf32_Ehdr *app_elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **ot
 		ERROR_MSG("Could not find .strtab section in application elf.\n");
 		return 0;
 	}
-	
-	Elf32_Sym *app_symtab = (Elf32_Sym *)((u_int32_t)app_elfh + app_symsect->sh_offset);
 
-	/*
-	 * First set the correct addresses for the NOBITS and PROGBITS
-	 * sections.
-	 */
-
-	if (!set_and_allocate_bits_sections(app_elfh)) {
-		ERROR_MSG("ERROR: could not set and allocate bits sections.\n");
-		return 0;
-	}
+	Elf32_Sym *app_symtab = (Elf32_Sym *)((u_int32_t)app_trc->elfh + app_symsect->sh_offset);
 
 	/*
 	 * For all relocation segments in the application.
 	 */
-	for (i = 0; i < app_elfh->e_shnum; i++) {
+	for (i = 0; i < app_trc->elfh->e_shnum; i++) {
 		if (s[i].sh_type != SHT_REL && s[i].sh_type != SHT_RELA)
 			continue;
 		if (s[i].sh_type == SHT_RELA) {
 			ERROR_MSG("RELA type segments not supported\n");
 			return 0;
 		}
-		Elf32_Rel *r = (Elf32_Rel *)((u_int32_t)app_elfh + s[i].sh_offset);
+		Elf32_Rel *r = (Elf32_Rel *)((u_int32_t)app_trc->elfh + s[i].sh_offset);
 		/*
 		 * For all relocations in the relocation segment.
 		 */
@@ -284,13 +232,13 @@ int link_relocations(Elf32_Ehdr *app_elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **ot
 			/*
 			 * 1. Find the symbol in the given elf binaries.
 			 */
-			
+
 			Elf32_Sym *app_symbol = &app_symtab[ELF32_R_SYM(r[j].r_info)];
-			Elf32_Ehdr *symbol_elf;
+			task_register_cons *symbol_trc;
 			Elf32_Sym *final_symbol;
 
-			if (!find_symbol_in_elfhs(app_symbol, &final_symbol, &symbol_elf,
-						  app_elfh, sys_elfh, other_elfhs)) {
+			if (!find_symbol_in_elfhs(app_symbol, &final_symbol, &symbol_trc,
+						  app_trc, sys_elfh, other_trcs)) {
 				ERROR_MSG("Could not locate symbol\n");
 				return 0;
 			}
@@ -303,18 +251,28 @@ int link_relocations(Elf32_Ehdr *app_elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **ot
 
 			if (final_symbol->st_shndx == SHN_ABS) {
 				address = final_symbol->st_value;
-			} else if (symbol_elf == app_elfh) {
-				Elf32_Shdr *symbol_section = &s[final_symbol->st_shndx];
-				address = final_symbol->st_value - symbol_section->sh_offset 
-					+ symbol_section->sh_addr;
-			} else if (symbol_elf == sys_elfh) {
-				/* extern u_int8_t _text; */
-				/* address = (u_int32_t)&_text + final_symbol->st_value; */
+			} else if (symbol_trc == NULL) {
+				/*
+				 * If the symbol_trc is NULL the
+				 * symbol resides in the system
+				 * binary.
+				 */
 				address = final_symbol->st_value;
+			} else if (section_sect[final_symbol->st_shndx].sh_flags & SHF_ALLOC) {
+				/*
+				 * If the SHF_ALLOC flag is set, the
+				 * section should already be allocated
+				 * somewhere.
+				 */
+				address = (u_int32_t)symbol_trc->cont_mem + final_symbol->st_value;
 			} else {
-				address = (u_int32_t)symbol_elf + (u_int32_t)final_symbol->st_value;
+				/*
+				 * Else we fall back on addressing the symbol in the elf.
+				 */
+				address = (u_int32_t)symbol_trc->elfh +
+					(u_int32_t)final_symbol->st_value;
 			}
-			
+
 			/*
 			 * 3. Set the relocation address.
 			 */
@@ -322,36 +280,30 @@ int link_relocations(Elf32_Ehdr *app_elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **ot
 			switch (ELF32_R_TYPE(r[j].r_info)) {
 			case R_ARM_JUMP_SLOT:
 			{
-				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_elfh + r[j].r_offset);
+				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_trc->elfh + r[j].r_offset);
 				*rel_address = (u_int32_t)address;
-				
+
 				INFO_MSG("R_ARM_JUMP_SLOT: The relocation address is set to 0x%x\n", address);
 			}
 			break;
 			case R_ARM_GLOB_DAT:
 			{
-				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_elfh + r[j].r_offset);
-				DEBUG_MSG("R_ARM_GLOB_DAT: rel_address = 0x%x, address = 0x%x\n", 
+				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_trc->elfh + r[j].r_offset);
+				DEBUG_MSG("R_ARM_GLOB_DAT: rel_address = 0x%x, address = 0x%x\n",
 				       (unsigned int)rel_address, (unsigned int)address);
 				*rel_address = (u_int32_t)address;
 				//*(u_int32_t *)address = (u_int32_t)rel_address;
-				
+
 				INFO_MSG("R_ARM_GLOB_DAT: The relocation address is set to 0x%x\n", address);
 			}
-			break;	
+			break;
 			default:
 				return 0; /* not reached */
 			}
 
 		}
 	}
-	
 
-	return 1;
-}
 
-int free_relocations(Elf32_Ehdr *elfh)
-{
-	free_bits_sections(elfh);
 	return 1;
 }

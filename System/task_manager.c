@@ -60,23 +60,6 @@ int get_number_of_tasks()
 	return i;
 }
 
-int get_elf_array(Elf32_Ehdr **array, int array_size)
-{
-	int i = 0;
-	struct task_register_cons_t *p;
-
-	SLIST_FOREACH(p, &task_register_list, tasks) {
-		if (i > array_size)
-			break;
-		array[i++] = p->elfh;
-	}
-
-	for (; i < array_size; i++)
-		array[i] = NULL;
-
-	return 1;
-}
-
 task_register_cons *task_find(const char *name)
 {
 	struct task_register_cons_t *p;
@@ -89,6 +72,19 @@ task_register_cons *task_find(const char *name)
 	return p;
 }
 
+void *task_get_section_address(task_register_cons *trc, Elf32_Half index)
+{
+	struct task_section_cons_t *p;
+	SLIST_FOREACH(p, &trc->sections, sections) {
+		if (p->section_index == index)
+			return p->amem;
+	}
+	/*
+	 * Did not find section.
+	 */
+	return NULL;
+}
+
 int task_link(task_register_cons *trc)
 {
 	if (check_elf_magic(trc->elfh))
@@ -98,18 +94,18 @@ int task_link(task_register_cons *trc)
 		return 0;
 	}
 
-	int elf_array_size = get_number_of_tasks() + 1;
-	Elf32_Ehdr *elf_array[elf_array_size];
-	get_elf_array(elf_array, elf_array_size);
-
 	Elf32_Ehdr *sys_elfh  = (Elf32_Ehdr *)&_system_elf_start;
 
-	if (link_relocations(trc->elfh, sys_elfh, elf_array)) {
+	if (link_relocations(trc, sys_elfh, SLIST_FIRST(&task_register_list))) {
 		INFO_MSG("Relocation successful\n");
 	} else {
 		ERROR_MSG("Relocation failed\n");
 		return 0;
 	}
+
+	return 1;
+}
+
 int task_alloc(task_register_cons *trc)
 {
 	int i;

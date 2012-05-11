@@ -28,6 +28,8 @@
 #ifndef TASK_MANAGER_H
 #define TASK_MANAGER_H
 
+#include <task.h>
+
 #include <System/queue.h>
 #include <System/elf.h>
 
@@ -51,6 +53,7 @@ typedef struct task_register_cons_t {
 } task_register_cons;
 
 task_register_cons	*task_find(const char *name);
+void			*task_get_section_address(task_register_cons *, Elf32_Half);
 int			 task_link(task_register_cons *trc);
 int			 task_alloc(task_register_cons *trc);
 int			 task_free(task_register_cons *trc);
