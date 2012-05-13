@@ -48,6 +48,18 @@
 xTaskHandle      migrator_task_handle;
 xSemaphoreHandle migrator_semaphore;
 
+request_hook_fn_t migrator_find_request_hook(task_register_cons *trc)
+{
+	request_hook_fn_t ret = NULL;
+	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", trc->elfh);
+	if (request_hook_symbol) {
+		ret = (request_hook_fn_t)((u_int32_t)trc->cont_mem + (u_int32_t)request_hook_symbol->st_value);
+		INFO_MSG("Found request hook symbol in task \"%s\" @ 0x%x\n", trc->name, (u_int32_t)ret);
+	}
+
+	return ret;
+}
+
 void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 {
 	/*
@@ -64,11 +76,29 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		return;
 	}
 
-	Elf32_Sym *new_entry_sym = find_symbol("_start", new_sw);
-	Elf32_Ehdr *sys_elfh = (Elf32_Ehdr *)&_system_elf_start;
+	/*
+	 * Allocate memory for the new software.
+	 */
 
-	if (new_entry_sym == NULL) {
-		ERROR_MSG("MIGRATOR: could not find entry symbol for new software for task \"%s\"\n", trc->name);
+	struct task_register_cons_t *new_trc =
+	  (struct task_register_cons_t *)pvPortMalloc(sizeof(struct task_register_cons *));
+
+	if (new_trc == NULL) {
+		ERROR_MSG("could not allocate memory while run-time updating task \"%s\"\n", trc->name);
+		return;
+	}
+
+	new_trc->name = trc->name;
+	new_trc->elfh = new_sw;
+	new_trc->task_handle = 0;
+	new_trc->cont_mem = NULL;
+
+	LIST_INIT(&new_trc->sections);
+
+	if (!task_alloc(new_trc)) {
+		ERROR_MSG("Could not allocate memory when run-time updating task \"%s\"\n",
+			  new_trc->name);
+		vPortFree(new_trc);
 		return;
 	}
 
@@ -76,8 +106,26 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 * Link the new software.
 	 */
 
-	if (!link_relocations(new_sw, sys_elfh, NULL)) {
-		ERROR_MSG("MIGRATOR: could not run-time link new software for task \"%s\"\n", trc->name);
+
+	if (!task_link(new_trc)) {
+		ERROR_MSG("Could not link new software when doing run-time update on task \"%s\"\n",
+			  new_trc->name);
+		task_free(new_trc);
+		vPortFree(new_trc);
+		return;
+	}
+
+	/*
+	 * Find the checkpoint request hook.
+	 */
+
+	new_trc->request_hook = migrator_find_request_hook(new_trc);
+
+	if (new_trc->request_hook == NULL) {
+		ERROR_MSG("Could not find checkpoint request hook when run-time updating task \"%s\"\n",
+			  new_trc->name);
+		task_free(new_trc);
+		vPortFree(new_trc);
 		return;
 	}
 
@@ -85,20 +133,33 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 * Find the .rtu_data sections.
 	 */
 
+	Elf32_Half old_rtu_ndx = find_section_index(RTU_DATA_SECTION_NAME, trc->elfh);
+	Elf32_Half new_rtu_ndx = find_section_index(RTU_DATA_SECTION_NAME, new_trc->elfh);
 	Elf32_Shdr *old_rtu = find_section(RTU_DATA_SECTION_NAME, trc->elfh);
-	Elf32_Shdr *new_rtu = find_section(RTU_DATA_SECTION_NAME, new_sw);
+	Elf32_Shdr *new_rtu = find_section(RTU_DATA_SECTION_NAME, new_trc->elfh);
 
-	/*
-	 * Do some checks on the .rtu_data sections in the old and new elf.
-	 */
-
-	if (old_rtu == NULL || new_rtu == NULL) {
-		ERROR_MSG("MIGRATOR: could not find \"" RTU_DATA_SECTION_NAME "\" sections in elfs\n");
+	if (old_rtu_ndx == 0 || new_rtu_ndx == 0 || old_rtu == NULL || new_rtu == NULL) {
+		ERROR_MSG("could not find \"" RTU_DATA_SECTION_NAME "\" sections in elfs\n");
+		task_free(new_trc);
+		vPortFree(new_trc);
 		return;
 	}
 
+
 	if (old_rtu->sh_size != new_rtu->sh_size) {
-		ERROR_MSG("MIGRATOR: size mismatch in \"" RTU_DATA_SECTION_NAME "\" sections between software versions.\n");
+		ERROR_MSG("size mismatch in \"" RTU_DATA_SECTION_NAME "\" sections between software versions.\n");
+		task_free(new_trc);
+		vPortFree(new_trc);
+		return;
+	}
+
+	void *old_rtu_mem = task_get_section_address(trc, old_rtu_ndx);
+	void *new_rtu_mem = task_get_section_address(trc, new_rtu_ndx);
+
+	if (old_rtu_mem == NULL || new_rtu_mem == NULL) {
+		ERROR_MSG("could not find allocated memory for section \"" RTU_DATA_SECTION_NAME "\".\n");
+		task_free(new_trc);
+		vPortFree(new_trc);
 		return;
 	}
 
@@ -108,72 +169,69 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 * function too.
 	 */
 
-	memcpy((void *)new_rtu->sh_addr, (void *)old_rtu->sh_addr, old_rtu->sh_size);
+	memcpy((void *)new_rtu_mem, (void *)old_rtu_mem, old_rtu->sh_size);
 
 	/*
-	 * Free the old software.
+	 * Free the old software, delete old task, create new task,
+	 * start it and update register_cons.
 	 */
 
-	free_relocations(trc->elfh);
-
-	/*
-	 * Delete old task, create new task and update register_cons.
-	 */
-
+	LIST_REPLACE(trc, new_trc, tasks);
 	vTaskDelete(trc->task_handle);
-
-	entry_ptr_t entry_point = get_entry_point(new_sw, new_entry_sym);
-
-	trc->elfh = new_sw;
-	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", new_sw);
-	trc->request_hook = (request_hook_fn_t)((u_int32_t)new_sw + (u_int32_t)request_hook_symbol->st_value);
-	
-	xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)trc->name,
-		    configMINIMAL_STACK_SIZE, NULL,
-		    APPLICATION_TASK_PRIORITY, &trc->task_handle);
-	
-
+	/*
+	 * BUG: the task should be free after the idle task has had
+	 *      the chance to free the task_handle.
+	 */
+	task_free(trc);
+	vPortFree(trc);
+	task_start(new_trc);
 }
 
 void migrator_task(void *arg)
 {
-	task_register_cons *rc;
+	task_register_cons *trc;
+	int i = 0;
 
 	while (1) {
+		i++;
+
+		if (i == 3)
+			printf("asd\n");
 
 		vTaskDelay(1000/portTICK_RATE_MS);
-	
-		if ((rc = task_find("rtuapp"))) {
+
+
+		if ((trc = task_find("rtuapp"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
 			INFO_MSG("Calling request hook.\n");
-			(rc->request_hook)(cp_req_rtu);
+			(trc->request_hook)(cp_req_rtu);
 			INFO_MSG("Returned from request hook.\n");
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			DEBUG_MSG("BOO!\n");
-			
+			DEBUG_MSG("BOO! (-> v2)\n");
+
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv2_elf_start;
-			
+
 			INFO_MSG("Starting runtime update.\n");
-			runtime_update(rc, new_sw);
-			INFO_MSG("Runtime update complete.\n");
+			runtime_update(trc, new_sw);
+			INFO_MSG("Runtime update complete. (-> v2)\n");
 			xSemaphoreGive(migrator_semaphore);
 		}
 
 		vTaskDelay(1000/portTICK_RATE_MS);
-	
-		if ((rc = task_find("rtuapp"))) {
+
+		if ((trc = task_find("rtuapp"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
 			INFO_MSG("Calling request hook.\n");
-			(rc->request_hook)(cp_req_rtu);
+			(*trc->request_hook)(cp_req_rtu);
 			INFO_MSG("Returned from request hook.\n");
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			DEBUG_MSG("BOO!\n");
-			
+			DEBUG_MSG("BOO! (-> v1)\n");
+
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv1_elf_start;
-			
+
 			INFO_MSG("Starting runtime update.\n");
-			runtime_update(rc, new_sw);
-			INFO_MSG("Runtime update complete.\n");
+			runtime_update(trc, new_sw);
+			INFO_MSG("Runtime update complete. (-> v1)\n");
 			xSemaphoreGive(migrator_semaphore);
 		}
 	}
@@ -181,8 +239,11 @@ void migrator_task(void *arg)
 
 int migrator_start()
 {
-	xTaskCreate(migrator_task, (const signed char *)"migrator", 
-		    configMINIMAL_STACK_SIZE, NULL, 3, &migrator_task_handle);
+	if (xTaskCreate(migrator_task, (const signed char *)"migrator",
+			configMINIMAL_STACK_SIZE, NULL, 4, &migrator_task_handle) != pdPASS) {
+		ERROR_MSG("could not create migrator task\n");
+		return 0;
+	}
 
 	vSemaphoreCreateBinary(migrator_semaphore);
 	DEBUG_MSG("migrator_semaphore @ 0x%x\n", (u_int32_t)&migrator_semaphore);

@@ -31,13 +31,16 @@
 #include <task.h>
 #include <semphr.h>
 
+#include <System/task_manager.h>
 #include <System/elf.h>
+
+#include <App/rtu.h>
 
 extern xTaskHandle      migrator_task_handle;
 extern xSemaphoreHandle migrator_semaphore;
 
-void	migrator_task(void *arg);
-int	migrator_register(const char *name, Elf32_Ehdr *elfh, xTaskHandle task_handle);
-int	migrator_start();
+request_hook_fn_t	 migrator_find_request_hook(task_register_cons *trc);
+void			 migrator_task(void *arg);
+int			 migrator_start();
 
 #endif /* MIGRATOR_H */
