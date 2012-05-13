@@ -154,7 +154,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	}
 
 	void *old_rtu_mem = task_get_section_address(trc, old_rtu_ndx);
-	void *new_rtu_mem = task_get_section_address(trc, new_rtu_ndx);
+	void *new_rtu_mem = task_get_section_address(new_trc, new_rtu_ndx);
 
 	if (old_rtu_mem == NULL || new_rtu_mem == NULL) {
 		ERROR_MSG("could not find allocated memory for section \"" RTU_DATA_SECTION_NAME "\".\n");
