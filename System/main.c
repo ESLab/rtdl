@@ -136,3 +136,8 @@ void vApplicationMallocFailedHook( void )
 {
 	__asm volatile (" smc #0 ");
 }
+
+void vApplicationIdleHook( void )
+{
+
+}

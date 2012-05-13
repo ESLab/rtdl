@@ -127,6 +127,8 @@ to exclude the API function. */
 	#define configCPU_CLOCK_HZ				( ( unsigned portLONG ) 2000000 )
 	#define configCPU_PERIPH_HZ				( configCPU_CLOCK_HZ / 2 )
 	#define configUART_PORT					( portCORE_ID() )
+	#undef configUSE_IDLE_HOOK
+	#define configUSE_IDLE_HOOK				1
 #endif /* configPLATFORM */
 
 #endif /* FREERTOS_CONFIG_H */
