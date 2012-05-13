@@ -108,6 +108,11 @@ int task_link(task_register_cons *trc)
 		return 0;
 	}
 
+	if (trc->cont_mem == NULL) {
+		ERROR_MSG("No memory allocated for task \"%s\" when trying to link.\n", trc->name);
+		return 0;
+	}
+
 	Elf32_Ehdr *sys_elfh  = (Elf32_Ehdr *)&_system_elf_start;
 
 	if (link_relocations(trc, sys_elfh, LIST_FIRST(&task_register_list))) {
@@ -168,6 +173,12 @@ int task_alloc(task_register_cons *trc)
 			struct task_section_cons_t *tsc =
 				(struct task_section_cons_t *)
 				pvPortMalloc(sizeof(task_section_cons));
+
+			if (tsc == NULL) {
+				ERROR_MSG("Could not allocate memory for tsc when allocating memory for task \"%s\".\n", trc->name);
+				return 0;
+			}
+
 			tsc->name =
 				(char *)
 				((u_int32_t)trc->elfh + (u_int32_t)strtab_sect->sh_offset +
@@ -177,16 +188,25 @@ int task_alloc(task_register_cons *trc)
 			tsc->amem = (void *)(cm_addr + s[i].sh_addr);
 			LIST_INSERT_HEAD(&trc->sections, tsc, sections);
 
-			if (s[i].sh_type == SHT_PROGBITS) {
+			if (s[i].sh_type != SHT_NOBITS) {
 				/*
 				 * Copy the section if it contains data.
 				 */
+				DEBUG_MSG("Copying data for section \"%s\".\n", tsc->name);
 				memcpy(tsc->amem, (void *)((u_int32_t)trc->elfh +
 							   (u_int32_t)s[i].sh_offset),
 				       s[i].sh_size);
+			} else {
+				/*
+				 * Set the entire section to zero.
+				 */
+				DEBUG_MSG("Setting data for section \"%s\" to zero.\n", tsc->name);
+				bzero(tsc->amem, s[i].sh_size);
 			}
 		}
 	}
+
+	trc->request_hook = migrator_find_request_hook(trc);
 
 	return 1;
 }
@@ -218,7 +238,7 @@ int task_start(task_register_cons *trc)
 {
 	Elf32_Sym *entry_sym = find_symbol("_start", trc->elfh);
 
-	entry_ptr_t entry_point = get_entry_point(trc->elfh, entry_sym);
+	entry_ptr_t entry_point = trc->cont_mem + entry_sym->st_value;
 
 	if (entry_sym != NULL)
 		INFO_MSG("Found entry sym for task \"%s\"\n", trc->name);
@@ -227,9 +247,15 @@ int task_start(task_register_cons *trc)
 		return 0;
 	}
 
-	xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)trc->name,
-		    configMINIMAL_STACK_SIZE, NULL,
-		    APPLICATION_TASK_PRIORITY, &trc->task_handle);
+	DEBUG_MSG("Entry point for task \"%s\" = 0x%x\n", trc->name, (u_int32_t)entry_point);
+
+	if (xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)trc->name,
+			configMINIMAL_STACK_SIZE, NULL,
+			APPLICATION_TASK_PRIORITY, &trc->task_handle) != pdPASS) {
+		ERROR_MSG("Could not create task for trc \"%s\".\n", trc->name);
+		return 0;
+	}
+
 	return 1;
 }
 
@@ -246,13 +272,7 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 	trc->task_handle = 0;
 	LIST_INSERT_HEAD(&task_register_list, trc, tasks);
 
-	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", elfh);
-	if (request_hook_symbol) {
-		INFO_MSG("Found request hook symbol in task \"%s\"\n", name);
-		trc->request_hook = (request_hook_fn_t)((u_int32_t)elfh + (u_int32_t)request_hook_symbol->st_value);
-	} else
-		trc->request_hook = NULL;
-
+	trc->request_hook = NULL;
 	trc->cont_mem = NULL;
 
 	LIST_INIT(&trc->sections);
