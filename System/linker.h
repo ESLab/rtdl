@@ -34,9 +34,9 @@
 typedef int (*entry_ptr_t) ();
 
 int		 check_elf_magic(Elf32_Ehdr *);
+Elf32_Half	 find_section_index(char *, Elf32_Ehdr *);
 Elf32_Shdr	*find_section(char *, Elf32_Ehdr *);
 Elf32_Sym	*find_symbol(char *, Elf32_Ehdr *);
-entry_ptr_t	 get_entry_point(Elf32_Ehdr *, Elf32_Sym *);
 int		 link_relocations(task_register_cons *, Elf32_Ehdr *, task_register_cons *);
 
 #endif /* _LINKER_H_ */

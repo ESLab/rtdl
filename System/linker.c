@@ -53,11 +53,6 @@ int check_elf_magic(Elf32_Ehdr *hdr)
 	return 1;
 }
 
-entry_ptr_t get_entry_point(Elf32_Ehdr *elfh, Elf32_Sym *entry_symbol)
-{
-	return (entry_ptr_t)((u_int32_t)elfh + (u_int32_t)(entry_symbol->st_value));
-}
-
 char *get_shstr(Elf32_Ehdr *elf_h, Elf32_Shdr *shstr_hdr, Elf32_Word index)
 {
 	char *data = (char *)((u_int32_t)elf_h + shstr_hdr->sh_offset);
@@ -65,7 +60,7 @@ char *get_shstr(Elf32_Ehdr *elf_h, Elf32_Shdr *shstr_hdr, Elf32_Word index)
 	return data + index;
 }
 
-Elf32_Shdr *find_section(char *name, Elf32_Ehdr *elf_h)
+Elf32_Half find_section_index(char *name, Elf32_Ehdr *elf_h)
 {
 	int i;
 	Elf32_Shdr *sect_hdr = (Elf32_Shdr *)((u_int32_t)elf_h + elf_h->e_shoff);
@@ -73,9 +68,22 @@ Elf32_Shdr *find_section(char *name, Elf32_Ehdr *elf_h)
 	for (i = 0; i < elf_h->e_shnum; i++) {
 		char *a = get_shstr(elf_h, shstr_hdr, sect_hdr[i].sh_name);
 		if (strcmp(a, name) == 0)
-			return &sect_hdr[i];
+			return i;
 	}
-	return NULL;
+	return 0;
+}
+
+Elf32_Shdr *find_section(char *name, Elf32_Ehdr *elf_h)
+{
+	int index = find_section_index(name, elf_h);
+	Elf32_Shdr *sect_hdr = (Elf32_Shdr *)((u_int32_t)elf_h + elf_h->e_shoff);
+
+	/*
+	 * Section header with index 0 is the NULL section, and not
+	 * used.
+	 */
+
+	return index == 0 ? (Elf32_Shdr *)NULL : &sect_hdr[index];
 }
 
 Elf32_Sym *get_symtab(Elf32_Ehdr *elf_h)
@@ -149,7 +157,8 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 			LIST_FOREACH(trcp, &trc_list, tasks) {
 				if (trcp == app_trc)
 					continue;
-				find_symbol(symbol_name, trcp->elfh);
+				DEBUG_MSG("looking for symbol \"%s\" in \"%s\"\n", symbol_name, trcp->name);
+				final_symbol = find_symbol(symbol_name, trcp->elfh);
 				if (final_symbol->st_shndx == SHN_UNDEF)
 					final_symbol = NULL;
 				if (final_symbol != NULL) {
@@ -186,7 +195,8 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_cons *other_trcs)
 {
 	int i,j;
-	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)app_trc->elfh + app_trc->elfh);
+	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)app_trc->elfh + app_trc->elfh->e_shoff);
+
 	Elf32_Shdr *app_symsect = find_section(".dynsym", app_trc->elfh);
 	Elf32_Shdr *strtab_sect = find_section(".dynstr", app_trc->elfh);
 	Elf32_Shdr *section_sect = (Elf32_Shdr *)((u_int32_t)app_trc->elfh + app_trc->elfh->e_shoff);
@@ -280,7 +290,7 @@ int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_reg
 			switch (ELF32_R_TYPE(r[j].r_info)) {
 			case R_ARM_JUMP_SLOT:
 			{
-				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_trc->elfh + r[j].r_offset);
+				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_trc->cont_mem + r[j].r_offset);
 				*rel_address = (u_int32_t)address;
 
 				INFO_MSG("R_ARM_JUMP_SLOT: The relocation address is set to 0x%x\n", address);
@@ -288,7 +298,7 @@ int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_reg
 			break;
 			case R_ARM_GLOB_DAT:
 			{
-				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_trc->elfh + r[j].r_offset);
+				u_int32_t *rel_address = (u_int32_t *)((u_int32_t)app_trc->cont_mem + r[j].r_offset);
 				DEBUG_MSG("R_ARM_GLOB_DAT: rel_address = 0x%x, address = 0x%x\n",
 				       (unsigned int)rel_address, (unsigned int)address);
 				*rel_address = (u_int32_t)address;
