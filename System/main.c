@@ -69,6 +69,23 @@ int main()
 	task_register_cons *writerc = task_register("writer", writer_elfh);
 	task_register_cons *rtuappc = task_register("rtuapp", rtuapp_elfh);
 
+	if (!task_alloc(simplec)) {
+		ERROR_MSG("Could not alloc memory for task \"simple\"\n");
+		goto exit;
+	}
+	if (!task_alloc(readerc)) {
+		ERROR_MSG("Could not alloc memory for task \"reader\"\n");
+		goto exit;
+	}
+	if (!task_alloc(writerc)) {
+		ERROR_MSG("Could not alloc memory for task \"writer\"\n");
+		goto exit;
+	}
+	if (!task_alloc(rtuappc)) {
+		ERROR_MSG("Could not alloc memory for task \"rtuapp\"\n");
+		goto exit;
+	}
+
 	/*
 	 * Linking tasks
 	 */
