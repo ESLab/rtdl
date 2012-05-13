@@ -51,6 +51,7 @@ devkitdir = "/export/home/aton4/wlund/bin/devkitARM/bin/"
 sourcedir = "."
 
 includedirs = [sourcedir,
+               sourcedir + "/System/umm",
                sourcedir + "/Source/include",
                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9"]
 
@@ -100,7 +101,7 @@ applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
 
 system_files = freertos_files + ['App/startup.S', 'System/main.c', 'System/task_manager.c', 
                                  'System/linker.c', 'System/migrator.c', 'System/printf-stdarg.c', 
-                                 'System/serial.c', 'System/pl011.c']
+                                 'System/serial.c', 'System/pl011.c', 'System/umm/umm_malloc.c']
 
 fs = set()
 for a in applications:
