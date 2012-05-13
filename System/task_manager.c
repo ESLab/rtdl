@@ -45,15 +45,15 @@
 
 #include <App/rtu.h>
 
-SLIST_HEAD(task_register_list_t, task_register_cons_t) task_register_list =
-	SLIST_HEAD_INITIALIZER(task_register_list);
+LIST_HEAD(task_register_list_t, task_register_cons_t) task_register_list =
+	LIST_HEAD_INITIALIZER(task_register_list);
 
 int get_number_of_tasks()
 {
 	int i = 0;
 	struct task_register_cons_t *p;
 
-	SLIST_FOREACH(p, &task_register_list, tasks) {
+	LIST_FOREACH(p, &task_register_list, tasks) {
 		i++;
 	}
 
@@ -64,7 +64,7 @@ task_register_cons *task_find(const char *name)
 {
 	struct task_register_cons_t *p;
 
-	SLIST_FOREACH(p, &task_register_list, tasks) {
+	LIST_FOREACH(p, &task_register_list, tasks) {
 		if (strcmp(name, p->name) == 0)
 			break;
 	}
@@ -74,16 +74,30 @@ task_register_cons *task_find(const char *name)
 
 void *task_get_section_address(task_register_cons *trc, Elf32_Half index)
 {
+	Elf32_Shdr *section_hdr = (Elf32_Shdr *)((u_int32_t)trc->elfh + trc->elfh->e_shoff);
 	struct task_section_cons_t *p;
-	SLIST_FOREACH(p, &trc->sections, sections) {
-		if (p->section_index == index)
-			return p->amem;
+
+	if (section_hdr[index].sh_flags & SHF_ALLOC) {
+		/*
+		 * The section should be allocated.
+		 */
+		LIST_FOREACH(p, &trc->sections, sections) {
+			if (p->section_index == index)
+				return p->amem;
+		}
+	} else {
+		/*
+		 * If it is not an allocated section, return the
+		 * address to the elf binary.
+		 */
+		return (void *)((u_int32_t)trc->elfh + section_hdr[index].sh_offset);
 	}
 	/*
 	 * Did not find section.
 	 */
 	return NULL;
 }
+
 
 int task_link(task_register_cons *trc)
 {
@@ -96,7 +110,7 @@ int task_link(task_register_cons *trc)
 
 	Elf32_Ehdr *sys_elfh  = (Elf32_Ehdr *)&_system_elf_start;
 
-	if (link_relocations(trc, sys_elfh, SLIST_FIRST(&task_register_list))) {
+	if (link_relocations(trc, sys_elfh, LIST_FIRST(&task_register_list))) {
 		INFO_MSG("Relocation successful\n");
 	} else {
 		ERROR_MSG("Relocation failed\n");
@@ -147,7 +161,7 @@ int task_alloc(task_register_cons *trc)
 
 	trc->cont_mem = (void *)cm_addr;
 
-	SLIST_INIT(&trc->sections);
+	LIST_INIT(&trc->sections);
 
 	for (i = 0; i < trc->elfh->e_shnum; i++) {
 		if (s[i].sh_flags & SHF_ALLOC) {
@@ -161,7 +175,7 @@ int task_alloc(task_register_cons *trc)
 			DEBUG_MSG("Processing allocation for section \"%s\".\n", tsc->name);
 			tsc->section_index = i;
 			tsc->amem = (void *)(cm_addr + s[i].sh_addr);
-			SLIST_INSERT_HEAD(&trc->sections, tsc, sections);
+			LIST_INSERT_HEAD(&trc->sections, tsc, sections);
 
 			if (s[i].sh_type == SHT_PROGBITS) {
 				/*
@@ -185,8 +199,8 @@ int task_free(task_register_cons *trc)
 	 * 1. Free each cons in the section list.
 	 */
 
-	SLIST_FOREACH_SAFE(p, &trc->sections, sections, p_tmp) {
-		SLIST_REMOVE(&trc->sections, p, task_section_cons_t, sections);
+	LIST_FOREACH_SAFE(p, &trc->sections, sections, p_tmp) {
+		LIST_REMOVE(p, sections);
 		vPortFree(p);
 	}
 
@@ -230,7 +244,7 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 	trc->name = name;
 	trc->elfh = elfh;
 	trc->task_handle = 0;
-	SLIST_INSERT_HEAD(&task_register_list, trc, tasks);
+	LIST_INSERT_HEAD(&task_register_list, trc, tasks);
 
 	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", elfh);
 	if (request_hook_symbol) {
@@ -241,7 +255,7 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 
 	trc->cont_mem = NULL;
 
-	SLIST_INIT(&trc->sections);
+	LIST_INIT(&trc->sections);
 
 	DEBUG_MSG("Number of tasks registered: %i\n", get_number_of_tasks());
 

@@ -39,7 +39,7 @@ typedef struct task_section_cons_t {
 	const char      *name;
 	Elf32_Half       section_index;
 	void		*amem;
-	SLIST_ENTRY(task_section_cons_t) sections;
+	LIST_ENTRY(task_section_cons_t) sections;
 } task_section_cons;
 
 typedef struct task_register_cons_t {
@@ -48,8 +48,8 @@ typedef struct task_register_cons_t {
 	xTaskHandle		 task_handle;
 	request_hook_fn_t	 request_hook;
 	void                    *cont_mem;
-	SLIST_HEAD(task_section_list_t, task_section_cons_t) sections;
-	SLIST_ENTRY(task_register_cons_t) tasks;
+	LIST_HEAD(task_section_list_t, task_section_cons_t) sections;
+	LIST_ENTRY(task_register_cons_t) tasks;
 } task_register_cons;
 
 task_register_cons	*task_find(const char *name);

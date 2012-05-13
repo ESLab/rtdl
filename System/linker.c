@@ -143,10 +143,10 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 
 			struct task_register_cons_t *trcp;
 
-			SLIST_HEAD(task_register_list_t, task_register_cons_t)
+			LIST_HEAD(task_register_list_t, task_register_cons_t)
 				trc_list = { other_trcs };
 
-			SLIST_FOREACH(trcp, &trc_list, tasks) {
+			LIST_FOREACH(trcp, &trc_list, tasks) {
 				if (trcp == app_trc)
 					continue;
 				find_symbol(symbol_name, trcp->elfh);
