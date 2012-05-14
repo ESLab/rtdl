@@ -44,6 +44,9 @@ extern char   __umm_heap_start[];
 extern char   __umm_heap_end[];
 extern size_t __umm_heap_size;
 
+void *umm_malloc( size_t size );
+void umm_free( void *ptr );
+
 void *umm_info( void *ptr, int force );
 
 // ----------------------------------------------------------------------------

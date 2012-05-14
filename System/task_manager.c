@@ -43,6 +43,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <umm_malloc.h>
+
 #include <App/rtu.h>
 
 LIST_HEAD(task_register_list_t, task_register_cons_t) task_register_list =
@@ -157,7 +159,11 @@ int task_alloc(task_register_cons *trc)
 		return 0;
 	}
 
-	u_int32_t cm_addr = (u_int32_t)pvPortMalloc(alloc_size);
+	/*
+	 * Use umm_malloc() for allocating task memory.
+	 */
+
+	u_int32_t cm_addr = (u_int32_t)umm_malloc(alloc_size);
 
 	if (cm_addr == 0) {
 		ERROR_MSG("Could not allocate memory for task \"%s\"\n", trc->name);
@@ -225,10 +231,12 @@ int task_free(task_register_cons *trc)
 	}
 
 	/*
-	 * 2. Free the continous memory region.
+	 * 2. Free the continous memory region. We are using
+	 *    umm_malloc() for the task memory, so we are
+	 *    using umm_free() to free it.
 	 */
 
-	vPortFree(trc->cont_mem);
+	umm_free(trc->cont_mem);
 	trc->cont_mem = NULL;
 
 	return 1;
@@ -244,6 +252,15 @@ int task_start(task_register_cons *trc)
 		INFO_MSG("Found entry sym for task \"%s\"\n", trc->name);
 	else {
 		ERROR_MSG("Did not find entry sym for task \"%s\"\n", trc->name);
+		return 0;
+	}
+
+	/*
+	 * This hold at least for ARM.
+	 */
+
+	if ((u_int32_t)entry_sym & 0x3) {
+		ERROR_MSG("the entry point (@ 0x%x) is not 4 byte aligned.\n", (u_int32_t)entry_sym);
 		return 0;
 	}
 
