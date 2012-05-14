@@ -569,6 +569,15 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
 
 // ----------------------------------------------------------------------------
 
+#if 1
+
+umm_block umm_heap[ (size_t) 8 * 1024 * 1024 / sizeof(umm_block) ];
+
+const unsigned int umm_numblocks = sizeof(umm_heap)/sizeof(umm_block);
+
+#define UMM_NUMBLOCKS (umm_numblocks)
+
+#else
 #ifndef UMM_TEST_MAIN
 
   #define umm_free    free
@@ -601,6 +610,7 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
 
   #define UMM_NUMBLOCKS (umm_numblocks)
 
+#endif
 #endif
 
 // ----------------------------------------------------------------------------
