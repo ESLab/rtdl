@@ -44,10 +44,7 @@ print_version(const char * name)
     char *acType = "Release";
 #endif /* _DEBUG */
 
-    char acVersion[60];
-    snprintf(acVersion,sizeof(acVersion),"[%s %s %s]",
-        __DATE__,__TIME__,acType);
-    printf("%s %s\n",name,acVersion);
+    printf("%s [%s %s %s]\n",name,__DATE__,__TIME__,acType);
 }
 
 void

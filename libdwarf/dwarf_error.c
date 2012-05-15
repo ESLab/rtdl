@@ -353,7 +353,7 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
             if (errptr == NULL) {
 		ERROR_MSG("Could not allocate Dwarf_Error structure, "
 			  "abort() in libdwarf.\n");
-                abort();
+                return;
             }
         } else {
             /*  We have no dbg to work with. dwarf_init failed. We hack
@@ -362,7 +362,7 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
             if (errptr == NULL) {
 		ERROR_MSG("Could not allocate Dwarf_Error structure, "
 			  "abort() in libdwarf..\n");
-                abort();
+                return;
             }
         }
 
@@ -376,14 +376,14 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
         if (errptr == NULL) {
 	    ERROR_MSG("Could not allocate Dwarf_Error structure,"
 		      " abort() in libdwarf.\n");
-            abort();
+            return;
         }
         errptr->er_errval = errval;
         dbg->de_errhand(errptr, dbg->de_errarg);
         return;
     }
     ERROR_MSG("abort() in libdwarf. No error argument, no handler.\n");
-    abort();
+    return;
 }
 
 

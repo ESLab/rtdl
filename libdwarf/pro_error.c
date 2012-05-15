@@ -82,7 +82,7 @@ _dwarf_p_error(Dwarf_P_Debug dbg,
             _dwarf_p_get_alloc(dbg, sizeof(struct Dwarf_Error_s));
         if (errptr == NULL) {
 	    ERROR_MSG("Could not allocate Dwarf_Error structure\n");
-            abort();
+            return;
         }
         errptr->er_errval = (Dwarf_Sword) errval;
         *error = errptr;
@@ -94,12 +94,12 @@ _dwarf_p_error(Dwarf_P_Debug dbg,
             _dwarf_p_get_alloc(dbg, sizeof(struct Dwarf_Error_s));
         if (errptr == NULL) {
 	    ERROR_MSG("Could not allocate Dwarf_Error structure\n");
-            abort();
+            return;
         }
         errptr->er_errval = (Dwarf_Sword) errval;
         dbg->de_errhand(errptr, dbg->de_errarg);
         return;
     }
 
-    abort();
+    return;
 }

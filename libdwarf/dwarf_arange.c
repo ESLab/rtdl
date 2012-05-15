@@ -252,7 +252,7 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
             char buf[200];
             Dwarf_Unsigned pad_count = arange_ptr - arange_ptr_past_end;
             Dwarf_Unsigned offset = arange_ptr - arange_ptr_start;
-            snprintf(buf,sizeof(buf),"DW_DLE_ARANGE_LENGTH_BAD."
+            sprintf(buf,"DW_DLE_ARANGE_LENGTH_BAD."
                 " 0x%" DW_PR_XZEROS DW_PR_DUx 
                 " pad bytes at offset 0x%" DW_PR_XZEROS DW_PR_DUx 
                 " in .debug_aranges",

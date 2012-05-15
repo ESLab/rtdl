@@ -266,8 +266,7 @@ dwarf_malloc_check_dealloc_data(void *addr_in, unsigned char code)
                 ERROR_MSG("Above is Duplicate dealloc!\n");
             }
         }
-        abort();
-        exit(3);
+	return;
     }
     addr_match->mc_dealloc_noted = 1;
     addr_match->mc_dealloc_noted_count += 1;

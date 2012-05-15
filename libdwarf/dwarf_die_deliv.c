@@ -450,7 +450,7 @@ dwarf_next_cu_header_internal(Dwarf_Debug dbg,
                     /*  We will assume all is ok, though it is not. 
                         Relocation errors need not be fatal.  */
                     char msg_buf[200];
-                    snprintf(msg_buf,sizeof(msg_buf),
+                    sprintf(msg_buf,
                         "Relocations did not complete successfully, but we are "
                         " ignoring error: %s",dwarf_errmsg(err2));
                     dwarf_insert_harmless_error(dbg,msg_buf);

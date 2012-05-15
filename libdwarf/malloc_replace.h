@@ -32,5 +32,6 @@
 
 #define malloc(x) pvPortMalloc(x)
 #define free(x)   vPortFree(x)
+#define calloc(x, n) pvPortMalloc((x) * (n))
 
 #endif /* MALLOC_REPLACE_H */
