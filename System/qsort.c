@@ -101,15 +101,17 @@ void qsort(void *bot, size_t nmemb, size_t size, int (*compar)())
  * Knuth, page 122, equation 26), since the quicksort algorithm does less
  * comparisons than the insertion sort.
  */
-#define	SORT(bot, n) { \
-	if (n > 1) \
-		if (n == 2) { \
-			t1 = bot + size; \
-			if (compar(t1, bot) < 0) \
-				SWAP(t1, bot); \
-		} else \
+#define	SORT(bot, n) {					      \
+		if (n > 1) {				      \
+			if (n == 2) {			      \
+				t1 = bot + size;	      \
+				if (compar(t1, bot) < 0)      \
+					SWAP(t1, bot);	      \
+			}				      \
+		} else {				      \
 			insertion_sort(bot, n, size, compar); \
-}
+		}					      \
+	}
 
 static void
 quick_sort(bot, nmemb, size, compar)

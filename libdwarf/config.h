@@ -142,3 +142,10 @@
 /* #  undef WORDS_BIGENDIAN */
 # endif
 #endif
+
+#pragma GCC diagnostic warning "-Wunused-variable"
+#pragma GCC diagnostic warning "-Wpointer-to-int-cast"
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+#pragma GCC diagnostic warning "-Woverflow"
+#pragma GCC diagnostic warning "-Wimplicit-function-declaration"
+#pragma GCC diagnostic warning "-Wunused-but-set-variable"
