@@ -199,8 +199,6 @@ int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_reg
 
 	Elf32_Shdr *app_symsect = find_section(".dynsym", app_trc->elfh);
 	Elf32_Shdr *strtab_sect = find_section(".dynstr", app_trc->elfh);
-	Elf32_Shdr *section_sect = (Elf32_Shdr *)((u_int32_t)app_trc->elfh + app_trc->elfh->e_shoff);
-
 
 	if (app_symsect == NULL) {
 		ERROR_MSG("Could not find the applications symtab.\n");
@@ -257,6 +255,9 @@ int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_reg
 			 * 2. Find the absolute address of the symbol.
 			 */
 
+			Elf32_Shdr *section_sect =
+				(Elf32_Shdr *)((u_int32_t)symbol_trc->elfh +
+					       symbol_trc->elfh->e_shoff);
 			u_int32_t address;
 
 			if (final_symbol->st_shndx == SHN_ABS) {
