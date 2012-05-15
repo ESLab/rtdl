@@ -162,7 +162,7 @@ newone(void)
     struct mc_data_s *newd = malloc(sizeof(struct mc_data_s));
 
     if (newd == 0) {
-        fprintf(stderr, "out of memory , # %ld\n", mc_data_list_size);
+	ERROR_MSG("out of memory, # %l\n", mc_data_list_size);
         exit(1);
     }
     memset(newd, 0, sizeof(struct mc_data_s));
@@ -191,16 +191,15 @@ dwarf_malloc_check_alloc_data(void *addr_in, unsigned char code)
 static void
 print_entry(char *msg, struct mc_data_s *data)
 {
-    fprintf(stderr,
-        "%s: 0x%08lx code %2d (%s) type %s dealloc noted %u ct %u\n",
-        msg,
-        (long) data->mc_address,
-        data->mc_alloc_code,
-        alloc_type_name[data->mc_alloc_code],
-        (data->mc_type == MC_TYPE_ALLOC) ? "alloc  " :
-        (data->mc_type == MC_TYPE_DEALLOC) ? "dealloc" : "unknown",
-        (unsigned) data->mc_dealloc_noted,
-        (unsigned) data->mc_dealloc_noted_count);
+    INFO_MSG("%s: 0x%08lx code %2d (%s) type %s dealloc noted %u ct %u\n",
+	     msg,
+	     (long) data->mc_address,
+	     data->mc_alloc_code,
+	     alloc_type_name[data->mc_alloc_code],
+	     (data->mc_type == MC_TYPE_ALLOC) ? "alloc  " :
+	     (data->mc_type == MC_TYPE_DEALLOC) ? "dealloc" : "unknown",
+	     (unsigned) data->mc_dealloc_noted,
+	     (unsigned) data->mc_dealloc_noted_count);
 }
 
 /* newd is a 'dealloc'.
@@ -258,14 +257,13 @@ dwarf_malloc_check_dealloc_data(void *addr_in, unsigned char code)
     prev =
         balanced_by_alloc_p(newd, &addr_match_num, &addr_match, *base);
     if (prev < 0) {
-        fprintf(stderr,
-            "Unbalanced dealloc at index %ld\n", mc_data_list_size);
+        ERROR_MSG("Unbalanced dealloc at index %ld\n", mc_data_list_size);
         print_entry("new", newd);
-        fprintf(stderr, "addr-match_num? %ld\n", addr_match_num);
+        ERROR_MSG("addr-match_num? %ld\n", addr_match_num);
         if (addr_match) {
             print_entry("prev entry", addr_match);
             if (addr_match->mc_dealloc_noted > 1) {
-                fprintf(stderr, "Above is Duplicate dealloc!\n");
+                ERROR_MSG("Above is Duplicate dealloc!\n");
             }
         }
         abort();
@@ -274,7 +272,7 @@ dwarf_malloc_check_dealloc_data(void *addr_in, unsigned char code)
     addr_match->mc_dealloc_noted = 1;
     addr_match->mc_dealloc_noted_count += 1;
     if (addr_match->mc_dealloc_noted_count > 1) {
-        fprintf(stderr, "Double dealloc entry %ld\n", addr_match_num);
+        ERROR_MSG("Double dealloc entry %ld\n", addr_match_num);
         print_entry("new dealloc entry", newd);
         print_entry("bad alloc entry", addr_match);
     }
@@ -292,7 +290,7 @@ dwarf_malloc_check_complete(char *msg)
     long hash_slots_used = 0;
     long max_chain_length = 0;
 
-    fprintf(stderr, "Run complete, %s. %ld entries\n", msg, total);
+    INFO_MSG("Run complete, %s. %ld entries\n", msg, total);
     for (; i < HASH_TABLE_SIZE; ++i) {
         struct mc_data_s *cur = mc_data_hash[i];
         long cur_chain_length = 0;
@@ -305,16 +303,15 @@ dwarf_malloc_check_complete(char *msg)
             if (cur->mc_type == MC_TYPE_ALLOC) {
                 if (cur->mc_dealloc_noted) {
                     if (cur->mc_dealloc_noted > 1) {
-                        fprintf(stderr,
-                            " Duplicate dealloc! entry %ld\n",
-                            cur->mc_alloc_number);
+                        ERROR_MSG(" Duplicate dealloc! entry %ld\n",
+				  cur->mc_alloc_number);
                         print_entry("duplicate dealloc", cur);
 
                     }
                     continue;
                 } else {
-                    fprintf(stderr, "malloc no dealloc, entry %ld\n",
-                        cur->mc_alloc_number);
+                    ERROR_MSG("malloc no dealloc, entry %ld\n",
+			      cur->mc_alloc_number);
                     print_entry("dangle", cur);
                 }
             } else {
@@ -326,8 +323,8 @@ dwarf_malloc_check_complete(char *msg)
             max_chain_length = cur_chain_length;
         }
     }
-    fprintf(stderr, "mc hash table slots=%ld, "
-        "used=%ld,  maxchain=%ld\n",
+    INFO_MSG("mc hash table slots=%ld, "
+	     "used=%ld,  maxchain=%ld\n",
         (long) HASH_TABLE_SIZE, hash_slots_used, max_chain_length);
     return;
 }

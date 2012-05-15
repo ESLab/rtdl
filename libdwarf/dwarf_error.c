@@ -351,9 +351,8 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
             errptr =
                 (Dwarf_Error) _dwarf_get_alloc(dbg, DW_DLA_ERROR, 1);
             if (errptr == NULL) {
-                fprintf(stderr,
-                    "Could not allocate Dwarf_Error structure, "
-                    "abort() in libdwarf.\n");
+		ERROR_MSG("Could not allocate Dwarf_Error structure, "
+			  "abort() in libdwarf.\n");
                 abort();
             }
         } else {
@@ -361,9 +360,8 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
                 up a special area. */
             errptr = _dwarf_special_no_dbg_error_malloc();
             if (errptr == NULL) {
-                fprintf(stderr,
-                    "Could not allocate Dwarf_Error structure, "
-                    "abort() in libdwarf..\n");
+		ERROR_MSG("Could not allocate Dwarf_Error structure, "
+			  "abort() in libdwarf..\n");
                 abort();
             }
         }
@@ -376,16 +374,15 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
     if (dbg != NULL && dbg->de_errhand != NULL) {
         errptr = (Dwarf_Error) _dwarf_get_alloc(dbg, DW_DLA_ERROR, 1);
         if (errptr == NULL) {
-            fprintf(stderr, "Could not allocate Dwarf_Error structure,"
-                " abort() in libdwarf.\n");
+	    ERROR_MSG("Could not allocate Dwarf_Error structure,"
+		      " abort() in libdwarf.\n");
             abort();
         }
         errptr->er_errval = errval;
         dbg->de_errhand(errptr, dbg->de_errarg);
         return;
     }
-    fprintf(stderr,
-        "abort() in libdwarf. No error argument, no handler.\n");
+    ERROR_MSG("abort() in libdwarf. No error argument, no handler.\n");
     abort();
 }
 

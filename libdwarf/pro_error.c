@@ -72,8 +72,8 @@ _dwarf_p_error(Dwarf_P_Debug dbg,
         /*  We do not expect to ever see such an error number,
             DW_DLE_LO_USER is not used. */
         /*  The 'standard' typedef for Dwarf_Word is "unsigned long". */
-        fprintf(stderr,"ERROR VALUE: %lu - %s\n",
-            (unsigned long) errval, "this error value is unknown to libdwarf.");
+	ERROR_MSG("ERROR VALUE: %lu - %s\n",
+		  (unsigned long) errval, "this error value is unknown to libdwarf.");
     }
     /*  Allow NULL dbg on entry, since sometimes that can happen and we
         want to report the upper-level error, not this one. */
@@ -81,8 +81,7 @@ _dwarf_p_error(Dwarf_P_Debug dbg,
         errptr = (Dwarf_Error)
             _dwarf_p_get_alloc(dbg, sizeof(struct Dwarf_Error_s));
         if (errptr == NULL) {
-            fprintf(stderr,
-                "Could not allocate Dwarf_Error structure\n");
+	    ERROR_MSG("Could not allocate Dwarf_Error structure\n");
             abort();
         }
         errptr->er_errval = (Dwarf_Sword) errval;
@@ -94,8 +93,7 @@ _dwarf_p_error(Dwarf_P_Debug dbg,
         errptr = (Dwarf_Error)
             _dwarf_p_get_alloc(dbg, sizeof(struct Dwarf_Error_s));
         if (errptr == NULL) {
-            fprintf(stderr,
-                "Could not allocate Dwarf_Error structure\n");
+	    ERROR_MSG("Could not allocate Dwarf_Error structure\n");
             abort();
         }
         errptr->er_errval = (Dwarf_Sword) errval;

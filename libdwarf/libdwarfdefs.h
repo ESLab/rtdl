@@ -88,4 +88,6 @@ typedef unsigned long long __uint64_t;
 #define HAVE___UINT64_T 1
 #endif
 
+#include <System/system.h>
+
 #endif /* LIBDWARFDEFS_H */
