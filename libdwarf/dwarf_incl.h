@@ -54,7 +54,7 @@
 #include <string.h>
 
 #ifdef HAVE_ELF_H
-#include <elf.h>
+#include <System/elf.h>
 #endif
 
 #include <limits.h>
