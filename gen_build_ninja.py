@@ -64,8 +64,8 @@ n.variable(key="mkimage", value="mkimage")
 
 # -Werror
 
-n.variable(key="cflags", 
-           value=get_include_args(includedirs) + 
+n.variable(key="cflags",
+           value=get_include_args(includedirs) +
            "-O0 -Wall -fmessage-length=0 " +
            "-mcpu=cortex-a9 -g3 -fno-builtin-printf -fPIC -DDEBUG -DINFO")
 
@@ -109,9 +109,9 @@ libdwarf_files = glob.glob('libdwarf/*.c')
 system_files = \
     libdwarf_files + \
     freertos_files + \
-    ['App/startup.S', 'System/main.c', 'System/linker.c',
-     'System/migrator.c', 'System/printf-stdarg.c', 'System/serial.c',
-     'System/pl011.c', 'System/umm/umm_malloc.c']
+    ['App/startup.S', 'System/main.c', 'System/task_manager.c',
+     'System/linker.c', 'System/migrator.c', 'System/printf-stdarg.c',
+     'System/serial.c', 'System/pl011.c', 'System/umm/umm_malloc.c']
 
 fs = set()
 for a in applications:
@@ -166,13 +166,13 @@ n.build(outputs = systemextelf,
         rule = "link",
         inputs = map(lambda f: get_object_file(f), system_files),
         variables = {'ldflags': '-nostartfiles -Wl,-T,System/system_ext.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit = ["System/system_ext.ld", "System/applications.ld", 
+        implicit = ["System/system_ext.ld", "System/applications.ld",
                     "system_elf.ld"] + map(lambda a: a + ".ld", applications.keys()))
 n.build(outputs = systemext_elf,
         rule = "link",
         inputs = map(lambda f: get_object_file(f), system_files),
         variables = {'ldflags': '-nostartfiles -Wl,-T,System/system_ext_.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit = ["System/system_ext_.ld", "System/applications.ld", 
+        implicit = ["System/system_ext_.ld", "System/applications.ld",
                     "system_elf_.ld"] + map(lambda a: a + ".ld", applications.keys()))
 
 n.build(outputs = systemextbin,
