@@ -126,4 +126,9 @@ int			 task_free(task_register_cons *trc);
 int			 task_start(task_register_cons *trc);
 task_register_cons	*task_register(const char *name, Elf32_Ehdr *elfh);
 
+#ifdef IN_APPTASK
+void			*apptask_malloc(size_t size);
+void			 apptask_free(void *ptr);
+#endif /* IN_APPTASK */
+
 #endif /* TASK_MANAGER_H */

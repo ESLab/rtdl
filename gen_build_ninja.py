@@ -33,8 +33,8 @@ import ninja_syntax
 def get_basename(filename):
     return filename.split("/")[-1].split(".")[0]
 
-def get_object_file(filename, object_postfix = ''):
-    return builddir + get_basename(filename) + object_postfix + ".o"
+def get_object_file(filename, object_postfix = '', in_app = False):
+    return builddir + ("app_" if in_app else "") + get_basename(filename) + object_postfix + ".o"
 
 def get_include_args(dirs):
     ret = ""
@@ -70,7 +70,7 @@ n.variable(key="cflags",
            "-mcpu=cortex-a9 -g3 -Werror -fno-builtin-printf -fPIC -DDEBUG -DINFO")
 
 n.rule(name = "cc",
-       command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $cflags $in -o $out",
+       command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $cflags $app_cflags $in -o $out",
        description = "CC $out",
        depfile = "$out.d")
 
@@ -114,12 +114,21 @@ system_files = \
      'System/serial.c', 'System/pl011.c', 'System/umm/umm_malloc.c',
      'System/qsort.c', 'System/dwarfif.c']
 
-fs = set()
+
+app_fs = set()
 for a in applications:
     for f in applications[a]:
-        fs.add(f)
+        app_fs.add(f)
+
+fs = set()
 for f in system_files:
     fs.add(f)
+
+for f in list(app_fs):
+    n.build(outputs = get_object_file(f, in_app = True),
+            rule = "cc",
+            variables = {'app_cflags': "-DIN_APPTASK"},
+            inputs = f)
 
 for f in list(fs):
     n.build(outputs = get_object_file(f),
@@ -189,7 +198,7 @@ for a in applications:
     ldfile = a + ".ld"
     n.build(outputs = elffile,
             rule = "link",
-            inputs = map(lambda f: get_object_file(f), applications[a]),
+            inputs = map(lambda f: get_object_file(f, in_app = True), applications[a]),
             variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpucortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
             implicit = "App/app.ld")
     n.build(outputs = ldfile,

@@ -331,3 +331,56 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 
 	return trc;
 }
+
+void *apptask_malloc(size_t size)
+{
+	task_register_tree *root = task_get_trc_root();
+	xTaskHandle task_handle = xTaskGetCurrentTaskHandle();
+	task_register_cons *trc = RB_FIND(task_register_tree_t, root, task_handle);
+
+	/*
+	 * If the task is not found in the register we should not even
+	 * bother allocating any memory.
+	 */
+
+	if (trc == NULL)
+		return NULL;
+
+	void *alloc_ptr = pvPortMalloc(size);
+	if (alloc_ptr == NULL)
+		return NULL;
+	task_dynmemsect_cons *dms = pvPortMalloc(sizeof(task_dynmemsect_cons));
+	if (dms == NULL) {
+		vPortFree(alloc_ptr);
+		return NULL;
+	}
+	dms->ptr  = alloc_ptr;
+	dms->size = size;
+
+	SPLAY_INSERT(task_dynmemsect_tree_t, &trc->dynmemsects, dms);
+	return alloc_ptr;
+}
+
+void apptask_free(void *ptr)
+{
+	task_register_tree *root = task_get_trc_root();
+	xTaskHandle task_handle = xTaskGetCurrentTaskHandle();
+	task_register_cons *trc = RB_FIND(task_register_tree_t, root, task_handle);
+
+	/*
+	 * If the task is not found in the register we should not free
+	 * any memory.
+	 */
+
+	if (trc == NULL)
+		return;
+
+	vPortFree(ptr);
+	task_dynmemsect_cons *dms =
+		SPLAY_FIND(task_dynmemsect_tree_t,
+			   &trc->dynmemsects, ptr);
+	if (dms != NULL) {
+		SPLAY_REMOVE(task_dynmemsect_tree_t, &trc->dynmemsects, dms);
+		vPortFree(dms);
+	}
+}
