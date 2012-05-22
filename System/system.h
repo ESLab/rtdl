@@ -28,6 +28,8 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+#include <stdio.h>
+
 #ifdef DEBUG
 #ifdef SYSTEM_MODULE_NAME
 #define DEBUG_MSG(...)	printf(SYSTEM_MODULE_NAME ": DEBUG>>> "  __VA_ARGS__)
