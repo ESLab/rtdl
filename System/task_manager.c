@@ -50,6 +50,7 @@
 task_register_tree task_register_tree_var =
   RB_INITIALIZER(task_register_tree);
 
+SPLAY_GENERATE(task_dynmemsect_tree_t, task_dynmemsect_cons_t, dynmemsects, task_dynmemsect_cons_cmp)
 RB_GENERATE(task_register_tree_t, task_register_cons_t, tasks, task_register_cons_cmp)
 
 int get_number_of_tasks()
@@ -222,6 +223,8 @@ int task_alloc(task_register_cons *trc)
 		}
 	}
 
+	SPLAY_INIT(&trc->dynmemsects);
+
 	trc->request_hook = migrator_find_request_hook(trc);
 
 	return 1;
@@ -241,7 +244,26 @@ int task_free(task_register_cons *trc)
 	}
 
 	/*
-	 * 2. Free the continous memory region. We are using
+	 * 2. Free all dynamically allocated memory sections.
+	 *    Comment: O(n) algorithm looks a little nasty.
+	 */
+
+	task_dynmemsect_cons *dms_start, *dms_p, *dms_q;
+
+	dms_start = SPLAY_MIN(task_dynmemsect_tree_t, &trc->dynmemsects);
+
+	for (dms_p = dms_start; dms_p != NULL; dms_p = dms_q) {
+		dms_q = SPLAY_NEXT(task_dynmemsect_tree_t, &trc->dynmemsects, dms_p);
+		vPortFree(dms_p->ptr);
+		dms_p->ptr = dms_q;
+	}
+
+	for (dms_p = dms_start; dms_p != NULL; dms_p = dms_p->ptr) {
+		vPortFree(dms_p);
+	}
+
+	/*
+	 * 3. Free the continous memory region. We are using
 	 *    umm_malloc() for the task memory, so we are
 	 *    using umm_free() to free it.
 	 */
@@ -303,6 +325,7 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 	trc->cont_mem = NULL;
 
 	LIST_INIT(&trc->sections);
+	SPLAY_INIT(&trc->dynmemsects);
 
 	DEBUG_MSG("Number of tasks registered: %i\n", get_number_of_tasks());
 

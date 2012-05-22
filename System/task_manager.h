@@ -37,12 +37,37 @@
 
 #include <App/rtu.h>
 
+/*
+ * Defines for task_section structure. Implemented as a double-linked
+ * list.
+ */
+
 typedef struct task_section_cons_t {
 	const char      *name;
 	Elf32_Half       section_index;
 	void		*amem;
 	LIST_ENTRY(task_section_cons_t) sections;
 } task_section_cons;
+
+/*
+ * Defines for task_dynmemsect structure. Implemented as a splay tree
+ * for smaller memory foot print than rb trees.
+ */
+
+typedef struct task_dynmemsect_cons_t {
+	size_t	 size;
+	void	*ptr;
+	SPLAY_ENTRY(task_dynmemsect_cons_t) dynmemsects;
+} task_dynmemsect_cons;
+
+typedef SPLAY_HEAD(task_dynmemsect_tree_t,
+		   task_dynmemsect_cons_t)
+task_dynmemsect_tree;
+
+/*
+ * Defines for task_register structure. Implemented as a rb tree for
+ * fast search when doing malloc()/free().
+ */
 
 typedef struct task_register_cons_t {
 	const char		*name;
@@ -51,10 +76,30 @@ typedef struct task_register_cons_t {
 	request_hook_fn_t	 request_hook;
 	void                    *cont_mem;
 	LIST_HEAD(task_section_list_t, task_section_cons_t) sections;
+	task_dynmemsect_tree dynmemsects;
 	RB_ENTRY(task_register_cons_t) tasks;
 } task_register_cons;
 
-typedef RB_HEAD(task_register_tree_t, task_register_cons_t) task_register_tree;
+typedef RB_HEAD(task_register_tree_t,
+		task_register_cons_t)
+task_register_tree;
+
+/*
+ * Prototypes and compare function for task_dynmemsect structure.
+ */
+
+static __inline__ int task_dynmemsect_cons_cmp
+(task_dynmemsect_cons *op1, task_dynmemsect_cons *op2)
+{
+	return (u_int32_t)op1->ptr > (u_int32_t)op2->ptr ? -1 : 1;
+}
+
+SPLAY_PROTOTYPE(task_dynmemsect_tree_t, task_dynmemsect_cons_t, dynmemsects, task_dynmemsect_cons_cmp)
+
+
+/*
+ * Prototypes and compare function for task_register structure.
+ */
 
 static __inline__ int task_register_cons_cmp
 (task_register_cons *op1, task_register_cons *op2)
@@ -63,6 +108,10 @@ static __inline__ int task_register_cons_cmp
 }
 
 RB_PROTOTYPE(task_register_tree_t, task_register_cons_t, tasks, task_register_cons_cmp)
+
+/*
+ * Prototypes.
+ */
 
 task_register_tree	*task_get_trc_root();
 task_register_cons	*task_find(const char *name);
