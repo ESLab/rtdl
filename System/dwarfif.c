@@ -34,6 +34,11 @@
 #include <System/task_manager.h>
 #include <System/system.h>
 
+/*
+ * Essentially layer violation to get access to libdwarf internals.
+ */
+#include <dwarf_incl.h>
+
 int dwarfif_get_section_info(void *obj, Dwarf_Half section_index,
 			     Dwarf_Obj_Access_Section *return_section, int *error)
 {
@@ -113,4 +118,130 @@ int dwarfif_get_access_if(task_register_cons *trc, Dwarf_Obj_Access_Interface *a
 	aif->object = trc;
 	aif->methods = &dwarfif_access_methods;
 	return 1;
+}
+
+int dwarfif_init(task_register_cons *trc, Dwarf_Debug *dbg)
+{
+	int ret;
+	Dwarf_Error error;
+	Dwarf_Handler errhand = 0;
+	Dwarf_Ptr errarg = 0;
+	Dwarf_Obj_Access_Interface *binary_interface;
+	
+	binary_interface = pvPortMalloc(sizeof(Dwarf_Obj_Access_Interface));
+	if (binary_interface == NULL) {
+		ERROR_MSG("Could not allocate memory.\n");
+		goto error0;
+	}
+	
+	if (!dwarfif_get_access_if(trc, binary_interface)) {
+		ERROR_MSG("Could not get access interface.\n");
+		goto error1;
+	}
+
+	if ((ret = dwarf_object_init(binary_interface, errhand, 
+				     errarg, dbg, &error)) != DW_DLV_OK) {
+		ERROR_MSG("Could not initiate dwarf object.\n");
+		goto error1;
+	}
+	
+	return 1;
+
+error1:
+	vPortFree(binary_interface);
+error0:
+	return 0;
+}
+
+int dwarfif_finish(Dwarf_Debug *dbg)
+{
+	Dwarf_Error error = 0;
+	vPortFree((*dbg)->de_obj_file);
+	
+	if (dwarf_object_finish(*dbg, &error) != DW_DLV_OK) {
+		ERROR_MSG("Could not finish dwarf object.\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+int dwarfif_get_type_die(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Die *type_die)
+{
+	Dwarf_Error err;
+	Dwarf_Half tag;
+	Dwarf_Attribute attr;
+	Dwarf_Off off;
+	if (dwarf_tag(die, &tag, &err) != DW_DLV_OK) {
+		INFO_MSG("Could not get die tag.\n");
+		return 0;
+	}
+	if (tag != DW_TAG_variable) {
+		ERROR_MSG("Die is not a variable.\n");
+		return 0;
+	}
+	if (dwarf_attr(die, DW_AT_type, &attr, &err) != DW_DLV_OK) {
+		INFO_MSG("Could not get type attribute from variable.\n");
+		return 0;
+	}
+	if (dwarf_global_formref(attr, &off, &err) != DW_DLV_OK) {
+		INFO_MSG("Could not get dwarf offset for type die.\n");
+		return 0;
+	}
+	if (dwarf_offdie(dbg, off, type_die, &err) != DW_DLV_OK) {
+		INFO_MSG("Could not get type die from offset.\n");
+		return 0;
+	}
+	if (dwarf_tag(*type_die, &tag, &err) != DW_DLV_OK) {
+		INFO_MSG("Could not get tag from type die.\n");
+		return 0;
+	}
+	switch (tag) {
+	case DW_TAG_base_type:
+	case DW_TAG_pointer_type:
+		break;
+	default:
+	{
+		const char *tagname;
+		int res = dwarf_get_TAG_name(tag, &tagname);
+		if (res != DW_DLV_OK) {
+			tagname = "";
+		}
+		INFO_MSG("Type die has a unsupported tag. (%s)\n", tagname);
+		return 0;
+	}
+	}
+	return 1;
+}
+
+Dwarf_Die dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half follow_attr, Dwarf_Half until_tag)
+{
+	Dwarf_Error err;
+	Dwarf_Half tag;
+	Dwarf_Attribute attr;
+	Dwarf_Off off;
+	Dwarf_Die new_die;
+	int res;
+	
+	if (dwarf_tag(die, &tag, &err) != DW_DLV_OK) {
+		return NULL;
+	}
+
+	if (tag == until_tag) {
+		return die;
+	}
+
+	if ((res = dwarf_attr(die, follow_attr, &attr, &err)) != DW_DLV_OK) {
+		return NULL;
+	}
+
+	if (dwarf_global_formref(attr, &off, &err) != DW_DLV_OK) {
+		return NULL;
+	}
+
+	if (dwarf_offdie(dbg, off, &new_die, &err) != DW_DLV_OK) {
+		return NULL;
+	}
+
+	return dwarfif_follow_attr_until(dbg, new_die, follow_attr, until_tag);
 }

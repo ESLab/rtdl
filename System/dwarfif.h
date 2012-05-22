@@ -32,6 +32,10 @@
 
 #include <libdwarf.h>
 
-int dwarfif_get_access_if(task_register_cons *trc, Dwarf_Obj_Access_Interface *aif);
+int		dwarfif_get_access_if(task_register_cons *trc, Dwarf_Obj_Access_Interface *aif);
+int		dwarfif_init(task_register_cons *trc, Dwarf_Debug *dbg);
+int		dwarfif_finish(Dwarf_Debug *dbg);
+int		dwarfif_get_type_die(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Die *type_die);
+Dwarf_Die	dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half follow_attr, Dwarf_Half until_tag);
 
 #endif /* DWARFIF_H */
