@@ -305,6 +305,10 @@ int task_start(task_register_cons *trc)
 		return 0;
 	}
 
+	task_register_tree *root = task_get_trc_root();
+	RB_REMOVE(task_register_tree_t, root, trc);
+	RB_INSERT(task_register_tree_t, root, trc);
+
 	return 1;
 }
 
@@ -335,8 +339,8 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 void *apptask_malloc(size_t size)
 {
 	task_register_tree *root = task_get_trc_root();
-	xTaskHandle task_handle = xTaskGetCurrentTaskHandle();
-	task_register_cons *trc = RB_FIND(task_register_tree_t, root, task_handle);
+	task_register_cons criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
+	task_register_cons *trc = RB_FIND(task_register_tree_t, root, &criterion);
 
 	/*
 	 * If the task is not found in the register we should not even
@@ -364,8 +368,8 @@ void *apptask_malloc(size_t size)
 void apptask_free(void *ptr)
 {
 	task_register_tree *root = task_get_trc_root();
-	xTaskHandle task_handle = xTaskGetCurrentTaskHandle();
-	task_register_cons *trc = RB_FIND(task_register_tree_t, root, task_handle);
+	task_register_cons criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
+	task_register_cons *trc = RB_FIND(task_register_tree_t, root, &criterion);
 
 	/*
 	 * If the task is not found in the register we should not free
