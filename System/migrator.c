@@ -202,14 +202,8 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 void migrator_task(void *arg)
 {
 	task_register_cons *trc;
-	int i = 0;
 
 	while (1) {
-		i++;
-
-		if (i == 3)
-			printf("asd\n");
-
 		vTaskDelay(1000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtuapp"))) {
