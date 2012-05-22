@@ -95,7 +95,9 @@ typedef RB_HEAD(task_register_tree_t,
 static __inline__ int task_dynmemsect_cons_cmp
 (task_dynmemsect_cons *op1, task_dynmemsect_cons *op2)
 {
-	return (u_int32_t)op1->ptr > (u_int32_t)op2->ptr ? -1 : 1;
+	u_int32_t op1i = (u_int32_t)op1->ptr;
+	u_int32_t op2i = (u_int32_t)op2->ptr;
+	return (int64_t)op1i - (int64_t)op2i;
 }
 
 SPLAY_PROTOTYPE(task_dynmemsect_tree_t, task_dynmemsect_cons_t, dynmemsects, task_dynmemsect_cons_cmp)
@@ -108,7 +110,12 @@ SPLAY_PROTOTYPE(task_dynmemsect_tree_t, task_dynmemsect_cons_t, dynmemsects, tas
 static __inline__ int task_register_cons_cmp
 (task_register_cons *op1, task_register_cons *op2)
 {
-	return (u_int32_t)op1->task_handle > (u_int32_t)op2->task_handle ? -1 : 1;
+	u_int32_t op1i = (u_int32_t)op1->task_handle;
+	u_int32_t op2i = (u_int32_t)op2->task_handle;
+	if (op1->task_handle == 0 || op2->task_handle == 0)
+		return 1;
+	else
+		return (int64_t)op1i - (int64_t)op2i;
 }
 
 RB_PROTOTYPE(task_register_tree_t, task_register_cons_t, tasks, task_register_cons_cmp)
