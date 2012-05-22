@@ -49,6 +49,10 @@ typedef struct task_section_cons_t {
 	LIST_ENTRY(task_section_cons_t) sections;
 } task_section_cons;
 
+typedef LIST_HEAD(task_section_list_t,
+		  task_section_cons_t)
+     task_section_list;
+
 /*
  * Defines for task_dynmemsect structure. Implemented as a splay tree
  * for smaller memory foot print than rb trees.
@@ -62,7 +66,7 @@ typedef struct task_dynmemsect_cons_t {
 
 typedef SPLAY_HEAD(task_dynmemsect_tree_t,
 		   task_dynmemsect_cons_t)
-task_dynmemsect_tree;
+     task_dynmemsect_tree;
 
 /*
  * Defines for task_register structure. Implemented as a rb tree for
@@ -75,14 +79,14 @@ typedef struct task_register_cons_t {
 	xTaskHandle		 task_handle;
 	request_hook_fn_t	 request_hook;
 	void                    *cont_mem;
-	LIST_HEAD(task_section_list_t, task_section_cons_t) sections;
-	task_dynmemsect_tree dynmemsects;
+	task_section_list	 sections;
+	task_dynmemsect_tree	 dynmemsects;
 	RB_ENTRY(task_register_cons_t) tasks;
 } task_register_cons;
 
 typedef RB_HEAD(task_register_tree_t,
 		task_register_cons_t)
-task_register_tree;
+     task_register_tree;
 
 /*
  * Prototypes and compare function for task_dynmemsect structure.
