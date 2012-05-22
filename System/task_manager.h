@@ -72,6 +72,5 @@ int			 task_alloc(task_register_cons *trc);
 int			 task_free(task_register_cons *trc);
 int			 task_start(task_register_cons *trc);
 task_register_cons	*task_register(const char *name, Elf32_Ehdr *elfh);
-void			*task_get_section(task_register_cons *trc, Elf32_Half section_index);
 
 #endif /* TASK_MANAGER_H */

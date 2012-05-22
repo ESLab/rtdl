@@ -86,6 +86,9 @@ void *task_get_section_address(task_register_cons *trc, Elf32_Half index)
 	Elf32_Shdr *section_hdr = (Elf32_Shdr *)((u_int32_t)trc->elfh + trc->elfh->e_shoff);
 	struct task_section_cons_t *p;
 
+	if (index > trc->elfh->e_shnum)
+		return NULL;
+
 	if (section_hdr[index].sh_flags & SHF_ALLOC) {
 		/*
 		 * The section should be allocated.
