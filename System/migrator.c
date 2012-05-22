@@ -81,7 +81,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 */
 
 	struct task_register_cons_t *new_trc =
-	  (struct task_register_cons_t *)pvPortMalloc(sizeof(struct task_register_cons *));
+	  (struct task_register_cons_t *)pvPortMalloc(sizeof(task_register_cons));
 
 	if (new_trc == NULL) {
 		ERROR_MSG("could not allocate memory while run-time updating task \"%s\"\n", trc->name);
