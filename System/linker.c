@@ -134,7 +134,7 @@ Elf32_Sym *find_symbol(char *name, Elf32_Ehdr *elf_h)
 }
 
 int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_register_cons **out_symbol_trc,
-			 task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_cons *other_trcs)
+			 task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_tree *other_trcs)
 {
 	Elf32_Sym *final_symbol = NULL;
 	task_register_cons *final_symbol_trc;
@@ -149,12 +149,9 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 
 		if (other_trcs) {
 
-			struct task_register_cons_t *trcp;
+			task_register_cons *trcp;
 
-			LIST_HEAD(task_register_list_t, task_register_cons_t)
-				trc_list = { other_trcs };
-
-			LIST_FOREACH(trcp, &trc_list, tasks) {
+			RB_FOREACH(trcp, task_register_tree_t, other_trcs) {
 				if (trcp == app_trc)
 					continue;
 				DEBUG_MSG("looking for symbol \"%s\" in \"%s\"\n", symbol_name, trcp->name);
@@ -192,7 +189,7 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 	return 1;
 }
 
-int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_cons *other_trcs)
+int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_tree *other_trcs)
 {
 	int i,j;
 	Elf32_Shdr *s = (Elf32_Shdr *)((u_int32_t)app_trc->elfh + app_trc->elfh->e_shoff);

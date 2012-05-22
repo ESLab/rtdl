@@ -47,26 +47,33 @@
 
 #include <App/rtu.h>
 
-LIST_HEAD(task_register_list_t, task_register_cons_t) task_register_list =
-	LIST_HEAD_INITIALIZER(task_register_list);
+task_register_tree task_register_tree_var =
+  RB_INITIALIZER(task_register_tree);
+
+RB_GENERATE(task_register_tree_t, task_register_cons_t, tasks, task_register_cons_cmp)
 
 int get_number_of_tasks()
 {
 	int i = 0;
-	struct task_register_cons_t *p;
+	task_register_cons *p;
 
-	LIST_FOREACH(p, &task_register_list, tasks) {
+	RB_FOREACH(p, task_register_tree_t, &task_register_tree_var) {
 		i++;
 	}
 
 	return i;
 }
 
+task_register_tree *task_get_trc_root()
+{
+	return &task_register_tree_var;
+}
+
 task_register_cons *task_find(const char *name)
 {
 	struct task_register_cons_t *p;
 
-	LIST_FOREACH(p, &task_register_list, tasks) {
+	RB_FOREACH(p, task_register_tree_t, &task_register_tree_var) {
 		if (strcmp(name, p->name) == 0)
 			break;
 	}
@@ -117,7 +124,7 @@ int task_link(task_register_cons *trc)
 
 	Elf32_Ehdr *sys_elfh  = (Elf32_Ehdr *)&_system_elf_start;
 
-	if (link_relocations(trc, sys_elfh, LIST_FIRST(&task_register_list))) {
+	if (link_relocations(trc, sys_elfh, &task_register_tree_var)) {
 		INFO_MSG("Relocation successful\n");
 	} else {
 		ERROR_MSG("Relocation failed\n");
@@ -287,7 +294,7 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 	trc->name = name;
 	trc->elfh = elfh;
 	trc->task_handle = 0;
-	LIST_INSERT_HEAD(&task_register_list, trc, tasks);
+	RB_INSERT(task_register_tree_t, &task_register_tree_var, trc);
 
 	trc->request_hook = NULL;
 	trc->cont_mem = NULL;

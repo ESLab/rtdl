@@ -31,7 +31,9 @@
 #include <task.h>
 
 #include <System/queue.h>
+#include <System/tree.h>
 #include <System/elf.h>
+#include <System/types.h>
 
 #include <App/rtu.h>
 
@@ -49,9 +51,20 @@ typedef struct task_register_cons_t {
 	request_hook_fn_t	 request_hook;
 	void                    *cont_mem;
 	LIST_HEAD(task_section_list_t, task_section_cons_t) sections;
-	LIST_ENTRY(task_register_cons_t) tasks;
+	RB_ENTRY(task_register_cons_t) tasks;
 } task_register_cons;
 
+typedef RB_HEAD(task_register_tree_t, task_register_cons_t) task_register_tree;
+
+static __inline__ int task_register_cons_cmp
+(task_register_cons *op1, task_register_cons *op2)
+{
+	return (u_int32_t)op1->task_handle > (u_int32_t)op2->task_handle ? -1 : 1;
+}
+
+RB_PROTOTYPE(task_register_tree_t, task_register_cons_t, tasks, task_register_cons_cmp)
+
+task_register_tree	*task_get_trc_root();
 task_register_cons	*task_find(const char *name);
 void			*task_get_section_address(task_register_cons *, Elf32_Half);
 int			 task_link(task_register_cons *trc);

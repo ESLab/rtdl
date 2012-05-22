@@ -60,7 +60,7 @@ request_hook_fn_t migrator_find_request_hook(task_register_cons *trc)
 	return ret;
 }
 
-void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
+int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 {
 	/*
 	 * Make sure that task is suspended.
@@ -73,7 +73,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 
 	if (!check_elf_magic(new_sw)) {
 		ERROR_MSG("MIGRATOR: elf magic on new software does not check out.\n");
-		return;
+		return 0;
 	}
 
 	/*
@@ -85,7 +85,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 
 	if (new_trc == NULL) {
 		ERROR_MSG("could not allocate memory while run-time updating task \"%s\"\n", trc->name);
-		return;
+		return 0;
 	}
 
 	new_trc->name = trc->name;
@@ -99,7 +99,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		ERROR_MSG("Could not allocate memory when run-time updating task \"%s\"\n",
 			  new_trc->name);
 		vPortFree(new_trc);
-		return;
+		return 0;
 	}
 
 	/*
@@ -112,7 +112,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 			  new_trc->name);
 		task_free(new_trc);
 		vPortFree(new_trc);
-		return;
+		return 0;
 	}
 
 	/*
@@ -126,7 +126,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 			  new_trc->name);
 		task_free(new_trc);
 		vPortFree(new_trc);
-		return;
+		return 0;
 	}
 
 	/*
@@ -142,7 +142,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		ERROR_MSG("could not find \"" RTU_DATA_SECTION_NAME "\" sections in elfs\n");
 		task_free(new_trc);
 		vPortFree(new_trc);
-		return;
+		return 0;
 	}
 
 
@@ -150,7 +150,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		ERROR_MSG("size mismatch in \"" RTU_DATA_SECTION_NAME "\" sections between software versions.\n");
 		task_free(new_trc);
 		vPortFree(new_trc);
-		return;
+		return 0;
 	}
 
 	void *old_rtu_mem = task_get_section_address(trc, old_rtu_ndx);
@@ -160,7 +160,7 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		ERROR_MSG("could not find allocated memory for section \"" RTU_DATA_SECTION_NAME "\".\n");
 		task_free(new_trc);
 		vPortFree(new_trc);
-		return;
+		return 0;
 	}
 
 	/*
@@ -176,15 +176,27 @@ void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 * start it and update register_cons.
 	 */
 
-	LIST_REPLACE(trc, new_trc, tasks);
-	vTaskDelete(trc->task_handle);
+	task_register_tree *root = task_get_trc_root();
+
+	RB_INSERT(task_register_tree_t, root, new_trc);
+
 	/*
 	 * BUG: the task should be free after the idle task has had
 	 *      the chance to free the task_handle.
 	 */
+	if (!task_start(new_trc)) {
+		ERROR_MSG("Could not start new task, going back to old.\n");
+		RB_REMOVE(task_register_tree_t, root, new_trc);
+		task_free(new_trc);
+		vPortFree(new_trc);
+		vTaskResume(trc->task_handle);
+		return 0;
+	}
+	RB_REMOVE(task_register_tree_t, root, trc);
+	vTaskDelete(trc->task_handle);
 	task_free(trc);
 	vPortFree(trc);
-	task_start(new_trc);
+	return 1;
 }
 
 void migrator_task(void *arg)
@@ -199,7 +211,6 @@ void migrator_task(void *arg)
 			printf("asd\n");
 
 		vTaskDelay(1000/portTICK_RATE_MS);
-
 
 		if ((trc = task_find("rtuapp"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
