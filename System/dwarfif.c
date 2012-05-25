@@ -44,7 +44,7 @@ int dwarfif_get_section_info(void *obj, Dwarf_Half section_index,
 {
 	DEBUG_MSG("get section info called (index = %i).\n", section_index);
 	task_register_cons *trc = obj;
-	
+
 	u_int32_t addr = (u_int32_t)task_get_section_address(trc, section_index);
 	Elf32_Shdr *section = (Elf32_Shdr *)((u_int32_t)trc->elfh + trc->elfh->e_shoff) + section_index;
 	Elf32_Shdr *strtab  = (Elf32_Shdr *)((u_int32_t)trc->elfh + trc->elfh->e_shoff) + trc->elfh->e_shstrndx;
@@ -60,7 +60,7 @@ int dwarfif_get_section_info(void *obj, Dwarf_Half section_index,
 	return_section->name	  = strtab_addr + section->sh_name;
 	return_section->link	  = section->sh_link;
 	return_section->entrysize = section->sh_entsize;
-	
+
 	return DW_DLV_OK;
 }
 
@@ -89,7 +89,7 @@ Dwarf_Unsigned dwarfif_get_section_count(void* obj)
 	return trc->elfh->e_shnum;
 }
 
-int dwarfif_load_section(void* obj, Dwarf_Half section_index, 
+int dwarfif_load_section(void* obj, Dwarf_Half section_index,
 			 Dwarf_Small** return_data, int* error)
 {
 	DEBUG_MSG("load section called.\n");
@@ -103,14 +103,14 @@ int dwarfif_load_section(void* obj, Dwarf_Half section_index,
 	return DW_DLV_OK;
 }
 
-static const struct Dwarf_Obj_Access_Methods_s dwarfif_access_methods =	
-{ dwarfif_get_section_info, 
+static const struct Dwarf_Obj_Access_Methods_s dwarfif_access_methods =
+{ dwarfif_get_section_info,
   dwarfif_get_byte_order,
-  dwarfif_get_length_size, 
+  dwarfif_get_length_size,
   dwarfif_get_pointer_size,
-  dwarfif_get_section_count, 
+  dwarfif_get_section_count,
   dwarfif_load_section,
-  NULL 
+  NULL
 };
 
 int dwarfif_get_access_if(task_register_cons *trc, Dwarf_Obj_Access_Interface *aif)
@@ -127,24 +127,24 @@ int dwarfif_init(task_register_cons *trc, Dwarf_Debug *dbg)
 	Dwarf_Handler errhand = 0;
 	Dwarf_Ptr errarg = 0;
 	Dwarf_Obj_Access_Interface *binary_interface;
-	
+
 	binary_interface = pvPortMalloc(sizeof(Dwarf_Obj_Access_Interface));
 	if (binary_interface == NULL) {
 		ERROR_MSG("Could not allocate memory.\n");
 		goto error0;
 	}
-	
+
 	if (!dwarfif_get_access_if(trc, binary_interface)) {
 		ERROR_MSG("Could not get access interface.\n");
 		goto error1;
 	}
 
-	if ((ret = dwarf_object_init(binary_interface, errhand, 
+	if ((ret = dwarf_object_init(binary_interface, errhand,
 				     errarg, dbg, &error)) != DW_DLV_OK) {
 		ERROR_MSG("Could not initiate dwarf object.\n");
 		goto error1;
 	}
-	
+
 	return 1;
 
 error1:
@@ -157,7 +157,7 @@ int dwarfif_finish(Dwarf_Debug *dbg)
 {
 	Dwarf_Error error = 0;
 	vPortFree((*dbg)->de_obj_file);
-	
+
 	if (dwarf_object_finish(*dbg, &error) != DW_DLV_OK) {
 		ERROR_MSG("Could not finish dwarf object.\n");
 		return 0;
@@ -222,7 +222,7 @@ Dwarf_Die dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half f
 	Dwarf_Off off;
 	Dwarf_Die new_die;
 	int res;
-	
+
 	if (dwarf_tag(die, &tag, &err) != DW_DLV_OK) {
 		return NULL;
 	}
@@ -244,4 +244,45 @@ Dwarf_Die dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half f
 	}
 
 	return dwarfif_follow_attr_until(dbg, new_die, follow_attr, until_tag);
+}
+
+int dwarfif_die_has_vartag(Dwarf_Die die)
+{
+	Dwarf_Error err;
+	Dwarf_Half tag;
+
+	if (dwarf_tag(die, &tag, &err) != DW_DLV_OK) {
+		return 0;
+	}
+
+	switch (tag) {
+	case DW_TAG_array_type:
+	case DW_TAG_class_type:
+	case DW_TAG_enumeration_type:
+	case DW_TAG_pointer_type:
+	case DW_TAG_reference_type:
+	case DW_TAG_string_type:
+	case DW_TAG_structure_type:
+	case DW_TAG_subroutine_type:
+	case DW_TAG_typedef:
+	case DW_TAG_union_type:
+	case DW_TAG_ptr_to_member_type:
+	case DW_TAG_set_type:
+	case DW_TAG_subrange_type:
+	case DW_TAG_base_type:
+	case DW_TAG_const_type:
+	case DW_TAG_file_type:
+	case DW_TAG_packed_type:
+	case DW_TAG_thrown_type:
+	case DW_TAG_volatile_type:
+	case DW_TAG_restrict_type:
+	case DW_TAG_interface_type:
+	case DW_TAG_unspecified_type:
+	case DW_TAG_mutable_type:
+	case DW_TAG_shared_type:
+	case DW_TAG_rvalue_reference_type:
+		return 1;
+	default:
+		return 0;
+	}
 }
