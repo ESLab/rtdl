@@ -351,6 +351,21 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 	return trc;
 }
 
+task_dynmemsect_cons *task_find_dynmemsect(task_register_cons *trc, void *p)
+{
+	task_dynmemsect_cons criterion = { .ptr = p };
+	SPLAY_SPLAY(task_dynmemsect_tree_t, &trc->dynmemsects, &criterion);
+
+	task_dynmemsect_cons	*tdc	       = SPLAY_ROOT(&trc->dynmemsects);
+	u_int32_t		 start_address = (u_int32_t)tdc->ptr;
+	u_int32_t		 end_address   = start_address + tdc->size;
+	u_int32_t		 address       = (u_int32_t)p;
+	if (address >= start_address && address < end_address)
+		return tdc;
+	else
+		return NULL;
+}
+
 void *apptask_malloc(size_t size)
 {
 	task_register_tree *root = task_get_trc_root();

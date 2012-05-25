@@ -273,6 +273,7 @@ void name##_SPLAY_MINMAX(struct name *head, int __comp) \
 #define SPLAY_NEGINF	-1
 #define SPLAY_INF	1
 
+#define SPLAY_SPLAY(name, x, y)	name##_SPLAY(x, y)
 #define SPLAY_INSERT(name, x, y)	name##_SPLAY_INSERT(x, y)
 #define SPLAY_REMOVE(name, x, y)	name##_SPLAY_REMOVE(x, y)
 #define SPLAY_FIND(name, x, y)		name##_SPLAY_FIND(x, y)
