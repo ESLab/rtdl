@@ -58,9 +58,13 @@ int get_number_of_tasks()
 	int i = 0;
 	task_register_cons *p;
 
+	TASK_ACQUIRE_TR_LOCK();
+
 	RB_FOREACH(p, task_register_tree_t, &task_register_tree_var) {
 		i++;
 	}
+
+	TASK_RELEASE_TR_LOCK();
 
 	return i;
 }
@@ -74,10 +78,14 @@ task_register_cons *task_find(const char *name)
 {
 	struct task_register_cons_t *p;
 
+	TASK_ACQUIRE_TR_LOCK();
+
 	RB_FOREACH(p, task_register_tree_t, &task_register_tree_var) {
 		if (strcmp(name, p->name) == 0)
 			break;
 	}
+
+	TASK_RELEASE_TR_LOCK();
 
 	return p;
 }
@@ -306,8 +314,13 @@ int task_start(task_register_cons *trc)
 	}
 
 	task_register_tree *root = task_get_trc_root();
+
+	TASK_ACQUIRE_TR_LOCK();
+
 	RB_REMOVE(task_register_tree_t, root, trc);
 	RB_INSERT(task_register_tree_t, root, trc);
+
+	TASK_RELEASE_TR_LOCK();
 
 	return 1;
 }
@@ -323,7 +336,9 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 	trc->name = name;
 	trc->elfh = elfh;
 	trc->task_handle = 0;
+	TASK_ACQUIRE_TR_LOCK();
 	RB_INSERT(task_register_tree_t, &task_register_tree_var, trc);
+	TASK_RELEASE_TR_LOCK();
 
 	trc->request_hook = NULL;
 	trc->cont_mem = NULL;

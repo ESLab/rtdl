@@ -178,7 +178,9 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 
 	task_register_tree *root = task_get_trc_root();
 
+	TASK_ACQUIRE_TR_LOCK();
 	RB_INSERT(task_register_tree_t, root, new_trc);
+	TASK_RELEASE_TR_LOCK();
 
 	/*
 	 * BUG: the task should be free after the idle task has had
@@ -186,13 +188,21 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 */
 	if (!task_start(new_trc)) {
 		ERROR_MSG("Could not start new task, going back to old.\n");
+
+		TASK_ACQUIRE_TR_LOCK();
 		RB_REMOVE(task_register_tree_t, root, new_trc);
+		TASK_RELEASE_TR_LOCK();
+
 		task_free(new_trc);
 		vPortFree(new_trc);
 		vTaskResume(trc->task_handle);
 		return 0;
 	}
+
+	TASK_ACQUIRE_TR_LOCK();
 	RB_REMOVE(task_register_tree_t, root, trc);
+	TASK_RELEASE_TR_LOCK();
+
 	vTaskDelete(trc->task_handle);
 	task_free(trc);
 	vPortFree(trc);

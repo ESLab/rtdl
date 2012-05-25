@@ -151,6 +151,8 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 
 			task_register_cons *trcp;
 
+			TASK_ACQUIRE_TR_LOCK();
+
 			RB_FOREACH(trcp, task_register_tree_t, other_trcs) {
 				if (trcp == app_trc)
 					continue;
@@ -163,6 +165,9 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 					break;
 				}
 			}
+
+			TASK_RELEASE_TR_LOCK();
+
 		}
 
 		if (final_symbol == NULL) {

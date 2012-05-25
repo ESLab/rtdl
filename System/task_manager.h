@@ -121,6 +121,13 @@ static __inline__ int task_register_cons_cmp
 RB_PROTOTYPE(task_register_tree_t, task_register_cons_t, tasks, task_register_cons_cmp)
 
 /*
+ * Macros
+ */
+
+#define TASK_ACQUIRE_TR_LOCK() do { } while(0)
+#define TASK_RELEASE_TR_LOCK() do { } while(0)
+
+/*
  * Prototypes.
  */
 
