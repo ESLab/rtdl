@@ -246,7 +246,7 @@ Dwarf_Die dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half f
 	return dwarfif_follow_attr_until(dbg, new_die, follow_attr, until_tag);
 }
 
-int dwarfif_die_has_vartag(Dwarf_Die die)
+int dwarfif_die_has_typetag(Dwarf_Die die)
 {
 	Dwarf_Error err;
 	Dwarf_Half tag;
