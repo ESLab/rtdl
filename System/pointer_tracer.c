@@ -181,3 +181,95 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 
 	return pt_internal_trace_pointer(state, new_v);
 }
+
+static int pt_iterate_die_1(pt_pstate *pstate, Dwarf_Die die, pt_die_cb_fun_t *fun, void *arg)
+{
+	return (*fun)(pstate, die, arg);
+}
+
+static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_cb_fun_t *fun, void *arg)
+{
+	Dwarf_Die	cur_die = die;
+	Dwarf_Die	child;
+	Dwarf_Error	err;
+	int		res;
+
+	if (!pt_iterate_die_1(pstate, cur_die, fun)) {
+		return 0;
+	}
+
+	while (1) {
+		Dwarf_Die sib_die;
+		if ((res = dwarf_child(cur_die, &child, &err)) == DW_DLV_ERROR) {
+			return 0;
+		}
+		if (res == DW_DLV_OK) {
+			/*
+			 * We found a child.
+			 */
+			if (!pt_iterate_die_and_siblings(pstate, child, fun)) {
+				return 0;
+			}
+		}
+		/*
+		 * Continue with the siblings.
+		 */
+		if ((res = dwarf_siblingof(pstate->dbg, cur_die, &sib_die, &err)) == DW_DLV_ERROR) {
+			return 0;
+		}
+		if (res == DW_DLV_NO_ENTRY) {
+			return 1;
+		}
+		if (cur_die != die) {
+			dwarf_dealloc(pstate->dbg, cur_die, DW_DLA_DIE);
+		}
+		cur_die = sib_die;
+		if (!pt_iterate_die_1(pstate, cur_die, fun)) {
+			return 0;
+		}
+	}
+}
+
+int pt_iterate_dies(pt_pstate *pstate, pt_die_cb_fun_t *fun, void *arg)
+{
+    Dwarf_Unsigned	cu_header_length = 0;
+    Dwarf_Half		version_stamp	 = 0;
+    Dwarf_Unsigned	abbrev_offset	 = 0;
+    Dwarf_Half		address_size	 = 0;
+    Dwarf_Half		length_size	 = 0;
+    Dwarf_Half		extension_size	 = 0;
+    Dwarf_Unsigned	next_cu_header	 = 0;
+    Dwarf_Error		err;
+    int			cu_number;
+    int			res;
+
+    /*
+     * Iterate through the compilation units.
+     */
+
+    for (cu_number = 0; ; cu_number++) {
+	    Dwarf_Die no_die = 0;
+	    Dwarf_Die cu_die;
+
+	    if ((res = dwarf_next_cu_header_b(pstate->dbg, &cu_header_length,
+					      &version_stamp, &abbrev_offset, &address_size,
+					      &length_size, &extension_size, &next_cu_header,
+					      &err)) == DW_DLV_ERROR) {
+		    ERROR_MSG("Error in dwarg_next_cu_header (%s)\n", dwarf_errmsg(err));
+		    return 0;
+	    }
+	    if (res == DW_DLV_NO_ENTRY) {
+		    return 1;
+	    }
+
+	    if (dwarf_siblingof(pstate->dbg, no_die, &cu_die, &err) != DW_DLV_OK) {
+		    ERROR_MSG("Error in dwarf_siblingof (%s)\n", dwarf_errmsg(err));
+	    }
+
+	    if (!pt_iterate_die_and_siblings(pstate, cu_die, fun)) {
+		    return 0;
+	    }
+
+	    dwarf_dealloc(pstate->dbg, cu_die, DW_DLA_DIE);
+    }
+}
