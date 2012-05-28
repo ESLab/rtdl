@@ -286,3 +286,45 @@ int dwarfif_die_has_typetag(Dwarf_Die die)
 		return 0;
 	}
 }
+
+/*
+ * This function tries to find the address of a static variable,
+ * e.g. the variable is statically allocated in a data section and the
+ * address is given in the debug information.
+ */
+void *dwarfif_find_static_var_address(task_register_cons *trc, Dwarf_Die var)
+{
+	Dwarf_Error	  err;
+	Dwarf_Attribute	  attr;
+	Dwarf_Block	 *location_block;
+	int		  res;
+	Dwarf_Locdesc	**ldl;
+	Dwarf_Signed	  noe;
+
+	if (dwarf_attr(var, DW_AT_location, &attr, &err) != DW_DLV_OK) {
+		DEBUG_MSG("Could not find location attribute for variable. (%s)\n", dwarf_errmsg(err));
+		return NULL;
+	}
+
+	if (dwarf_formblock(attr, &location_block, &err) != DW_DLV_OK) {
+		DEBUG_MSG("Could not get location block for variable.\n");
+		return NULL;
+	}
+
+	res = dwarf_loclist_n(attr, &ldl, &noe, &err);
+
+	if (res != DW_DLV_OK) {
+		DEBUG_MSG("Got no location list for variable.\n");
+	}
+
+	Dwarf_Loc *loc = ldl[0]->ld_s;
+	if (loc->lr_atom != DW_OP_addr) {
+		/*
+		 * Unsupported.
+		 */
+		return NULL;
+	}
+	u_int32_t offset = loc->lr_number;
+
+	return (void *)((u_int32_t)trc->cont_mem + offset);
+}
