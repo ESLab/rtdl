@@ -88,10 +88,11 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		return 0;
 	}
 
-	new_trc->name = trc->name;
-	new_trc->elfh = new_sw;
-	new_trc->task_handle = 0;
-	new_trc->cont_mem = NULL;
+	new_trc->name	       = trc->name;
+	new_trc->elfh	       = new_sw;
+	new_trc->task_handle   = 0;
+	new_trc->cont_mem      = NULL;
+	new_trc->cont_mem_size = 0;
 
 	LIST_INIT(&new_trc->sections);
 

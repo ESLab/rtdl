@@ -189,7 +189,8 @@ int task_alloc(task_register_cons *trc)
 		return 0;
 	}
 
-	trc->cont_mem = (void *)cm_addr;
+	trc->cont_mem	   = (void *)cm_addr;
+	trc->cont_mem_size = alloc_size;
 
 	LIST_INIT(&trc->sections);
 
@@ -277,7 +278,8 @@ int task_free(task_register_cons *trc)
 	 */
 
 	umm_free(trc->cont_mem);
-	trc->cont_mem = NULL;
+	trc->cont_mem	   = NULL;
+	trc->cont_mem_size = 0;
 
 	return 1;
 }
@@ -342,6 +344,7 @@ task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 
 	trc->request_hook = NULL;
 	trc->cont_mem = NULL;
+	trc->cont_mem_size = 0;
 
 	LIST_INIT(&trc->sections);
 	SPLAY_INIT(&trc->dynmemsects);

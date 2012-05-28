@@ -79,6 +79,7 @@ typedef struct task_register_cons_t {
 	xTaskHandle		 task_handle;
 	request_hook_fn_t	 request_hook;
 	void                    *cont_mem;
+	size_t			 cont_mem_size;
 	task_section_list	 sections;
 	task_dynmemsect_tree	 dynmemsects;
 	RB_ENTRY(task_register_cons_t) tasks;
