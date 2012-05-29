@@ -43,8 +43,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <umm_malloc.h>
-
 #include <App/rtu.h>
 
 task_register_tree task_register_tree_var =
@@ -179,10 +177,10 @@ int task_alloc(task_register_cons *trc)
 	}
 
 	/*
-	 * Use umm_malloc() for allocating task memory.
+	 * Use TASKSECTION_MALLOC_CALL() for allocating task memory.
 	 */
 
-	u_int32_t cm_addr = (u_int32_t)umm_malloc(alloc_size);
+	u_int32_t cm_addr = (u_int32_t)TASKSECTION_MALLOC_CALL(alloc_size);
 
 	if (cm_addr == 0) {
 		ERROR_MSG("Could not allocate memory for task \"%s\"\n", trc->name);
@@ -272,12 +270,11 @@ int task_free(task_register_cons *trc)
 	}
 
 	/*
-	 * 3. Free the continous memory region. We are using
-	 *    umm_malloc() for the task memory, so we are
-	 *    using umm_free() to free it.
+	 * 3. Free the continous memory region. This is a TASKSECTION
+	 *    so we are using the correct CALL.
 	 */
 
-	umm_free(trc->cont_mem);
+	TASKSECTION_FREE_CALL(trc->cont_mem);
 	trc->cont_mem	   = NULL;
 	trc->cont_mem_size = 0;
 
