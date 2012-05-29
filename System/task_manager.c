@@ -369,11 +369,11 @@ task_dynmemsect_cons *task_find_dynmemsect(task_register_cons *trc, void *p)
 		return NULL;
 }
 
-void *apptask_malloc(size_t size)
+void *task_apptask_malloc(size_t size, xTaskHandle task_handle)
 {
-	task_register_tree *root = task_get_trc_root();
-	task_register_cons criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
-	task_register_cons *trc = RB_FIND(task_register_tree_t, root, &criterion);
+	task_register_tree	*root	   = task_get_trc_root();
+	task_register_cons	 criterion = { .task_handle = task_handle };
+	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
 
 	/*
 	 * If the task is not found in the register we should not even
@@ -398,11 +398,11 @@ void *apptask_malloc(size_t size)
 	return alloc_ptr;
 }
 
-void apptask_free(void *ptr)
+void task_apptask_free(void *ptr, xTaskHandle task_handle)
 {
-	task_register_tree *root = task_get_trc_root();
-	task_register_cons criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
-	task_register_cons *trc = RB_FIND(task_register_tree_t, root, &criterion);
+	task_register_tree	*root	   = task_get_trc_root();
+	task_register_cons	 criterion = { .task_handle = task_handle };
+	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
 
 	/*
 	 * If the task is not found in the register we should not free
@@ -420,4 +420,14 @@ void apptask_free(void *ptr)
 		SPLAY_REMOVE(task_dynmemsect_tree_t, &trc->dynmemsects, dms);
 		vPortFree(dms);
 	}
+}
+
+void *apptask_malloc(size_t size)
+{
+	return task_apptask_malloc(size, xTaskGetCurrentTaskHandle());
+}
+
+void apptask_free(void *ptr)
+{
+	return task_apptask_free(ptr, xTaskGetCurrentTaskHandle());
 }
