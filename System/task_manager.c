@@ -247,7 +247,7 @@ int task_free(task_register_cons *trc)
 
 	LIST_FOREACH_SAFE(p, &trc->sections, sections, p_tmp) {
 		LIST_REMOVE(p, sections);
-		vPortFree(p);
+		SYSTEM_FREE_CALL(p);
 	}
 
 	/*
@@ -261,12 +261,12 @@ int task_free(task_register_cons *trc)
 
 	for (dms_p = dms_start; dms_p != NULL; dms_p = dms_q) {
 		dms_q = SPLAY_NEXT(task_dynmemsect_tree_t, &trc->dynmemsects, dms_p);
-		vPortFree(dms_p->ptr);
+		SYSTEM_FREE_CALL(dms_p->ptr);
 		dms_p->ptr = dms_q;
 	}
 
 	for (dms_p = dms_start; dms_p != NULL; dms_p = dms_p->ptr) {
-		vPortFree(dms_p);
+		SYSTEM_FREE_CALL(dms_p);
 	}
 
 	/*

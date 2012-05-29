@@ -99,7 +99,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	if (!task_alloc(new_trc)) {
 		ERROR_MSG("Could not allocate memory when run-time updating task \"%s\"\n",
 			  new_trc->name);
-		vPortFree(new_trc);
+		SYSTEM_FREE_CALL(new_trc);
 		return 0;
 	}
 
@@ -112,7 +112,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		ERROR_MSG("Could not link new software when doing run-time update on task \"%s\"\n",
 			  new_trc->name);
 		task_free(new_trc);
-		vPortFree(new_trc);
+		SYSTEM_FREE_CALL(new_trc);
 		return 0;
 	}
 
@@ -126,7 +126,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		ERROR_MSG("Could not find checkpoint request hook when run-time updating task \"%s\"\n",
 			  new_trc->name);
 		task_free(new_trc);
-		vPortFree(new_trc);
+		SYSTEM_FREE_CALL(new_trc);
 		return 0;
 	}
 
@@ -142,15 +142,14 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	if (old_rtu_ndx == 0 || new_rtu_ndx == 0 || old_rtu == NULL || new_rtu == NULL) {
 		ERROR_MSG("could not find \"" RTU_DATA_SECTION_NAME "\" sections in elfs\n");
 		task_free(new_trc);
-		vPortFree(new_trc);
+		SYSTEM_FREE_CALL(new_trc);
 		return 0;
 	}
-
 
 	if (old_rtu->sh_size != new_rtu->sh_size) {
 		ERROR_MSG("size mismatch in \"" RTU_DATA_SECTION_NAME "\" sections between software versions.\n");
 		task_free(new_trc);
-		vPortFree(new_trc);
+		SYSTEM_FREE_CALL(new_trc);
 		return 0;
 	}
 
@@ -160,7 +159,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	if (old_rtu_mem == NULL || new_rtu_mem == NULL) {
 		ERROR_MSG("could not find allocated memory for section \"" RTU_DATA_SECTION_NAME "\".\n");
 		task_free(new_trc);
-		vPortFree(new_trc);
+		SYSTEM_FREE_CALL(new_trc);
 		return 0;
 	}
 
@@ -195,7 +194,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		TASK_RELEASE_TR_LOCK();
 
 		task_free(new_trc);
-		vPortFree(new_trc);
+		SYSTEM_FREE_CALL(new_trc);
 		vTaskResume(trc->task_handle);
 		return 0;
 	}
@@ -206,7 +205,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 
 	vTaskDelete(trc->task_handle);
 	task_free(trc);
-	vPortFree(trc);
+	SYSTEM_FREE_CALL(trc);
 	return 1;
 }
 

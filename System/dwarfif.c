@@ -148,7 +148,7 @@ int dwarfif_init(task_register_cons *trc, Dwarf_Debug *dbg)
 	return 1;
 
 error1:
-	vPortFree(binary_interface);
+	SYSTEM_FREE_CALL(binary_interface);
 error0:
 	return 0;
 }
@@ -156,7 +156,7 @@ error0:
 int dwarfif_finish(Dwarf_Debug *dbg)
 {
 	Dwarf_Error error = 0;
-	vPortFree((*dbg)->de_obj_file);
+	SYSTEM_FREE_CALL((*dbg)->de_obj_file);
 
 	if (dwarf_object_finish(*dbg, &error) != DW_DLV_OK) {
 		ERROR_MSG("Could not finish dwarf object.\n");
