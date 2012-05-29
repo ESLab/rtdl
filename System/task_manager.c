@@ -383,7 +383,7 @@ void *task_apptask_malloc(size_t size, xTaskHandle task_handle)
 	if (trc == NULL)
 		return NULL;
 
-	void *alloc_ptr = pvPortMalloc(size);
+	void *alloc_ptr = APPTASK_MALLOC_CALL(size);
 	if (alloc_ptr == NULL)
 		return NULL;
 	task_dynmemsect_cons *dms = pvPortMalloc(sizeof(task_dynmemsect_cons));
@@ -418,7 +418,7 @@ void task_apptask_free(void *ptr, xTaskHandle task_handle)
 			   &trc->dynmemsects, ptr);
 	if (dms != NULL) {
 		SPLAY_REMOVE(task_dynmemsect_tree_t, &trc->dynmemsects, dms);
-		vPortFree(dms);
+		APPTASK_FREE_CALL(dms);
 	}
 }
 
