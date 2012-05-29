@@ -63,6 +63,7 @@ n.variable(key="ld", value="arm-eabi-ld")
 n.variable(key="objcopy", value="arm-eabi-objcopy")
 n.variable(key="mkimage", value="mkimage")
 n.variable(key="cloc", value="cloc")
+n.variable(key="cscope", value="cscope")
 
 # -Werror
 
@@ -94,7 +95,11 @@ n.rule(name = "app_ld",
 
 n.rule(name = "cloc",
        command = "$cloc $clocflags --report-file=$out $in",
-       description = "CLOC")
+       description = "CLOC $out")
+
+n.rule(name = "cscope",
+       command = "$cscope -b -f $out " + get_include_args(includedirs) + " $in",
+       description = "CSCOPE $out")
 
 freertos_files = ["Source/croutine.c",
                   "Source/list.c",
@@ -209,6 +214,10 @@ n.build(outputs = "cloc_report.log",
         rule = "cloc",
         inputs = contributed_files)
 
+n.build(outputs = "cscope.out",
+        rule = "cscope",
+        inputs = list(set.union(app_fs,fs)))
+
 for a in applications:
     elffile = a + ".elf"
     ldfile = a + ".ld"
@@ -221,4 +230,4 @@ for a in applications:
             rule = "app_ld",
             inputs = elffile)
 
-n.default([systemextuimg, "cloc_report.log"])
+n.default([systemextuimg, "cloc_report.log", "cscope.out"])
