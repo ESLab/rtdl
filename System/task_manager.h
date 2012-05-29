@@ -149,8 +149,8 @@ task_dynmemsect_cons    *task_find_dynmemsect(task_register_cons *trc, void *p);
 void			*apptask_malloc(size_t size);
 void			 apptask_free(void *ptr);
 #else /* !IN_APPTASK */
-void			*task_apptask_malloc(size_t size, xTaskHandle task_handle);
-void			 task_apptask_free(void *ptr, xTaskHandle task_handle);
+void			*task_apptask_malloc(size_t size, task_register_cons *trc);
+void			 task_apptask_free(void *ptr, task_register_cons *trc);
 #endif /* IN_APPTASK */
 
 #endif /* TASK_MANAGER_H */

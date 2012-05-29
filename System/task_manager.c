@@ -366,20 +366,8 @@ task_dynmemsect_cons *task_find_dynmemsect(task_register_cons *trc, void *p)
 		return NULL;
 }
 
-void *task_apptask_malloc(size_t size, xTaskHandle task_handle)
+void *task_apptask_malloc(size_t size, task_register_cons *trc)
 {
-	task_register_tree	*root	   = task_get_trc_root();
-	task_register_cons	 criterion = { .task_handle = task_handle };
-	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
-
-	/*
-	 * If the task is not found in the register we should not even
-	 * bother allocating any memory.
-	 */
-
-	if (trc == NULL)
-		return NULL;
-
 	void *alloc_ptr = APPTASK_MALLOC_CALL(size);
 	if (alloc_ptr == NULL)
 		return NULL;
@@ -395,20 +383,8 @@ void *task_apptask_malloc(size_t size, xTaskHandle task_handle)
 	return alloc_ptr;
 }
 
-void task_apptask_free(void *ptr, xTaskHandle task_handle)
+void task_apptask_free(void *ptr, task_register_cons *trc)
 {
-	task_register_tree	*root	   = task_get_trc_root();
-	task_register_cons	 criterion = { .task_handle = task_handle };
-	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
-
-	/*
-	 * If the task is not found in the register we should not free
-	 * any memory.
-	 */
-
-	if (trc == NULL)
-		return;
-
 	vPortFree(ptr);
 	task_dynmemsect_cons *dms =
 		SPLAY_FIND(task_dynmemsect_tree_t,
@@ -421,10 +397,34 @@ void task_apptask_free(void *ptr, xTaskHandle task_handle)
 
 void *apptask_malloc(size_t size)
 {
-	return task_apptask_malloc(size, xTaskGetCurrentTaskHandle());
+	task_register_tree	*root	   = task_get_trc_root();
+	task_register_cons	 criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
+	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
+
+	/*
+	 * If the task is not found in the register we should not
+	 * bother allocating any memory.
+	 */
+
+	if (trc == NULL)
+		return NULL;
+
+	return task_apptask_malloc(size, trc);
 }
 
 void apptask_free(void *ptr)
 {
-	return task_apptask_free(ptr, xTaskGetCurrentTaskHandle());
+	task_register_tree	*root	   = task_get_trc_root();
+	task_register_cons	 criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
+	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
+
+	/*
+	 * If the task is not found in the register we should not free
+	 * any memory.
+	 */
+
+	if (trc == NULL)
+		return;
+
+	return task_apptask_free(ptr, trc);
 }
