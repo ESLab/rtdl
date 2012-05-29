@@ -373,7 +373,7 @@ void *task_apptask_malloc(size_t size, task_register_cons *trc)
 		return NULL;
 	task_dynmemsect_cons *dms = SYSTEM_MALLOC_CALL(sizeof(task_dynmemsect_cons));
 	if (dms == NULL) {
-		vPortFree(alloc_ptr);
+		APPTASK_FREE_CALL(alloc_ptr);
 		return NULL;
 	}
 	dms->ptr  = alloc_ptr;
@@ -385,13 +385,13 @@ void *task_apptask_malloc(size_t size, task_register_cons *trc)
 
 void task_apptask_free(void *ptr, task_register_cons *trc)
 {
-	vPortFree(ptr);
+	APPTASK_FREE_CALL(ptr);
 	task_dynmemsect_cons *dms =
 		SPLAY_FIND(task_dynmemsect_tree_t,
 			   &trc->dynmemsects, ptr);
 	if (dms != NULL) {
 		SPLAY_REMOVE(task_dynmemsect_tree_t, &trc->dynmemsects, dms);
-		APPTASK_FREE_CALL(dms);
+		SYSTEM_FREE_CALL(dms);
 	}
 }
 
