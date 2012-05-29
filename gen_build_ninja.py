@@ -62,6 +62,7 @@ n.variable(key="cc", value="arm-eabi-gcc")
 n.variable(key="ld", value="arm-eabi-ld")
 n.variable(key="objcopy", value="arm-eabi-objcopy")
 n.variable(key="mkimage", value="mkimage")
+n.variable(key="cloc", value="cloc")
 
 # -Werror
 
@@ -91,6 +92,10 @@ n.rule(name = "app_ld",
        command = """hexdump -v -e '"BYTE(0x" 1/1 "%02X" ")\\n"' $in > $out""",
        description = "APP LD FILE")
 
+n.rule(name = "cloc",
+       command = "$cloc $clocflags --report-file=$out $in",
+       description = "CLOC")
+
 freertos_files = ["Source/croutine.c",
                   "Source/list.c",
                   "Source/queue.c",
@@ -115,6 +120,12 @@ system_files = \
      'System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c',
      'System/umm/umm_malloc.c', 'System/qsort.c', 'System/dwarfif.c']
 
+contributed_files = \
+    ['System/applications.h', 'System/dwarfif.c', 'System/dwarfif.h',
+     'System/linker.c', 'System/linker.h', 'System/main.c',
+     'System/migrator.c', 'System/migrator.h', 'System/pointer_tracer.c',
+     'System/pointer_tracer.h', 'System/system_config.h', 'System/task_manager.c',
+     'System/task_manager.h', 'System/types.h', 'gen_build_ninja.py']
 
 app_fs = set()
 for a in applications:
@@ -194,6 +205,10 @@ n.build(outputs = systemextuimg,
         rule = "mkimage",
         inputs = systemextbin)
 
+n.build(outputs = "cloc_report.log",
+        rule = "cloc",
+        inputs = contributed_files)
+
 for a in applications:
     elffile = a + ".elf"
     ldfile = a + ".ld"
@@ -206,4 +221,4 @@ for a in applications:
             rule = "app_ld",
             inputs = elffile)
 
-n.default(systemextuimg)
+n.default([systemextuimg, "cloc_report.log"])
