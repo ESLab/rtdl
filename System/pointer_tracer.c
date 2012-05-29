@@ -194,7 +194,7 @@ static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_
 	Dwarf_Error	err;
 	int		res;
 
-	if (!pt_iterate_die_1(pstate, cur_die, fun)) {
+	if (!pt_iterate_die_1(pstate, cur_die, fun, arg)) {
 		return 0;
 	}
 
@@ -207,7 +207,7 @@ static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_
 			/*
 			 * We found a child.
 			 */
-			if (!pt_iterate_die_and_siblings(pstate, child, fun)) {
+			if (!pt_iterate_die_and_siblings(pstate, child, fun, arg)) {
 				return 0;
 			}
 		}
@@ -224,7 +224,7 @@ static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_
 			dwarf_dealloc(pstate->dbg, cur_die, DW_DLA_DIE);
 		}
 		cur_die = sib_die;
-		if (!pt_iterate_die_1(pstate, cur_die, fun)) {
+		if (!pt_iterate_die_1(pstate, cur_die, fun, arg)) {
 			return 0;
 		}
 	}
@@ -266,7 +266,7 @@ int pt_iterate_dies(pt_pstate *pstate, pt_die_cb_fun_t *fun, void *arg)
 		    ERROR_MSG("Error in dwarf_siblingof (%s)\n", dwarf_errmsg(err));
 	    }
 
-	    if (!pt_iterate_die_and_siblings(pstate, cu_die, fun)) {
+	    if (!pt_iterate_die_and_siblings(pstate, cu_die, fun, arg)) {
 		    return 0;
 	    }
 
