@@ -128,6 +128,9 @@ RB_PROTOTYPE(task_register_tree_t, task_register_cons_t, tasks, task_register_co
 #define TASK_ACQUIRE_TR_LOCK() do { } while(0)
 #define TASK_RELEASE_TR_LOCK() do { } while(0)
 
+#define APPTASK_MALLOC_CALL(s) pvPortMalloc(s)
+#define APPTASK_FREE_CALL(p) vPortFree(p)
+
 /*
  * Prototypes.
  */

@@ -58,4 +58,10 @@
 #define ERROR_MSG(...)	printf("ERROR>>> " __VA_ARGS__)
 #endif /* SYSTEM_MODULE_NAME */
 
+#define SYSTEM_MALLOC_CALL(s) pvPortMalloc(s)
+#define SYSTEM_FREE_CALL(p) vPortFree(p)
+
+#define TASKSECTION_MALLOC_CALL(s) pvPortMalloc(s)
+#define TASKSECTION_FREE_CALL(p) vPortFree(p)
+
 #endif /* SYSTEM_H */
