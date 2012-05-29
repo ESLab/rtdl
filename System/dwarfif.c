@@ -128,7 +128,7 @@ int dwarfif_init(task_register_cons *trc, Dwarf_Debug *dbg)
 	Dwarf_Ptr errarg = 0;
 	Dwarf_Obj_Access_Interface *binary_interface;
 
-	binary_interface = pvPortMalloc(sizeof(Dwarf_Obj_Access_Interface));
+	binary_interface = SYSTEM_MALLOC_CALL(sizeof(Dwarf_Obj_Access_Interface));
 	if (binary_interface == NULL) {
 		ERROR_MSG("Could not allocate memory.\n");
 		goto error0;

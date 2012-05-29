@@ -30,8 +30,10 @@
 
 #include <FreeRTOS.h>
 
-#define malloc(x) pvPortMalloc(x)
-#define free(x)   vPortFree(x)
-#define calloc(x, n) pvPortMalloc((x) * (n))
+#include <System/system.h>
+
+#define malloc(x)	SYSTEM_MALLOC_CALL(x)
+#define free(x)	SYSTEM_FREE_CALL(x)
+#define calloc(x, n)	SYSTEM_MALLOC_CALL((x) * (n))
 
 #endif /* MALLOC_REPLACE_H */

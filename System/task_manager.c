@@ -196,7 +196,7 @@ int task_alloc(task_register_cons *trc)
 		if (s[i].sh_flags & SHF_ALLOC) {
 			struct task_section_cons_t *tsc =
 				(struct task_section_cons_t *)
-				pvPortMalloc(sizeof(task_section_cons));
+				SYSTEM_MALLOC_CALL(sizeof(task_section_cons));
 
 			if (tsc == NULL) {
 				ERROR_MSG("Could not allocate memory for tsc when allocating memory for task \"%s\".\n", trc->name);
@@ -327,7 +327,7 @@ int task_start(task_register_cons *trc)
 task_register_cons *task_register(const char *name, Elf32_Ehdr *elfh)
 {
 	struct task_register_cons_t *trc =
-		(task_register_cons *)pvPortMalloc(sizeof(task_register_cons));
+		(task_register_cons *)SYSTEM_MALLOC_CALL(sizeof(task_register_cons));
 	if (trc == NULL) {
 		return NULL;
 	}
@@ -383,7 +383,7 @@ void *task_apptask_malloc(size_t size, xTaskHandle task_handle)
 	void *alloc_ptr = APPTASK_MALLOC_CALL(size);
 	if (alloc_ptr == NULL)
 		return NULL;
-	task_dynmemsect_cons *dms = pvPortMalloc(sizeof(task_dynmemsect_cons));
+	task_dynmemsect_cons *dms = SYSTEM_MALLOC_CALL(sizeof(task_dynmemsect_cons));
 	if (dms == NULL) {
 		vPortFree(alloc_ptr);
 		return NULL;

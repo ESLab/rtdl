@@ -58,7 +58,7 @@ int pt_trace_pointer(pt_pstate *state, Dwarf_Die type_die, void *p)
 		return 0;
 	}
 
-	if ((v = pvPortMalloc(sizeof(pt_visited_variable))) == NULL) {
+	if ((v = SYSTEM_MALLOC_CALL(sizeof(pt_visited_variable))) == NULL) {
 		ERROR_MSG("Could not allocate memory.\n");
 		return 0;
 	}
@@ -118,7 +118,7 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 			 * Include this memory section.
 			 */
 			pt_dyn_memsect *dms;
-			if ((dms = pvPortMalloc(sizeof(pt_dyn_memsect))) == NULL) {
+			if ((dms = SYSTEM_MALLOC_CALL(sizeof(pt_dyn_memsect))) == NULL) {
 				ERROR_MSG("Could not allocate memory.\n");
 				return 0;
 			}
@@ -168,7 +168,7 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 
 	pt_visited_variable *new_v;
 
-	if ((new_v = pvPortMalloc(sizeof(pt_visited_variable))) == NULL) {
+	if ((new_v = SYSTEM_MALLOC_CALL(sizeof(pt_visited_variable))) == NULL) {
 		ERROR_MSG("Could not allocate memory.\n");
 		return 0;
 	}
