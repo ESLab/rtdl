@@ -69,8 +69,8 @@ int pt_trace_pointer(pt_pstate *state, Dwarf_Die type_die, void *p)
 	}
 
 	v->type_die = type_die;
-	v->p        = p;
-	
+	v->mem_p    = p;
+
 	return pt_internal_trace_pointer(state, v);
 }
 
@@ -82,10 +82,10 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 	 * Investigate if we have already visited this variable.
 	 */
 
-	void	*new_p	       = (void *)*(u_int32_t *)(v->p);
+	void	*new_p	       = (void *)*(u_int32_t *)(v->mem_p);
 	void	*new_section_p = 0;
 
-	pt_visited_variable search_criterion = { .p = new_p };
+	pt_visited_variable search_criterion = { .mem_p = new_p };
 
 	pt_visited_variable *found_v =
 		RB_FIND(pt_visited_variable_tree_t, 
@@ -111,13 +111,13 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 		 * Add this memory section to the included_memsects
 		 * tree, if it is not already included.
 		 */
-		pt_dyn_memsect  criterion     = { .p = tdc };
-		pt_dyn_memsect *found_memsect = 
+		pt_dyn_memsect  criterion     = { .tdc_p = tdc };
+		pt_dyn_memsect *found_memsect =
 			RB_FIND(pt_dyn_memsect_tree_t,
 				&state->included_memsects,
 				&criterion);
 		new_section_p = tdc->ptr;
-		
+
 		if (found_memsect == NULL) {
 			/*
 			 * Include this memory section.
@@ -127,7 +127,8 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 				ERROR_MSG("Could not allocate memory.\n");
 				return 0;
 			}
-			dms->p = tdc;
+			dms->tdc_p   = tdc;
+			dms->delta_p = 0;
 			RB_INSERT(pt_dyn_memsect_tree_t, &state->included_memsects, dms);
 		}
 	} else {

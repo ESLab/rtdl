@@ -40,7 +40,7 @@
  */
 
 typedef struct pt_dyn_memsect_t {
-	task_dynmemsect_cons    *p;
+	task_dynmemsect_cons    *tdc_p;
 	RB_ENTRY(pt_dyn_memsect_t) tree_e;
 } pt_dyn_memsect;
 
@@ -48,7 +48,7 @@ typedef RB_HEAD(pt_dyn_memsect_tree_t, pt_dyn_memsect_t) pt_dyn_memsect_tree;
 
 static inline int pt_dyn_memsect_tree_cmp(pt_dyn_memsect *op1, pt_dyn_memsect *op2)
 {
-	return op1->p - op2->p;
+	return op1->tdc_p->ptr - op2->tdc_p->ptr;
 }
 
 RB_PROTOTYPE(pt_dyn_memsect_tree_t, pt_dyn_memsect_t, tree_e, pt_dyn_memsect_tree_cmp)
@@ -59,7 +59,7 @@ RB_PROTOTYPE(pt_dyn_memsect_tree_t, pt_dyn_memsect_t, tree_e, pt_dyn_memsect_tre
 
 typedef struct pt_visited_variable_t {
 	Dwarf_Die	 type_die;
-	void		*p;
+	void		*mem_p;
 	void		*section_p;
 	RB_ENTRY(pt_visited_variable_t) tree_e;
 } pt_visited_variable;
@@ -68,7 +68,7 @@ typedef RB_HEAD(pt_visited_variable_tree_t, pt_visited_variable_t) pt_visited_va
 
 static inline int pt_visited_variable_tree_cmp(pt_visited_variable *op1, pt_visited_variable *op2)
 {
-	return op1->p - op2->p;
+	return op1->mem_p - op2->mem_p;
 }
 
 RB_PROTOTYPE(pt_visited_variable_tree_t, pt_visited_variable_t, tree_e, pt_visited_variable_tree_cmp)
