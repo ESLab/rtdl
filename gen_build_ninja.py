@@ -131,7 +131,8 @@ contributed_files = \
      'System/linker.c', 'System/linker.h', 'System/main.c',
      'System/migrator.c', 'System/migrator.h', 'System/pointer_tracer.c',
      'System/pointer_tracer.h', 'System/system_config.h', 'System/task_manager.c',
-     'System/task_manager.h', 'System/types.h', 'gen_build_ninja.py']
+     'System/task_manager.h', 'System/types.h', 'System/system_util.c',
+     'System/system_util.h', 'gen_build_ninja.py']
 
 app_fs = set()
 for a in applications:
