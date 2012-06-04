@@ -31,6 +31,6 @@
 #define DEBUG
 #define INFO
 
-#define RTU_POINTER_TRACEING
+#define RTU_POINTER_TRACING
 
 #endif /* SYSTEM_CONFIG_H */ 

@@ -39,10 +39,10 @@
 #include <System/system.h>
 #include <System/task_manager.h>
 #include <System/elf.h>
-#ifdef RTU_POINTER_TRACEING
+#ifdef RTU_POINTER_TRACING
 #include <System/pointer_tracer.h>
 #include <System/system_util.h>
-#endif /* RTU_POINTER_TRACEING */
+#endif /* RTU_POINTER_TRACING */
 
 #include <App/rtu.h>
 
@@ -64,7 +64,7 @@ request_hook_fn_t migrator_find_request_hook(task_register_cons *trc)
 	return ret;
 }
 
-#ifdef RTU_POINTER_TRACEING
+#ifdef RTU_POINTER_TRACING
 
 #include <dwarf.h>
 
@@ -218,7 +218,7 @@ static void *migrator_get_new_relocation_address(pt_pstate *pstate, task_registe
 
 #endif /* 0 */
 
-#endif /* RTU_POINTER_TRACEING */
+#endif /* RTU_POINTER_TRACING */
 
 int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 {
@@ -318,7 +318,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		goto error_L2;
 	}
 
-#ifdef RTU_POINTER_TRACEING
+#ifdef RTU_POINTER_TRACING
 
 	struct runtime_update_cb_arg_t cb_arg =
 		{ .lower_bound		      = (u_int32_t)trc->cont_mem + old_rtu->sh_addr,
@@ -345,16 +345,16 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 */
 
 	/*
-	 * We need the static memory section for pointer traceing.
+	 * We need the static memory section for pointer tracing.
 	 */
 
-	DEBUG_MSG("Traceing pointers...\n");
+	DEBUG_MSG("Tracing pointers...\n");
 
 	if (!pt_iterate_dies(&pstate, runtime_update_die_cb, &cb_arg)) {
 		ERROR_MSG("pt_iterate_dies() fail.\n");
 		goto error_L2_rtu0;
 	} else {
-		DEBUG_MSG("Pointer traceing successful.\n");
+		DEBUG_MSG("Pointer tracing successful.\n");
 	}
 
 	/*
@@ -382,7 +382,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		}
 	}
 
-#endif /* RTU_POINTER_TRACEING */
+#endif /* RTU_POINTER_TRACING */
 
 	/*
 	 * Copy the .rtu_data section from the old to the new
@@ -392,7 +392,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 
 	memcpy((void *)new_rtu_mem, (void *)old_rtu_mem, old_rtu->sh_size);
 
-#ifdef RTU_POINTER_TRACEING
+#ifdef RTU_POINTER_TRACING
 
 	/*
 	 * For each visited pointer variable, update the pointed-to
@@ -466,7 +466,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		goto error_L2;
 	}
 
-#endif /* RTU_POINTER_TRACEING */
+#endif /* RTU_POINTER_TRACING */
 
 	/*
 	 * Free the old software, delete old task, create new task,

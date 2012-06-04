@@ -43,7 +43,7 @@
 typedef struct pt_dyn_memsect_t {
 	task_dynmemsect_cons    *tdc_p;
 
-#ifdef RTU_POINTER_TRACEING
+#ifdef RTU_POINTER_TRACING
 	/*
 	 * delta_p is used when memory section are relocated. The
 	 * address of the pointer to the new memory section is new_p =
@@ -53,7 +53,7 @@ typedef struct pt_dyn_memsect_t {
 	 * migrator module.
 	 */
 	int32_t                  delta_p;
-#endif /* RTU_POINTER_TRACEING */
+#endif /* RTU_POINTER_TRACING */
 
 	RB_ENTRY(pt_dyn_memsect_t) tree_e;
 } pt_dyn_memsect;
