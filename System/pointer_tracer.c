@@ -51,8 +51,23 @@ int pt_pstate_init(pt_pstate *state, Dwarf_Debug dbg, task_register_cons *trc)
 	return 1;
 }
 
-int pt_pstate_free(pt_pstate *state)
+int pt_pstate_free(pt_pstate *pstate)
 {
+	{
+		pt_dyn_memsect *p, *tp;
+		RB_FOREACH_SAFE(p, pt_dyn_memsect_tree_t, &pstate->included_memsects, tp) {
+			RB_REMOVE(pt_dyn_memsect_tree_t, &pstate->included_memsects, p);
+			SYSTEM_FREE_CALL(p);
+		}
+	}
+
+	{
+		pt_visited_variable *p, *tp;
+		RB_FOREACH_SAFE(p, pt_visited_variable_tree_t, &pstate->visited_variables, tp) {
+			RB_REMOVE(pt_visited_variable_tree_t, &pstate->visited_variables, p);
+			SYSTEM_FREE_CALL(p);
+		}
+	}
 	return 1;
 }
 

@@ -108,9 +108,9 @@ typedef int (pt_die_cb_fun_t) (pt_pstate *pstate, Dwarf_Die die, void *arg);
  * Function prototypes
  */
 
-int	 pt_pstate_init(pt_pstate *state, Dwarf_Debug dbg, task_register_cons *trc);
-int	 pt_pstate_free(pt_pstate *state);
-int	 pt_trace_pointer(pt_pstate *state, Dwarf_Die type_die, void *p);
+int	 pt_pstate_init(pt_pstate *pstate, Dwarf_Debug dbg, task_register_cons *trc);
+int	 pt_pstate_free(pt_pstate *pstate);
+int	 pt_trace_pointer(pt_pstate *pstate, Dwarf_Die type_die, void *p);
 int	 pt_iterate_dies(pt_pstate *pstate, pt_die_cb_fun_t *fun, void *arg);
 void	*pt_get_included_section_pointer(pt_pstate *pstate, void *p);
 
