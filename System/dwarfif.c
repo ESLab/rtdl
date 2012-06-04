@@ -147,6 +147,12 @@ error0:
 	return 0;
 }
 
+int dwarfif_free(Dwarf_Debug dbg)
+{
+	Dwarf_Error err;
+	return dwarf_object_finish(dbg, &err) == DW_DLV_OK ? 1 : 0;
+}
+
 int dwarfif_finish(Dwarf_Debug *dbg)
 {
 	Dwarf_Error error = 0;
