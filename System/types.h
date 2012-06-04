@@ -25,8 +25,10 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef _DWARF_TYPES_H_
-#define _DWARF_TYPES_H_
+#ifndef SYSTEM_TYPES_H
+#define SYSTEM_TYPES_H
+
+#include <sys/types.h>
 
 typedef signed char int8_t;
 typedef unsigned char u_int8_t;
@@ -37,4 +39,4 @@ typedef unsigned int u_int32_t;
 typedef long long int64_t;
 typedef unsigned long long u_int64_t;
 
-#endif /* _DWARF_TYPES_H_ */
+#endif /* SYSTEM_TYPES_H */
