@@ -459,10 +459,12 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	}
 
 	pt_pstate_free(&pstate);
+	dwarfif_free(dbg);
 
 	if (0) {
 	error_L2_rtu0:
 		pt_pstate_free(&pstate);
+		dwarfif_free(dbg);
 		goto error_L2;
 	}
 
