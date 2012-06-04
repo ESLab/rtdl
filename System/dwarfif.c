@@ -42,7 +42,6 @@
 int dwarfif_get_section_info(void *obj, Dwarf_Half section_index,
 			     Dwarf_Obj_Access_Section *return_section, int *error)
 {
-	DEBUG_MSG("get section info called (index = %i).\n", section_index);
 	task_register_cons *trc = obj;
 
 	u_int32_t addr = (u_int32_t)task_get_section_address(trc, section_index);
@@ -66,25 +65,21 @@ int dwarfif_get_section_info(void *obj, Dwarf_Half section_index,
 
 Dwarf_Endianness dwarfif_get_byte_order(void* obj)
 {
-	DEBUG_MSG("get byte order called.\n");
 	return DW_OBJECT_LSB;
 }
 
 Dwarf_Small dwarfif_get_length_size(void* obj)
 {
-	DEBUG_MSG("get length size called.\n");
 	return sizeof(u_int32_t);
 }
 
 Dwarf_Small dwarfif_get_pointer_size(void* obj)
 {
-	DEBUG_MSG("get pointer size called.\n");
 	return sizeof(void *);
 }
 
 Dwarf_Unsigned dwarfif_get_section_count(void* obj)
 {
-	DEBUG_MSG("get section count called.\n");
 	task_register_cons *trc = obj;
 	return trc->elfh->e_shnum;
 }
@@ -92,7 +87,6 @@ Dwarf_Unsigned dwarfif_get_section_count(void* obj)
 int dwarfif_load_section(void* obj, Dwarf_Half section_index,
 			 Dwarf_Small** return_data, int* error)
 {
-	DEBUG_MSG("load section called.\n");
 	task_register_cons *trc = obj;
 	void *ret = task_get_section_address(trc, section_index);
 	*return_data = ret;
@@ -196,40 +190,17 @@ int dwarfif_get_type_die(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Die *type_die)
 		INFO_MSG("Could not get tag from type die.\n");
 		return 0;
 	}
-	switch (tag) {
-	case DW_TAG_base_type:
-	case DW_TAG_pointer_type:
-		break;
-	default:
-	{
-		const char *tagname;
-		int res = dwarf_get_TAG_name(tag, &tagname);
-		if (res != DW_DLV_OK) {
-			tagname = "";
-		}
-		INFO_MSG("Type die has a unsupported tag. (%s)\n", tagname);
-		return 0;
-	}
-	}
+
 	return 1;
 }
 
-Dwarf_Die dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half follow_attr, Dwarf_Half until_tag)
+Dwarf_Die dwarfif_follow_attr(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half follow_attr)
 {
-	Dwarf_Error err;
-	Dwarf_Half tag;
+	Dwarf_Error	err;
+	int		res;
 	Dwarf_Attribute attr;
-	Dwarf_Off off;
-	Dwarf_Die new_die;
-	int res;
-
-	if (dwarf_tag(die, &tag, &err) != DW_DLV_OK) {
-		return NULL;
-	}
-
-	if (tag == until_tag) {
-		return die;
-	}
+	Dwarf_Off	off;
+	Dwarf_Die	new_die;
 
 	if ((res = dwarf_attr(die, follow_attr, &attr, &err)) != DW_DLV_OK) {
 		return NULL;
@@ -243,7 +214,30 @@ Dwarf_Die dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half f
 		return NULL;
 	}
 
-	return dwarfif_follow_attr_until(dbg, new_die, follow_attr, until_tag);
+	return new_die;
+}
+
+Dwarf_Die dwarfif_follow_attr_until(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half follow_attr, Dwarf_Half until_tag)
+{
+	Dwarf_Error	err;
+	Dwarf_Half	tag;
+
+	while (1) {
+
+		if (dwarf_tag(die, &tag, &err) != DW_DLV_OK) {
+			return NULL;
+		}
+
+		if (tag == until_tag) {
+			return die;
+		}
+
+		die = dwarfif_follow_attr(dbg, die, follow_attr);
+
+		if (die == NULL)
+			return NULL;
+
+	}
 }
 
 int dwarfif_die_has_typetag(Dwarf_Die die)
@@ -297,24 +291,19 @@ void *dwarfif_find_static_var_address(task_register_cons *trc, Dwarf_Die var)
 	Dwarf_Error	  err;
 	Dwarf_Attribute	  attr;
 	Dwarf_Block	 *location_block;
-	int		  res;
 	Dwarf_Locdesc	**ldl;
 	Dwarf_Signed	  noe;
 
 	if (dwarf_attr(var, DW_AT_location, &attr, &err) != DW_DLV_OK) {
-		DEBUG_MSG("Could not find location attribute for variable. (%s)\n", dwarf_errmsg(err));
 		return NULL;
 	}
 
 	if (dwarf_formblock(attr, &location_block, &err) != DW_DLV_OK) {
-		DEBUG_MSG("Could not get location block for variable.\n");
 		return NULL;
 	}
 
-	res = dwarf_loclist_n(attr, &ldl, &noe, &err);
-
-	if (res != DW_DLV_OK) {
-		DEBUG_MSG("Got no location list for variable.\n");
+	if (dwarf_loclist_n(attr, &ldl, &noe, &err) != DW_DLV_OK) {
+		return NULL;
 	}
 
 	Dwarf_Loc *loc = ldl[0]->ld_s;
