@@ -39,6 +39,10 @@
 #include <System/system.h>
 #include <System/task_manager.h>
 #include <System/elf.h>
+#ifdef RTU_POINTER_TRACEING
+#include <System/pointer_tracer.h>
+#include <System/system_util.h>
+#endif /* RTU_POINTER_TRACEING */
 
 #include <App/rtu.h>
 
@@ -60,6 +64,162 @@ request_hook_fn_t migrator_find_request_hook(task_register_cons *trc)
 	return ret;
 }
 
+#ifdef RTU_POINTER_TRACEING
+
+#include <dwarf.h>
+
+struct runtime_update_cb_arg_t {
+	u_int32_t lower_bound;
+	u_int32_t upper_bound;
+};
+
+static int runtime_update_die_cb(pt_pstate *pstate, Dwarf_Die die, void *arg)
+{
+	struct runtime_update_cb_arg_t	*bounds = arg;
+	Dwarf_Die			 type_die;
+	Dwarf_Half			 tag;
+	Dwarf_Error			 err;
+	int				 res;
+	char				*name;
+
+	res = dwarf_diename(die, &name, &err);
+	if (res == DW_DLV_ERROR) {
+		ERROR_MSG("runtime_update_die_cb(): dwarf_diename() fail.\n");
+		return 0;
+	}
+	if (res == DW_DLV_NO_ENTRY) {
+		name = "<no DW_AT_name attr>";
+	}
+	res = dwarf_tag(die, &tag, &err) ;
+	if (res != DW_DLV_OK) {
+		ERROR_MSG("runtime_update_die_cb(): dwarf_tag() fail.\n");
+		return 0;
+	}
+	if (tag != DW_TAG_variable)
+		return 1;
+	if (dwarfif_get_type_die(pstate->dbg, die, &type_die)) {
+		task_register_cons *trc = pstate->trc;
+		void *p = dwarfif_find_static_var_address(trc, die);
+		u_int32_t address = (u_int32_t)p;
+		DEBUG_MSG("Found variable @ 0x%x, we have lower_bound = 0x%x and upper_bound = 0x%x\n",
+			  address, bounds->lower_bound, bounds->upper_bound);
+		if (p != NULL && address >= bounds->lower_bound && address < bounds->upper_bound) {
+			DEBUG_MSG("Found static variable \"%s\" @ 0x%x.\n", name, (u_int32_t)p);
+			INFO_MSG("Found type for variable %s\n", name);
+
+			if (!pt_trace_pointer(pstate, type_die, p)) {
+				DEBUG_MSG("Pointer tracing failed.\n");
+			} else {
+				DEBUG_MSG("Pointer tracing succeeded.\n");
+			}
+		}
+	} else {
+		INFO_MSG("Could not get type die for variable.\n");
+	}
+	return 1;
+}
+
+static void *migrator_rtu_get_new_relocation_address(pt_pstate *pstate, int32_t rtu_data_delta, void *var_p, void *section_p)
+{
+	/*
+	 * Find the pointers section.
+	 */
+
+	task_dynmemsect_cons	criterion_a = { .ptr = section_p };
+	pt_dyn_memsect		criterion_b = { .tdc_p = &criterion_a };
+
+	pt_dyn_memsect	*dms   = RB_FIND(pt_dyn_memsect_tree_t, &pstate->included_memsects, &criterion_b);
+
+	void	*new_section_p;
+	size_t	 new_section_size;
+	void	*new_p;
+
+	if (dms == NULL) {
+		/*
+		 * We did not find a dynamic memory
+		 * section, we will try to find out if
+		 * the variable is in the static
+		 * memory section.
+		 */
+		new_section_p    = pstate->trc->cont_mem;
+		new_section_size = pstate->trc->cont_mem_size;
+		new_p		 = (void *)((u_int32_t)var_p + rtu_data_delta);
+	} else {
+		/*
+		 * We do have a dynamic section.
+		 */
+		new_section_p	 = dms->tdc_p->ptr;
+		new_section_size = dms->tdc_p->size;
+		new_p		 = (void *)((u_int32_t)var_p + dms->delta_p);
+	}
+
+	if (!util_pointer_in_section(new_section_p, new_section_size, var_p)) {
+		/*
+		 * Pointer not in supposed section.
+		 */
+		return NULL;
+	}
+
+	return new_p;
+}
+
+#if 0
+
+/*
+ * This is a usable but not at the moment needed implementation of the
+ * get_new_relocation_address functionality.
+ */
+
+static void *migrator_get_new_relocation_address(pt_pstate *pstate, task_register_cons *new_trc, void *var_p, void *section_p)
+{
+	/*
+	 * Find the pointers section.
+	 */
+
+	task_dynmemsect_cons	criterion_a = { .ptr = section_p };
+	pt_dyn_memsect		criterion_b = { .tdc_p = &criterion_a };
+
+	pt_dyn_memsect	*dms   = RB_FIND(pt_dyn_memsect_tree_t, &pstate->included_memsects, &criterion_b);
+
+	int32_t static_delta_p = (u_int32_t)new_trc->cont_mem - (u_int32_t)pstate->trc->cont_mem;
+
+	void	*new_section_p;
+	size_t	 new_section_size;
+	void	*new_p;
+
+	if (dms == NULL) {
+		/*
+		 * We did not find a dynamic memory
+		 * section, we will try to find out if
+		 * the variable is in the static
+		 * memory section.
+		 */
+		new_section_p    = pstate->trc->cont_mem;
+		new_section_size = pstate->trc->cont_mem_size;
+		new_p		 = (void *)((u_int32_t)var_p + static_delta_p);
+	} else {
+		/*
+		 * We do have a dynamic section.
+		 */
+		new_section_p	 = dms->tdc_p->ptr;
+		new_section_size = dms->tdc_p->size;
+		new_p		 = (void *)((u_int32_t)var_p + dms->delta_p);
+	}
+
+	if (!util_pointer_in_section(new_section_p, new_section_size, var_p)) {
+		/*
+		 * Pointer not in supposed section.
+		 */
+		return NULL;
+	}
+
+	return new_p;
+}
+
+#endif /* 0 */
+
+#endif /* RTU_POINTER_TRACEING */
+
 int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 {
 	/*
@@ -68,12 +228,12 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	vTaskSuspend(trc->task_handle);
 
 	/*
-	 * Check elf magic on the new software
+	 * Check elf magic on the new software.
 	 */
 
 	if (!check_elf_magic(new_sw)) {
 		ERROR_MSG("MIGRATOR: elf magic on new software does not check out.\n");
-		return 0;
+		goto error_L0;
 	}
 
 	/*
@@ -87,6 +247,9 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 		ERROR_MSG("could not allocate memory while run-time updating task \"%s\"\n", trc->name);
 		return 0;
 	}
+	/*
+	 * -> Error level 1.
+	 */
 
 	new_trc->name	       = trc->name;
 	new_trc->elfh	       = new_sw;
@@ -99,21 +262,21 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	if (!task_alloc(new_trc)) {
 		ERROR_MSG("Could not allocate memory when run-time updating task \"%s\"\n",
 			  new_trc->name);
-		SYSTEM_FREE_CALL(new_trc);
-		return 0;
+		goto error_L1;
 	}
+
+	/*
+	 * -> Error level 2.
+	 */
 
 	/*
 	 * Link the new software.
 	 */
 
-
 	if (!task_link(new_trc)) {
 		ERROR_MSG("Could not link new software when doing run-time update on task \"%s\"\n",
 			  new_trc->name);
-		task_free(new_trc);
-		SYSTEM_FREE_CALL(new_trc);
-		return 0;
+		goto error_L2;
 	}
 
 	/*
@@ -125,32 +288,26 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	if (new_trc->request_hook == NULL) {
 		ERROR_MSG("Could not find checkpoint request hook when run-time updating task \"%s\"\n",
 			  new_trc->name);
-		task_free(new_trc);
-		SYSTEM_FREE_CALL(new_trc);
-		return 0;
+		goto error_L2;
 	}
 
 	/*
 	 * Find the .rtu_data sections.
 	 */
 
-	Elf32_Half old_rtu_ndx = find_section_index(RTU_DATA_SECTION_NAME, trc->elfh);
-	Elf32_Half new_rtu_ndx = find_section_index(RTU_DATA_SECTION_NAME, new_trc->elfh);
-	Elf32_Shdr *old_rtu = find_section(RTU_DATA_SECTION_NAME, trc->elfh);
-	Elf32_Shdr *new_rtu = find_section(RTU_DATA_SECTION_NAME, new_trc->elfh);
+	Elf32_Half	 old_rtu_ndx = find_section_index(RTU_DATA_SECTION_NAME, trc->elfh);
+	Elf32_Half	 new_rtu_ndx = find_section_index(RTU_DATA_SECTION_NAME, new_trc->elfh);
+	Elf32_Shdr	*old_rtu     = find_section(RTU_DATA_SECTION_NAME, trc->elfh);
+	Elf32_Shdr	*new_rtu     = find_section(RTU_DATA_SECTION_NAME, new_trc->elfh);
 
 	if (old_rtu_ndx == 0 || new_rtu_ndx == 0 || old_rtu == NULL || new_rtu == NULL) {
 		ERROR_MSG("could not find \"" RTU_DATA_SECTION_NAME "\" sections in elfs\n");
-		task_free(new_trc);
-		SYSTEM_FREE_CALL(new_trc);
-		return 0;
+		goto error_L2;
 	}
 
 	if (old_rtu->sh_size != new_rtu->sh_size) {
 		ERROR_MSG("size mismatch in \"" RTU_DATA_SECTION_NAME "\" sections between software versions.\n");
-		task_free(new_trc);
-		SYSTEM_FREE_CALL(new_trc);
-		return 0;
+		goto error_L2;
 	}
 
 	void *old_rtu_mem = task_get_section_address(trc, old_rtu_ndx);
@@ -158,10 +315,74 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 
 	if (old_rtu_mem == NULL || new_rtu_mem == NULL) {
 		ERROR_MSG("could not find allocated memory for section \"" RTU_DATA_SECTION_NAME "\".\n");
-		task_free(new_trc);
-		SYSTEM_FREE_CALL(new_trc);
-		return 0;
+		goto error_L2;
 	}
+
+#ifdef RTU_POINTER_TRACEING
+
+	struct runtime_update_cb_arg_t cb_arg =
+		{ .lower_bound		      = (u_int32_t)trc->cont_mem + old_rtu->sh_addr,
+		  .upper_bound		      = (u_int32_t)trc->cont_mem + old_rtu->sh_addr + old_rtu->sh_size };
+	Dwarf_Debug	dbg;
+	pt_pstate	pstate;
+
+	if (!dwarfif_init(trc, &dbg)) {
+		ERROR_MSG("Could not get debug object.\n");
+		goto error_L2;
+	}
+
+	/*
+	 * Trace pointers in the .rtu_data section.
+	 */
+
+	if (!pt_pstate_init(&pstate, dbg, trc)) {
+		ERROR_MSG("pt_pstate_init() fail.\n");
+		goto error_L2;
+	}
+
+	/*
+	 * -> error_L2_rtu0
+	 */
+
+	/*
+	 * We need the static memory section for pointer traceing.
+	 */
+
+	DEBUG_MSG("Traceing pointers...\n");
+
+	if (!pt_iterate_dies(&pstate, runtime_update_die_cb, &cb_arg)) {
+		ERROR_MSG("pt_iterate_dies() fail.\n");
+		goto error_L2_rtu0;
+	} else {
+		DEBUG_MSG("Pointer traceing successful.\n");
+	}
+
+	/*
+	 * Allocate new dynamic memory section, copy the section from
+	 * the old to the new, and calculate pointer deltas.
+	 */
+
+	{
+		pt_dyn_memsect *dmsp;
+
+		RB_FOREACH(dmsp, pt_dyn_memsect_tree_t, &pstate.included_memsects) {
+			u_int32_t	new_p = (u_int32_t)task_apptask_malloc(dmsp->tdc_p->size, new_trc);
+			u_int32_t	old_p = (u_int32_t)dmsp->tdc_p->ptr;
+
+			if (new_p == 0) {
+				ERROR_MSG("Error allocating dynamic memory section with size %u.\n", dmsp->tdc_p->size);
+				goto error_L2_rtu0;
+			}
+
+			memcpy((void *)new_p, (void *)old_p, dmsp->tdc_p->size);
+
+			dmsp->delta_p = new_p - old_p;
+			DEBUG_MSG("Copied %u bytes from 0x%x to 0x%x, delta_p = %i\n",
+				  dmsp->tdc_p->size, old_p, new_p, dmsp->delta_p);
+		}
+	}
+
+#endif /* RTU_POINTER_TRACEING */
 
 	/*
 	 * Copy the .rtu_data section from the old to the new
@@ -170,6 +391,82 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 */
 
 	memcpy((void *)new_rtu_mem, (void *)old_rtu_mem, old_rtu->sh_size);
+
+#ifdef RTU_POINTER_TRACEING
+
+	/*
+	 * For each visited pointer variable, update the pointed-to
+	 * address.
+	 */
+
+	int32_t rtu_data_delta = (u_int32_t)new_rtu_mem - (u_int32_t)old_rtu_mem;
+
+	{
+		pt_visited_variable	*vvp;
+
+		RB_FOREACH(vvp, pt_visited_variable_tree_t, &pstate.visited_variables) {
+			Dwarf_Error	err;
+			Dwarf_Half	tag;
+
+			if (dwarf_tag(vvp->type_die, &tag, &err) != DW_DLV_OK) {
+				ERROR_MSG("Could not get tag for type_die.\n");
+				goto error_L2_rtu0;
+			}
+
+			if (tag != DW_TAG_pointer_type) {
+				continue;
+			}
+
+			/*
+			 * Get the address of the relocated pointer.
+			 */
+
+			void *rel_p = migrator_rtu_get_new_relocation_address
+				(&pstate, rtu_data_delta, vvp->mem_p, vvp->section_p);
+
+			if (rel_p == NULL) {
+				ERROR_MSG("Could not find address for relocated variable "
+					  "from @ 0x%x", (u_int32_t)vvp->mem_p);
+				goto error_L2_rtu0;
+			}
+
+			/*
+			 * Get the address of the variable pointed to
+			 * by the relocated pointer.
+			 */
+
+		        void	*p_val	       = (void *)*(u_int32_t *)vvp->mem_p;
+			void    *p_val_section = pt_get_included_section_pointer
+				(&pstate, p_val);
+
+			if (p_val_section == NULL) {
+				DEBUG_MSG("Pointer not pointing to any included memory section, continuing.\n");
+				continue;
+			}
+
+			void *rel_p_val = migrator_rtu_get_new_relocation_address
+				(&pstate, rtu_data_delta, p_val, p_val_section);
+
+			/*
+			 * Write out the value.
+			 */
+
+			DEBUG_MSG("Setting variable @ 0x%x to 0x%x\n",
+				  (u_int32_t)rel_p, (u_int32_t)rel_p_val);
+
+			*(u_int32_t *)rel_p = (u_int32_t)rel_p_val;
+		}
+	}
+
+	pt_pstate_free(&pstate);
+
+	if (0) {
+	error_L2_rtu0:
+		pt_pstate_free(&pstate);
+		goto error_L2;
+	}
+
+#endif /* RTU_POINTER_TRACEING */
 
 	/*
 	 * Free the old software, delete old task, create new task,
@@ -207,6 +504,12 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	task_free(trc);
 	SYSTEM_FREE_CALL(trc);
 	return 1;
+ error_L2:
+	task_free(new_trc);
+ error_L1:
+	SYSTEM_FREE_CALL(new_trc);
+ error_L0:
+	return 0;
 }
 
 void migrator_task(void *arg)
