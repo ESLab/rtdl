@@ -89,7 +89,7 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 	pt_visited_variable search_criterion = { .mem_p = new_p };
 
 	pt_visited_variable *found_v =
-		RB_FIND(pt_visited_variable_tree_t, 
+		RB_FIND(pt_visited_variable_tree_t,
 			&state->visited_variables, &search_criterion);
 
 	if (found_v != NULL) {
@@ -154,16 +154,18 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 	 * Make a new visited_variable node.
 	 */
 
-	Dwarf_Die new_type_die = dwarfif_follow_attr_until(state->dbg, v->type_die, DW_AT_type, DW_TAG_pointer_type);
-	
+	Dwarf_Die new_type_die = dwarfif_follow_attr(state->dbg, v->type_die, DW_AT_type);
+	new_type_die = dwarfif_follow_attr_until(state->dbg, new_type_die, DW_AT_type, DW_TAG_pointer_type);
+
 	if (new_type_die == NULL) {
 		/*
-		 * We did not find a new pointer, return.
+		 * We did not find a new pointer (variable atomic),
+		 * return.
 		 */
 		DEBUG_MSG("Did not find a new pointer.\n");
 		return 1;
 	}
-	
+
 	if (new_section_p == NULL) {
 		/*
 		 * Pointer pointing to something other than a memory
@@ -181,9 +183,9 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 	}
 
 	new_v->type_die	 = new_type_die;
-	new_v->p	 = new_p;
+	new_v->mem_p	 = (void *)new_p;
 	new_v->section_p = new_section_p;
-	
+
 	DEBUG_MSG("Following pointer 0x%x\n", (u_int32_t)new_p);
 
 	return pt_internal_trace_pointer(state, new_v);
