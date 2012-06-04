@@ -32,6 +32,7 @@
 #include <System/tree.h>
 #include <System/task_manager.h>
 #include <System/dwarfif.h>
+#include <System/system.h>
 
 #include <libdwarf.h>
 
@@ -41,6 +42,19 @@
 
 typedef struct pt_dyn_memsect_t {
 	task_dynmemsect_cons    *tdc_p;
+
+#ifdef RTU_POINTER_TRACEING
+	/*
+	 * delta_p is used when memory section are relocated. The
+	 * address of the pointer to the new memory section is new_p =
+	 * p + delta_p.
+	 *
+	 * Comment: This variable should in principle be inside the
+	 * migrator module.
+	 */
+	int32_t                  delta_p;
+#endif /* RTU_POINTER_TRACEING */
+
 	RB_ENTRY(pt_dyn_memsect_t) tree_e;
 } pt_dyn_memsect;
 
