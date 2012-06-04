@@ -32,6 +32,7 @@
 #include <System/pointer_tracer.h>
 #include <System/tree.h>
 #include <System/system.h>
+#include <System/system_util.h>
 
 #include <dwarf.h>
 #include <libdwarf.h>
@@ -278,4 +279,35 @@ int pt_iterate_dies(pt_pstate *pstate, pt_die_cb_fun_t *fun, void *arg)
 
 	    dwarf_dealloc(pstate->dbg, cu_die, DW_DLA_DIE);
     }
+}
+
+void *pt_get_included_section_pointer(pt_pstate *pstate, void *p)
+{
+	task_dynmemsect_cons	criterion_a = { .ptr   = p };
+	pt_dyn_memsect		criterion_b = { .tdc_p = &criterion_a };
+
+	pt_dyn_memsect *dms = RB_NFIND(pt_dyn_memsect_tree_t, &pstate->included_memsects, &criterion_b);
+
+	void	*section_p;
+	size_t	 section_size;
+
+	if (dms == NULL) {
+		/*
+		 * Did not find a dynamic section. We will fall back
+		 * on the static section.
+		 */
+		section_p    = pstate->trc->cont_mem;
+		section_size = pstate->trc->cont_mem_size;
+	} else {
+		/*
+		 * We did find a dynamic section, return it if the pointer
+		 * appears to be in it.
+		 */
+		section_p    = dms->tdc_p->ptr;
+		section_size = dms->tdc_p->size;
+	}
+
+	return util_pointer_in_section
+		(section_p, section_size, p) ?
+		section_p : NULL;
 }
