@@ -38,17 +38,23 @@
 #include <App/rtu.h>
 
 int _RTU_DATA_ state1 = 0;
-int _RTU_DATA_ state2 = 0;
+int _RTU_DATA_ *state2 = NULL;
 
 int rtu_requested;
 
 void cpRequestHook(cp_req_t req_type)
 {
+	printf("rtuappv2 checkpoint request\n");
 	rtu_requested = 1;
 }
 
 int main()
 {
+	if (state2 == NULL) {
+		state2 = apptask_malloc(sizeof(int));
+		*state2 = 0;
+	}
+	printf("rtuapp_v2: got memory area @ 0x%x (pointer @ 0x%x)\n", (u_int32_t)state2, (u_int32_t)&state2);
 	rtu_requested = 0;
 	while (1) {
 		if (rtu_requested) {
@@ -58,8 +64,8 @@ int main()
 		}
 		vTaskDelay(100);
 		state1 += 2;
-		state2 += 4;
-		printf("rtu_app v2: (%i,%i)\n", state1, state2);
+		*state2 += 4;
+		printf("rtu_app v2: (%i,%i)\n", state1, *state2);
 	}
 }
 
