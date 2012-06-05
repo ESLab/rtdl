@@ -50,6 +50,7 @@ fout = open("build.ninja","w")
 n = ninja_syntax.Writer(fout)
 
 devkitdir = "/export/home/aton4/wlund/bin/devkitARM/bin/"
+#devkitdir = "/tmp/devkitARM/bin/"
 sourcedir = "."
 
 includedirs = [sourcedir,
@@ -58,9 +59,9 @@ includedirs = [sourcedir,
                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
                sourcedir + "/libdwarf"]
 
-n.variable(key="cc", value="arm-eabi-gcc")
-n.variable(key="ld", value="arm-eabi-ld")
-n.variable(key="objcopy", value="arm-eabi-objcopy")
+n.variable(key="cc", value=devkitdir + "arm-eabi-gcc")
+n.variable(key="ld", value=devkitdir + "arm-eabi-ld")
+n.variable(key="objcopy", value=devkitdir + "arm-eabi-objcopy")
 n.variable(key="mkimage", value="mkimage")
 n.variable(key="cloc", value="cloc")
 n.variable(key="cscope", value="cscope")
@@ -154,63 +155,43 @@ for f in list(fs):
             rule = "cc",
             inputs = f)
 
-systemelf = "system.elf"
-systembin = "system.bin"
-systemuimg = "system.uimg"
-n.build(outputs = systemelf,
-        rule = "link",
-        inputs = map(lambda f: get_object_file(f), system_files),
-        variables = {'ldflags': '-nostartfiles -Wl,-T,System/system.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit = map(lambda f: f + ".ld", applications) + ["System/system.ld", "System/applications.ld"])
-n.build(outputs = systembin,
+def gen_step_build(name, inputs, implicit, ldfiles):
+    i = 0
+    for ldf in ldfiles[0:-1]:
+        elffile    = builddir + name + "." + str(i) + ".elf"
+        symelffile = builddir + name + "." + str(i) + ".sym.elf"
+        ldfile     = builddir + name + "." + str(i) + ".ld"
+        n.build(outputs   = elffile,
+                rule      = "link",
+                inputs    = inputs,
+                variables = {'ldflags': '-nostartfiles -Wl,-T,' + ldf + ' -mcpu=cortex-a9 -g3 -gdwarf-3'},
+                implicit  = [builddir + name + "." + str(i - 1) + ".ld", ldf] if i > 0 else [ldf] + implicit)
+        n.build(outputs   = symelffile,
+                rule      = "objcopy",
+                inputs    = elffile,
+                variables = {'ocflags':'--extract-symbol'})
+        n.build(outputs   = ldfile,
+                rule      = "app_ld",
+                inputs    = symelffile)
+        i += 1
+    lastnldfile       = builddir + name + "." + str(i - 1) + ".ld"
+    n.build(outputs   = name + ".elf",
+            rule      = "link",
+            inputs    = inputs,
+            variables = {'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9 -g3 -gdwarf-3'},
+            implicit  = [lastnldfile] + implicit)
+
+gen_step_build("system", map(lambda f: get_object_file(f), system_files),
+               map(lambda f: f + ".ld", applications) + ["System/applications.ld"],
+               ["System/system.0.ld", "System/system.1.ld", "System/system.2.ld"])
+
+n.build(outputs = "system.bin",
         rule = "objcopy",
-        inputs = systemelf,
+        inputs = "system.elf",
         variables = {'ocflags': '-O binary'})
-n.build(outputs = systemuimg,
+n.build(outputs = "system.uimg",
         rule = "mkimage",
-        inputs = systembin)
-
-systemext_elf = "system_ext_.elf"
-systemextelf = "system_ext.elf"
-systemextbin = "system_ext.bin"
-systemextuimg = "system_ext.uimg"
-
-n.build(outputs = "system_sym.elf",
-        rule = "objcopy",
-        inputs = systemext_elf,
-        variables = {'ocflags':'--extract-symbol'})
-n.build(outputs = "system_sym_.elf",
-        rule = "objcopy",
-        inputs = systemelf,
-        variables = {'ocflags':'--extract-symbol'})
-
-n.build(outputs = "system_elf.ld",
-        rule = "app_ld",
-        inputs = "system_sym.elf")
-n.build(outputs = "system_elf_.ld",
-        rule = "app_ld",
-        inputs = "system_sym_.elf")
-
-n.build(outputs = systemextelf,
-        rule = "link",
-        inputs = map(lambda f: get_object_file(f), system_files),
-        variables = {'ldflags': '-nostartfiles -Wl,-T,System/system_ext.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit = ["System/system_ext.ld", "System/applications.ld",
-                    "system_elf.ld"] + map(lambda a: a + ".ld", applications.keys()))
-n.build(outputs = systemext_elf,
-        rule = "link",
-        inputs = map(lambda f: get_object_file(f), system_files),
-        variables = {'ldflags': '-nostartfiles -Wl,-T,System/system_ext_.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit = ["System/system_ext_.ld", "System/applications.ld",
-                    "system_elf_.ld"] + map(lambda a: a + ".ld", applications.keys()))
-
-n.build(outputs = systemextbin,
-        rule = "objcopy",
-        inputs = systemextelf,
-        variables = {'ocflags': '-O binary'})
-n.build(outputs = systemextuimg,
-        rule = "mkimage",
-        inputs = systemextbin)
+        inputs = "system.bin")
 
 n.build(outputs = "cloc_report.log",
         rule = "cloc",
@@ -232,4 +213,4 @@ for a in applications:
             rule = "app_ld",
             inputs = elffile)
 
-n.default([systemextuimg, "cloc_report.log", "cscope.out"])
+n.default(["system.uimg", "cloc_report.log", "cscope.out"])

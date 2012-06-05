@@ -65,7 +65,7 @@ SECTIONS
     } > ram
     .system_elf : {
         _system_elf_start = .;
-	INCLUDE "system_elf.ld";
+	INCLUDE "build/system.1.ld";
 	_system_elf_end = .;
     }
     .bss :
