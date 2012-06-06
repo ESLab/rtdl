@@ -35,7 +35,7 @@ fi
 DEBUG=0
 
 if [ X$DEBUG == X1 ]; then
-    qemu-system-arm -M vexpress-a9 -serial stdio -s -S -kernel $1
+    qemu-system-arm -M vexpress-a9 -smp 4 -serial stdio -s -S -kernel $1
 else
-    qemu-system-arm -M vexpress-a9 -serial stdio -kernel $1
+    qemu-system-arm -M vexpress-a9 -smp 4 -serial stdio -kernel $1
 fi
