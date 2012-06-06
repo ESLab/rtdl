@@ -35,7 +35,11 @@ def get_basename(filename):
     return filename.split("/")[-1].split(".")[0]
 
 def get_object_file(filename, object_postfix = '', in_app = False):
-    return builddir + ("app_" if in_app else "") + get_basename(filename) + object_postfix + ".o"
+    dirprefix = ""
+    for s in filename.split('/')[0:-1]:
+        dirprefix += s.lower() + "_"
+    return builddir + dirprefix + ("app_" if in_app else "") + \
+        get_basename(filename) + object_postfix + ".o"
 
 def get_include_args(dirs):
     ret = ""
