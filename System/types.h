@@ -30,13 +30,26 @@
 
 #include <sys/types.h>
 
-typedef signed char int8_t;
-typedef unsigned char u_int8_t;
-typedef short int16_t;
-typedef unsigned short u_int16_t;
-typedef int int32_t;
-typedef unsigned int u_int32_t;
-typedef long long int64_t;
-typedef unsigned long long u_int64_t;
+typedef signed char		int8_t;
+typedef unsigned char		u_int8_t;
+typedef short			int16_t;
+typedef unsigned short		u_int16_t;
+typedef int			int32_t;
+typedef unsigned int		u_int32_t;
+typedef long long		int64_t;
+typedef unsigned long long	u_int64_t;
+/*
+ * Native pointer integer types.
+ */
+typedef u_int32_t		npi_t;
+typedef int32_t			npi_d_t;
+/*
+ * Memory size types.
+ */
+typedef size_t			ms_t;
+/*
+ * Minimal addressable type.
+ */
+typedef u_int8_t		ma_t;
 
 #endif /* SYSTEM_TYPES_H */
