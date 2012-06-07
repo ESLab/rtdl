@@ -120,16 +120,24 @@ applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
                  'rtuappv1': ['App/app_startup.S', 'App/rtu_appv1.c'],
                  'rtuappv2': ['App/app_startup.S', 'App/rtu_appv2.c'] }
 
+vexpress_boot_files = map(lambda f: "System/vexpress-boot/" + f,
+                          ["loader.c", "loader-startup.S"])
+vexpress_kernel_files = map(lambda f: "System/vexpress-kernel/" + f,
+                            ["main.c", "kernel-startup.S"])
+
 libdwarf_files = glob.glob('libdwarf/*.c')
+
+system_utility_files = \
+    ['System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c']
 
 system_files = \
     libdwarf_files + \
     freertos_files + \
     ['App/startup.S', 'System/main.c', 'System/task_manager.c',
      'System/pointer_tracer.c', 'System/linker.c', 'System/migrator.c',
-     'System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c',
      'System/umm/umm_malloc.c', 'System/qsort.c', 'System/dwarfif.c',
-     'System/system_util.c']
+     'System/system_util.c'] + \
+     system_utility_files
 
 contributed_files = \
     ['System/applications.h', 'System/dwarfif.c', 'System/dwarfif.h',
@@ -145,7 +153,7 @@ for a in applications:
         app_fs.add(f)
 
 fs = set()
-for f in system_files:
+for f in system_files + vexpress_boot_files + vexpress_kernel_files:
     fs.add(f)
 
 for f in list(app_fs):
@@ -184,18 +192,44 @@ def gen_step_build(name, inputs, implicit, ldfiles):
             inputs    = inputs,
             variables = {'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9 -g3 -gdwarf-3'},
             implicit  = [lastnldfile] + implicit)
+    n.build(outputs   = name + ".bin",
+            rule      = "objcopy",
+            inputs    = name + ".elf",
+            variables = {'ocflags': '-O binary'})
+    n.build(outputs   = name + ".uimg",
+            rule      = "mkimage",
+            inputs    = name + ".bin")
+
 
 gen_step_build("system", map(lambda f: get_object_file(f), system_files),
                map(lambda f: f + ".ld", applications) + ["System/applications.ld"],
                ["System/system.0.ld", "System/system.1.ld", "System/system.2.ld"])
 
-n.build(outputs = "system.bin",
-        rule = "objcopy",
-        inputs = "system.elf",
+
+
+n.build(outputs   = builddir + "vexpress-kernel.elf",
+        rule      = "link",
+        inputs    = map(lambda f: get_object_file(f), freertos_files + vexpress_kernel_files +
+                     system_utility_files),
+        variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/vexpress-kernel/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
+        implicit  = ["System/vexpress-kernel/kernel.ld"])
+n.build(outputs   = builddir + "vexpress-kernel.ld",
+        rule      = "app_ld",
+        inputs    = builddir + "vexpress-kernel.elf")
+
+n.build(outputs   = "vexpress-boot.elf",
+        rule      = "link",
+        inputs    = map(lambda f: get_object_file(f), vexpress_boot_files + system_utility_files),
+        variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/vexpress-boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
+        implicit  = ["System/vexpress-boot/loader.ld", builddir + "vexpress-kernel.ld"])
+n.build(outputs   = "vexpress-boot.bin",
+        rule      = "objcopy",
+        inputs    = "vexpress-boot.elf",
         variables = {'ocflags': '-O binary'})
-n.build(outputs = "system.uimg",
-        rule = "mkimage",
-        inputs = "system.bin")
+n.build(outputs   = "vexpress-boot.uimg",
+        rule      = "mkimage",
+        inputs    = "vexpress-boot.bin")
+
 
 n.build(outputs = "cloc_report.log",
         rule = "cloc",
@@ -206,15 +240,15 @@ n.build(outputs = "cscope.out",
         inputs = list(set.union(app_fs,fs)))
 
 for a in applications:
-    elffile = a + ".elf"
-    ldfile = a + ".ld"
-    n.build(outputs = elffile,
-            rule = "link",
-            inputs = map(lambda f: get_object_file(f, in_app = True), applications[a]),
+    elffile           = a + ".elf"
+    ldfile            = a + ".ld"
+    n.build(outputs   = elffile,
+            rule      = "link",
+            inputs    = map(lambda f: get_object_file(f, in_app = True), applications[a]),
             variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpucortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
-            implicit = "App/app.ld")
-    n.build(outputs = ldfile,
-            rule = "app_ld",
-            inputs = elffile)
+            implicit  = "App/app.ld")
+    n.build(outputs   = ldfile,
+            rule      = "app_ld",
+            inputs    = elffile)
 
-n.default(["system.uimg", "cloc_report.log", "cscope.out"])
+n.default(["vexpress-boot.uimg", "system.uimg", "cloc_report.log", "cscope.out"])
