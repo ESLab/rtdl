@@ -120,9 +120,9 @@ applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
                  'rtuappv1': ['App/app_startup.S', 'App/rtu_appv1.c'],
                  'rtuappv2': ['App/app_startup.S', 'App/rtu_appv2.c'] }
 
-vexpress_boot_files = map(lambda f: "System/vexpress-boot/" + f,
-                          ["loader.c", "loader-startup.S"])
-vexpress_kernel_files = map(lambda f: "System/vexpress-kernel/" + f,
+vexpress_boot_files   = map(lambda f: "System/arch/vexpress/" + f,
+                            ["boot/loader.c", "boot/loader-startup.S"])
+vexpress_kernel_files = map(lambda f: "System/arch/vexpress/" + f,
                             ["main.c", "kernel-startup.S"])
 
 libdwarf_files = glob.glob('libdwarf/*.c')
@@ -211,8 +211,8 @@ n.build(outputs   = builddir + "vexpress-kernel.elf",
         rule      = "link",
         inputs    = map(lambda f: get_object_file(f), freertos_files + vexpress_kernel_files +
                      system_utility_files),
-        variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/vexpress-kernel/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit  = ["System/vexpress-kernel/kernel.ld"])
+        variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
+        implicit  = ["System/arch/vexpress/kernel.ld"])
 n.build(outputs   = builddir + "vexpress-kernel.ld",
         rule      = "app_ld",
         inputs    = builddir + "vexpress-kernel.elf")
@@ -220,8 +220,8 @@ n.build(outputs   = builddir + "vexpress-kernel.ld",
 n.build(outputs   = "vexpress-boot.elf",
         rule      = "link",
         inputs    = map(lambda f: get_object_file(f), vexpress_boot_files + system_utility_files),
-        variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/vexpress-boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit  = ["System/vexpress-boot/loader.ld", builddir + "vexpress-kernel.ld"])
+        variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
+        implicit  = ["System/arch/vexpress/boot/loader.ld", builddir + "vexpress-kernel.ld"])
 n.build(outputs   = "vexpress-boot.bin",
         rule      = "objcopy",
         inputs    = "vexpress-boot.elf",
