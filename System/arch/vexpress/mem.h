@@ -25,53 +25,13 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-ENTRY(Vector_Init);
+#ifndef VEXPRESS_MIS_H
+#define VEXPRESS_MIS_H
 
-MEMORY
-{
-	ram (rwx) : ORIGIN = 0x60100000, LENGTH = ( 64M )
-	//flash (rx) : ORIGIN = 0x10000, LENGTH = ( 64M - 0x10000 )
-	//ram (rwx) : ORIGIN = 0x4001000, LENGTH = ( 128M - 0x1000 )
-	//sdram (rwx) : ORIGIN = 0x20000000, LENGTH = 512M
-}
+#define MIS_ADDRESS				((void *)0x60200000)
+#define MIS_PAGESIZE			0x100000
+#define KERNEL_ALLOC_PAGES      10
+#define KERNEL_ALLOC_SIZE		(KERNEL_ALLOC_PAGES * MIS_PAGESIZE)
+#define KERNEL_START_ADDRESS(n) (MIS_ADDRESS + MIS_PAGESIZE + KERNEL_ALLOC_SIZE*(n))
 
-PROVIDE(__stack_offset = 0x00000);
-
-SECTIONS
-{
-    .dynsym : { *(.dynsym) }
-    .rel.dyn : { *(.rel.dyn) }
-    .plt : { *(.plt) }
-    .text :
-    {
-        _text = .;
-        __isr_vector_start = .;
-        *(.isr_vector)
-        __isr_vector_end = .;
-        *(.text*)
-        *(.rodata*)
-        _etext = .;
-    } > ram
-
-    .data : AT(ADDR(.text) + SIZEOF(.text))
-    {
-        _data = .;
-        *(vtable)
-        *(.data*)
-        _edata = .;
-    } > ram
-    .dynamic : { *(.dynamic) }
-    .kernel : {
-    	    _kernel_elf_start = .;
-    	    INCLUDE "build/vexpress-kernel.ld"
-	    _kernel_elf_end = .;
-    } > ram
-    .bss :
-    {
-        _bss = .;
-        *(.bss*)
-        *(COMMON)
-        _ebss = .;
-    } > ram
-}
-
+#endif /* VEXPRESS_MIS_H */

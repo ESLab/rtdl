@@ -69,6 +69,7 @@ n.variable(key="objcopy", value=devkitdir + "arm-eabi-objcopy")
 n.variable(key="mkimage", value="mkimage")
 n.variable(key="cloc", value="cloc")
 n.variable(key="cscope", value="cscope")
+n.variable(key="image_address", value="0x10000")
 
 # -Werror
 
@@ -91,7 +92,7 @@ n.rule(name = "objcopy",
        description = "OBJCOPY $in")
 
 n.rule(name = "mkimage",
-       command = "$mkimage -A arm -O linux -T kernel -C none -a 0x10000 -e 0x10000 -d $in -n FreeRTOS $out",
+       command = "$mkimage -A arm -O linux -T kernel -C none -a $image_address -e $image_address -d $in -n FreeRTOS $out",
        description = "MKIMAGE $in")
 
 n.rule(name = "app_ld",
@@ -123,7 +124,7 @@ applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
 vexpress_boot_files   = map(lambda f: "System/arch/vexpress/" + f,
                             ["boot/loader.c", "boot/loader-startup.S"])
 vexpress_kernel_files = map(lambda f: "System/arch/vexpress/" + f,
-                            ["main.c", "kernel-startup.S"])
+                            ["main.c", "kernel-startup.S", "setup_vm.c"])
 
 libdwarf_files = glob.glob('libdwarf/*.c')
 
@@ -210,7 +211,7 @@ gen_step_build("system", map(lambda f: get_object_file(f), system_files),
 n.build(outputs   = builddir + "vexpress-kernel.elf",
         rule      = "link",
         inputs    = map(lambda f: get_object_file(f), freertos_files + vexpress_kernel_files +
-                     system_utility_files),
+                        system_utility_files),
         variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
         implicit  = ["System/arch/vexpress/kernel.ld"])
 n.build(outputs   = builddir + "vexpress-kernel.ld",
@@ -228,7 +229,8 @@ n.build(outputs   = "vexpress-boot.bin",
         variables = {'ocflags': '-O binary'})
 n.build(outputs   = "vexpress-boot.uimg",
         rule      = "mkimage",
-        inputs    = "vexpress-boot.bin")
+        inputs    = "vexpress-boot.bin",
+        variables = {'image_address': '0x60100000'})
 
 
 n.build(outputs = "cloc_report.log",
@@ -245,7 +247,7 @@ for a in applications:
     n.build(outputs   = elffile,
             rule      = "link",
             inputs    = map(lambda f: get_object_file(f, in_app = True), applications[a]),
-            variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpucortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
+            variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
             implicit  = "App/app.ld")
     n.build(outputs   = ldfile,
             rule      = "app_ld",

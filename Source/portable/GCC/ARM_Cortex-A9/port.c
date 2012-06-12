@@ -102,8 +102,10 @@ static portSTACK_TYPE *puxIRQStackPointer = &(puxIRQStack[ portIRQ_STACK_SIZE - 
 static portSTACK_TYPE *puxAbortStackPointer = &(puxAbortStack[ portABORT_STACK_SIZE - 1 ] );
 static portSTACK_TYPE *puxSVCStackPointer = &(puxSVCStack[ portSVC_STACK_SIZE - 1 ] );
 
+#if ( configVM_PRE_SETUP == 0)
 /* Page table */
 static unsigned long PageTable[4096] __attribute__((aligned (16384)));
+#endif
 
 /*
  * Setup the timer to generate the tick interrupts.
@@ -517,7 +519,7 @@ void vPortUnknownInterruptHandler( void *pvParameter )
 }
 /*----------------------------------------------------------------------------*/
 
-
+#if ( configVM_PRE_SETUP == 0 )
 static unsigned long ReadSCTLR()
 {
 	unsigned long SCTLR;
@@ -545,10 +547,12 @@ static void WriteACTLR(unsigned long ACTLR)
 	__asm volatile("mcr p15, 0, %[actlr], c1, c0, 0"
 	::[actlr] "r" (ACTLR):);
 }
+#endif
 
 void _init(void)
 {
 extern int main( void );
+#if ( configVM_PRE_SETUP == 0 )
 int i;
 unsigned long *pulSrc, *pulDest;
 volatile unsigned long ulSCTLR = 0UL;
@@ -556,9 +560,14 @@ extern unsigned long __isr_vector_start;
 extern unsigned long __isr_vector_end;
 /*extern unsigned long _etext;
 extern unsigned long _data;*/
-extern unsigned long _bss;
-extern unsigned long _ebss;
+/* extern unsigned long _bss; */
+/* extern unsigned long _ebss; */
+#endif
+#if ( configVM_PRE_SETUP == 1 )
+//xMemoryInformationType *mit = configMIS_SECTION_ADDRESS;
+#endif
 
+#if ( configVM_PRE_SETUP == 0)
 	/* Disabled: The MMU and caches should be off at startup anyway. */
 /*	// Disable MMU
 	unsigned long CSIR;
@@ -598,6 +607,7 @@ extern unsigned long _ebss;
 	{
 		*pulDest++ = 0;
 	}
+#endif
 
 	/* Configure the Stack Pointer for the Processor Modes. */
 	__asm volatile (
@@ -633,6 +643,7 @@ extern unsigned long _ebss;
 				[svcsp] "r" (puxSVCStackPointer)
 				:  );
 
+#if ( configVM_PRE_SETUP == 0 )
 	/* Finally, copy the exception vector table over the boot loader. */
 	pulSrc = (unsigned long *)&__isr_vector_start;
 	pulDest = (unsigned long *)portEXCEPTION_VECTORS_BASE;
@@ -652,6 +663,7 @@ extern unsigned long _ebss;
 	ulSCTLR=ReadSCTLR();
 	ulSCTLR&=~(1<<13);
 	WriteSCTLR(ulSCTLR);
+#endif
 
 #if configPLATFORM == 1
 	/* Now set-up the Monitor Mode Vector Table. */
@@ -667,6 +679,7 @@ extern unsigned long _ebss;
 			);
 #endif /* configPLATFORM */
 
+#if ( configVM_PRE_SETUP == 0 )
 	// Enable branch prediction.
 	WriteSCTLR(ReadSCTLR()|(1<<11));
   
@@ -703,6 +716,7 @@ extern unsigned long _ebss;
 
 	// Enable L1 I & D caches.
 	WriteSCTLR(ReadSCTLR()|(1<<2)|(1<<12));
+#endif
 
 	main();
 }

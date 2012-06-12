@@ -1,11 +1,11 @@
 // Copyright ARM Ltd 2001. All rights reserved.
 // Modified by VL (07/24/2003)
 
-        .global Vector_Init
+	.global Vector_Init
+	.global Kernel_Start
 
-        .balign 4
-//        .section .isr_vector, "x"
-        .code 32
+	.balign 4
+	.code 32
 
 // These are example exception vectors and exception handlers
 //
@@ -25,6 +25,7 @@
 	.extern Abort_Handler_Panic
 	.extern __stack
 	.extern _init
+	.extern setup_vm
 
 // *****************
 // Exception Vectors
@@ -33,79 +34,87 @@
 // Note: LDR PC instructions are used here, though branch (B) instructions
 // could also be used, unless the ROM is at an address >32MB.
 
-        .section .isr_vector, "x"
+	.section .isr_vector, "x"
 
 Vector_Init:
-        LDR     PC, Reset_Addr
-        LDR     PC, Undefined_Addr
-        LDR     PC, SWI_Addr
-        LDR     PC, Prefetch_Addr
-        LDR     PC, Abort_Addr
-        NOP
-        LDR     PC, IRQ_Addr
-        LDR     PC, FIQ_Addr
+	ldr	pc, Reset_Addr
+	ldr	pc, Undefined_Addr
+	ldr	pc, SWI_Addr
+	ldr	pc, Prefetch_Addr
+	ldr	pc, Abort_Addr
+	nop
+	ldr	pc, IRQ_Addr
+	ldr	pc, FIQ_Addr
 
-Reset_Addr:      .word     Reset_Handler
-Undefined_Addr:  .word     Undefined_Handler
-SWI_Addr:        .word     SWI_Handler
-Prefetch_Addr:   .word     Prefetch_Handler
-Abort_Addr:      .word     Abort_Handler
-IRQ_Addr:        .word     IRQ_Handler
-FIQ_Addr:        .word     FIQ_Handler
+Reset_Addr:
+		.word	Reset_Handler
+Undefined_Addr:
+		.word	Undefined_Handler
+SWI_Addr:
+		.word	SWI_Handler
+Prefetch_Addr:	.word	Prefetch_Handler
+Abort_Addr:	.word	Abort_Handler
+IRQ_Addr:	.word	IRQ_Handler
+FIQ_Addr:	.word	FIQ_Handler
+
+Kernel_Start:
+	bl setup_vm
+	ldr pc, Init_Addr
+
+Init_Addr:
+	.word	_init
 
 // ************************
 // Exception Handlers
 // ************************
 
 Reset_Handler:
-	ADR	SP, Vector_Init
-	LDR	R0, Stack_Offset
-	ADD	SP, R0, SP
-	B	_init
-Stack_Offset:	.word	__stack_offset
+	ldr	sp, Stack_Addr
+	b	_init
+Stack_Addr:	.word	0
 
 Undefined_Handler:
-    // Put system/user mode R14-R0, exception address (LR - (4(ARM) or 2(THUMB))) and SPSR on stack
-    // used for logging
-    STMDB      SP, {R0-LR}^
-    NOP
-    SUB        SP, SP, #60
-    MRS        R0, SPSR
-    SUB        R1, LR, #2
-    // if ARM mode subtract 2 more
-    TST        R0, #T_bit
-    SUBEQ      R1, R1, #2
-    STMDB      SP!, {R1}
-    STMDB      SP!, {R0}
-    NOP
-    MOV        R0, SP
-    BL         Undefined_Handler_Panic
+	// Put system/user mode R14-R0, exception address (LR - (4(ARM) or 2(THUMB))) and SPSR on stack
+	// used for logging
+	stmdb	sp, {r0-lr}^
+	nop
+	sub	sp, sp, #60
+	mrs	r0, spsr
+	sub	r1, lr, #2
+	// if ARM mode subtract 2 more
+	tst	r0, #T_bit
+	subeq	r1, r1, #2
+	stmdb	sp!, {r1}
+	stmdb	sp!, {r0}
+	nop
+	mov	r0, sp
+	bl	Undefined_Handler_Panic
 Prefetch_Handler:
-    // Put system/user mode R14-R0, exception address (LR - 4) and SPSR on stack
-    // used for logging
-    STMDB      SP, {R0-LR}^
-    NOP
-    SUB        SP, SP, #60
-    SUB        R0, LR, #4
-    STMDB      SP!, {R0}
-    MRS        R0, SPSR
-    STMDB      SP!, {R0}
-    NOP
-    MOV        R0, SP
-    BL         Prefetch_Handler_Panic
+	// Put system/user mode R14-R0, exception address (LR - 4) and SPSR on stack
+	// used for logging
+	stmdb	sp, {r0-lr}^
+	nop
+	sub	sp, sp, #60
+	sub	r0, lr, #4
+	stmdb	sp!, {r0}
+	mrs	r0, spsr
+	stmdb	sp!, {r0}
+	nop
+	mov	r0, sp
+	bl	Prefetch_Handler_Panic
 Abort_Handler:
-    // Put system/user mode R14-R0, exception address (LR - 8) and SPSR on stack
-    // used for logging
-    STMDB      SP, {R0-LR}^
-    NOP
-    SUB        SP, SP, #60
-    SUB        R0, LR, #8
-    STMDB      SP!, {R0}
-    MRS        R0, SPSR
-    STMDB      SP!, {R0}
-    NOP
-    MOV        R0, SP
-    BL         Abort_Handler_Panic
+	// Put system/user mode R14-R0, exception address (LR - 8) and SPSR on stack
+	// used for logging
+	stmdb	sp, {r0-lr}^
+	nop
+	sub	sp, sp, #60
+	sub	r0, lr, #8
+	stmdb	sp!, {r0}
+	mrs	r0, spsr
+	stmdb	sp!, {r0}
+	nop
+	mov	r0, sp
+	bl	Abort_Handler_Panic
 
 // never refered to, this is only for backward compatibility purpose.
 // FIQ_Handler
@@ -114,11 +123,10 @@ Abort_Handler:
 
 // The following SWI handler support just the taskswitch for OpenRTOS
 SWI_Handler:
-		B				vPortSVCHandler
+	B	vPortSVCHandler
 
 FIQ_Handler:
 IRQ_Handler:
-	B					vPortInterruptContext
+	B	vPortInterruptContext
 
-    .end
-
+	.end

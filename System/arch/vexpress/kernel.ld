@@ -25,7 +25,7 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-ENTRY(Vector_Init);
+ENTRY(Kernel_Start);
 
 MEMORY
 {
@@ -68,6 +68,5 @@ SECTIONS
         *(COMMON)
         _ebss = .;
     } > ram
-
 }
 

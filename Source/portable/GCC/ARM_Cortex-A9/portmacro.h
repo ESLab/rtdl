@@ -78,6 +78,13 @@ extern "C" {
 #define portSTACK_TYPE	unsigned portLONG
 #define portBASE_TYPE	long
 
+typedef struct xMIT {
+	void		*phys_start;
+	portLONG	 phys_data_size;
+	void		*phys_end;
+	void		*phys_entry_point;
+} xMemoryInformationType;
+
 #if( configUSE_16_BIT_TICKS == 1 )
 	typedef unsigned portSHORT portTickType;
 	#define portMAX_DELAY ( portTickType ) 0xffff

@@ -25,6 +25,8 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
+#include <FreeRTOS.h>
+
 #define SYSTEM_MODULE_NAME "VX_LOADER"
 
 #include <stdio.h>
@@ -34,21 +36,15 @@
 #include <System/types.h>
 #include <System/system.h>
 
-#define NUMBER_OF_CORES		4
-#define KERNEL_ALLOC_SIZE	0x01000000
+#include <System/arch/vexpress/memory_layout.h>
 
-typedef void (*entry_point_fun_t)();
-
-static entry_point_fun_t jump_table[NUMBER_OF_CORES];
-
-static void *kernel_locations[NUMBER_OF_CORES];
-
-extern ma_t Vector_Init;
 extern ma_t _kernel_elf_start;
 extern ma_t _kernel_elf_end;
 
 #define KERNEL_ELFH	((Elf32_Ehdr *)&_kernel_elf_start)
 #define KERNEL_ELF_SIZE ((ms_t)((npi_t)&_kernel_elf_end - (npi_t)&_kernel_elf_start))
+
+xMemoryInformationType *mit = MIS_ADDRESS;
 
 static int check_elf_magic(Elf32_Ehdr *hdr)
 {
@@ -67,17 +63,22 @@ static int check_elf_magic(Elf32_Ehdr *hdr)
 	return 1;
 }
 
-void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address)
+void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address, xMemoryInformationType *mit)
 {
 	int i;
 	Elf32_Shdr *s = (Elf32_Shdr *)((npi_t)elfh + elfh->e_shoff);
 
-	for (i = 0; i < KERNEL_ELFH->e_shnum; i++) {
-		if (!(s[i].sh_flags & SHF_ALLOC)) 
+	for (i = 0; i < elfh->e_shnum; i++) {
+		if (!(s[i].sh_flags & SHF_ALLOC))
 			continue;
-		
+
 		void *section_addr = (void *)((npi_t)start_address + (npi_t)s[i].sh_addr);
 		DEBUG_MSG("Copying section #%i to 0x%x\n", i, (npi_t)section_addr);
+
+		mit->phys_data_size =
+			mit->phys_data_size < s[i].sh_addr + s[i].sh_size
+			? s[i].sh_addr + s[i].sh_size
+			: mit->phys_data_size;
 
 		if (s[i].sh_type != SHT_NOBITS) {
 			/*
@@ -96,18 +97,15 @@ void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address)
 	}
 }
 
-void load_and_jump()
+static void launch_kernels()
 {
+	void *end[NUMBER_OF_CORES];
+	void *ep[NUMBER_OF_CORES];
 	int i;
-	/*
-	 * Make software interrupt and jump to the right address.
-	 */
-
-	void *image_entry = (void *)&Vector_Init;
 
 	for (i = 0; i < NUMBER_OF_CORES; i++) {
-		printf("Copying kernel image %i...\n", i);
-		memcpy(kernel_locations[i], image_entry, KERNEL_ALLOC_SIZE);
+		end[i] = mit[i].phys_end;
+		ep[i]  = mit[i].phys_entry_point;
 	}
 
 	asm( "mrc		p15,0,r1,c1,c0,0\n\t"	// Read control register configuration data.
@@ -132,11 +130,13 @@ void load_and_jump()
 	     "Launcher:\n\t"
 	     "mrc		p15,0,r2,c0,c0,5\n\t"
 	     "and		r2,r2,#3\n\t"			// Find Core ID
-	     //"adr		r1,%0\n\t"
-	     "ldr		pc,[%0,r2,lsl #2]\n\t"
-	     : /* no output operands */
-	     : "r" (jump_table)
-	     : "r1", "r2");
+	     "ldr               sp, [%0, r2, lsl #2]\n\t"
+	     "ldr               pc, [%1, r2, lsl #2]\n\t"
+	     :
+	     : "r" (end), "r" (ep)
+	     : "r1", "r2" );
+
+
 }
 
 int _init()
@@ -145,35 +145,26 @@ int _init()
 		ERROR_MSG("The kernel elf magic does not check out.\n");
 		goto error;
 	}
-	
+
 	int i;
 	npi_t entry_point_address_offset = KERNEL_ELFH->e_entry;
 
 	for (i = 0; i < NUMBER_OF_CORES; i++) {
 		INFO_MSG("Copying kernel for core #%i\n", i);
-		npi_t start_address = 0x00100000 + KERNEL_ALLOC_SIZE*i;
-		allocate_elf_at_offset(KERNEL_ELFH, (void *)start_address);
-		jump_table[i]	    = 
-			(entry_point_fun_t)(start_address + 
-					    entry_point_address_offset);
+		mit[i].phys_start	= KERNEL_START_ADDRESS(i);
+		mit[i].phys_end		= KERNEL_START_ADDRESS(i+1);
+		mit[i].phys_entry_point = mit[i].phys_start + entry_point_address_offset;
+		allocate_elf_at_offset(KERNEL_ELFH, mit[i].phys_start, &mit[i]);
 	}
 
-	jump_table[0]();
+	launch_kernels();
 
-	printf("Jaha.\n");
+	/*
+	 * Not reached.
+	 */
+
 error:
-	while (1) 
+	while (1)
 		;
 	return 0;
-}
-
-
-void vApplicationMallocFailedHook( void )
-{
-	__asm volatile (" smc #0 ");
-}
-
-void vApplicationIdleHook( void )
-{
-
 }

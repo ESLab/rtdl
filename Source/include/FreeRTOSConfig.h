@@ -109,6 +109,9 @@ to exclude the API function. */
 #define configKERNEL_INTERRUPT_PRIORITY 		( 0xC0 )
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY 	( 0xA0 ) /* equivalent to 0xa0, or priority 5. */
 
+#define configVM_PRE_SETUP					1
+#define configMIS_SECTION_ADDRESS				((void *)0x60200000)
+
 /* Select the Platform 0=Realview-PBX-A9, 1=nVidia-Tegra2, 2=Versatile-Express */
 #define configPLATFORM							( 2 )
 
