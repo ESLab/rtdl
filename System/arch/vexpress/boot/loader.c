@@ -35,6 +35,7 @@
 #include <System/elf.h>
 #include <System/types.h>
 #include <System/system.h>
+#include <System/pl011.h>
 
 #include <System/arch/vexpress/memory_layout.h>
 
@@ -43,6 +44,8 @@ extern ma_t _kernel_elf_end;
 
 #define KERNEL_ELFH	((Elf32_Ehdr *)&_kernel_elf_start)
 #define KERNEL_ELF_SIZE ((ms_t)((npi_t)&_kernel_elf_end - (npi_t)&_kernel_elf_start))
+
+#define MULTICORE
 
 xMemoryInformationType *mit = MIS_ADDRESS;
 
@@ -97,16 +100,19 @@ void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address, xMemoryInform
 	}
 }
 
-static void launch_kernels()
+void *stack_ps[NUMBER_OF_CORES];
+void *entry_ps[NUMBER_OF_CORES];
+
+void launch_kernels()
 {
-	void *end[NUMBER_OF_CORES];
-	void *ep[NUMBER_OF_CORES];
 	int i;
 
 	for (i = 0; i < NUMBER_OF_CORES; i++) {
-		end[i] = mit[i].phys_end;
-		ep[i]  = mit[i].phys_entry_point;
+		stack_ps[i] = mit[i].phys_end;
+		entry_ps[i] = mit[i].phys_entry_point;
+		DEBUG_MSG("Core #%u entry point @ 0x%x\n", (unsigned int)i, (npi_t)mit[i].phys_entry_point);
 	}
+
 
 	asm( "mrc		p15,0,r1,c1,c0,0\n\t"	// Read control register configuration data.
 	     "bic		r1,r1,#(1<<0)\n\t"	// Disable MMU.
@@ -130,23 +136,39 @@ static void launch_kernels()
 	     "Launcher:\n\t"
 	     "mrc		p15,0,r2,c0,c0,5\n\t"
 	     "and		r2,r2,#3\n\t"			// Find Core ID
-	     "ldr               sp, [%0, r2, lsl #2]\n\t"
-	     "ldr               pc, [%1, r2, lsl #2]\n\t"
+
+	     "ldr		r1, stack_ps_addr\n\t"
+	     "ldr		sp, [r1, r2, lsl #2]\n\t"
+
+	     "ldr		r1, entry_ps_addr\n\t"
+	     "ldr		pc, [r1, r2, lsl #2]\n\t"
+	     "stack_ps_addr:    .word stack_ps\n\t"
+	     "entry_ps_addr:    .word entry_ps\n\t"
 	     :
-	     : "r" (end), "r" (ep)
+	     :
 	     : "r1", "r2" );
+}
 
+static void init_uart(void)
+{
+	int i;
 
+	for (i = 0; i < NUMBER_OF_CORES; i++) {
+		vUARTInitialise(i, 38400, 64);
+	}
 }
 
 int _init()
 {
+	int i;
+
+	init_uart();
+
 	if (!check_elf_magic(KERNEL_ELFH)) {
 		ERROR_MSG("The kernel elf magic does not check out.\n");
 		goto error;
 	}
 
-	int i;
 	npi_t entry_point_address_offset = KERNEL_ELFH->e_entry;
 
 	for (i = 0; i < NUMBER_OF_CORES; i++) {
@@ -157,7 +179,16 @@ int _init()
 		allocate_elf_at_offset(KERNEL_ELFH, mit[i].phys_start, &mit[i]);
 	}
 
+#ifdef MULTICORE
 	launch_kernels();
+#else
+	asm( "ldr               sp, [%0]\n\t"
+	     "ldr               pc, [%1]\n\t"
+	     :
+	     : "r" (&mit[0].phys_end), "r" (&mit[0].phys_entry_point)
+	     : );
+#endif
+
 
 	/*
 	 * Not reached.

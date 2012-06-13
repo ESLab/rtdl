@@ -3,6 +3,10 @@
 
         .global Vector_Init
 
+	.global smp_start_vector
+	.global smp_start_launch_address
+	.global smp_start_vector_size
+
         .balign 4
 //        .section .isr_vector, "x"
         .code 32
@@ -57,5 +61,6 @@ Reset_Handler:
 	ADD	SP, R0, SP
 	B	_init
 Stack_Offset:	.word	__stack_offset
-    .end
+
+	.end
 
