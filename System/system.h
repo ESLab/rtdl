@@ -62,7 +62,7 @@
 #define SYSTEM_MALLOC_CALL(s) pvPortMalloc(s)
 #define SYSTEM_FREE_CALL(p) vPortFree(p)
 
-#define TASKSECTION_MALLOC_CALL(s) umm_malloc(s)
-#define TASKSECTION_FREE_CALL(p) umm_free(p)
+#define TASKSECTION_MALLOC_CALL(s) pvPortMalloc(s)
+#define TASKSECTION_FREE_CALL(p) vPortFree(p)
 
 #endif /* SYSTEM_H */
