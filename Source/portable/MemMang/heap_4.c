@@ -77,6 +77,8 @@ task.h is included from an application file. */
 
 #include <umm_malloc.h>
 
+static xMemoryInformationType *xMit = configMIS_SECTION_ADDRESS;
+
 /*-----------------------------------------------------------*/
 
 void *pvPortMalloc( size_t xWantedSize )
@@ -105,13 +107,40 @@ void *pvReturn;
 
 void vPortFree( void *pv )
 {
-	if( pv )
-	{
-		vTaskSuspendAll();
+/*
+ * Check if the pointer is in the local GVMS
+ */
+
+void *vpStartAddress;
+void *vpEndAddress;
+unsigned long ulI;
+
+	for (ulI = 0; ulI <= portMAX_CORE_ID; ulI++) {
+		vpStartAddress = xMit[ulI].phys_heap_begin;
+		vpEndAddress   = (void *)((unsigned portLONG)vpStartAddress +
+								  (unsigned portLONG)xMit[ulI].phys_heap_size);
+		if ( pv >= vpStartAddress && pv < vpEndAddress )
 		{
-			umm_free( pv );
+			/*
+			 * The pointer is in this section.
+			 */
+			if ( ulI == portCORE_ID() )
+			{
+				vTaskSuspendAll();
+				{
+					umm_free( pv );
+				}
+				xTaskResumeAll();
+			}
+			else
+			{
+			/*
+			 * We should send a free request to the
+			 * corresponding core, and make sure that the
+			 * memory gets freed.
+			 */
+			}
 		}
-		xTaskResumeAll();
 	}
 }
 
