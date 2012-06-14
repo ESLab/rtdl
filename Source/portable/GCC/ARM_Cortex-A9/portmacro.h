@@ -101,6 +101,7 @@ typedef struct xMIT {
 #define portTICK_RATE_MS			( ( portTickType ) 1000 / configTICK_RATE_HZ )		
 #define portBYTE_ALIGNMENT			8
 #define portHEAP_END				( ( (char * )&_data + (unsigned long)configTOTAL_HEAP_SIZE ) )
+#define portMAX_CORE_ID			(3)
 /*-----------------------------------------------------------*/	
 
 /* Critical section management. */
