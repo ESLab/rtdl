@@ -51,6 +51,7 @@ def get_include_args(dirs):
     return ret
 
 builddir = "./build/"
+bindir   = "./bin/"
 
 fout = open("build.ninja","w")
 #n = ninja_syntax.Writer(sys.stdout)
@@ -198,26 +199,26 @@ def gen_step_build(name, inputs, implicit, ldfiles):
                 inputs    = symelffile)
         i += 1
     lastnldfile       = builddir + name + "." + str(i - 1) + ".ld"
-    n.build(outputs   = name + ".elf",
+    n.build(outputs   = bindir + name + ".elf",
             rule      = "link",
             inputs    = inputs,
             variables = {'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9 -g3 -gdwarf-3'},
             implicit  = [lastnldfile] + implicit)
-    n.build(outputs   = name + ".bin",
+    n.build(outputs   = bindir + name + ".bin",
             rule      = "objcopy",
-            inputs    = name + ".elf",
+            inputs    = bindir + name + ".elf",
             variables = {'ocflags': '-O binary'})
-    n.build(outputs   = name + ".uimg",
+    n.build(outputs   = bindir + name + ".uimg",
             rule      = "mkimage",
-            inputs    = name + ".bin")
+            inputs    = bindir + name + ".bin")
 
 
 gen_step_build("system", map(lambda f: get_object_file(f, config="no_vm"),
                              system_files + ["Source/portable/MemMang/heap_3.c"]),
-               map(lambda f: f + ".ld", applications) + ["System/applications.ld"],
+               map(lambda f: builddir + f + ".ld", applications) + ["System/applications.ld"],
                ["System/system.0.ld", "System/system.1.ld", "System/system.2.ld"])
 
-n.build(outputs   = builddir + "vexpress-kernel.elf",
+n.build(outputs   = bindir + "vexpress-kernel.elf",
         rule      = "link",
         inputs    = map(lambda f: get_object_file(f, config="vm"), freertos_files + ["Source/portable/MemMang/heap_4.c"] +
                         vexpress_kernel_files + system_utility_files),
@@ -225,20 +226,20 @@ n.build(outputs   = builddir + "vexpress-kernel.elf",
         implicit  = ["System/arch/vexpress/kernel.ld"])
 n.build(outputs   = builddir + "vexpress-kernel.ld",
         rule      = "app_ld",
-        inputs    = builddir + "vexpress-kernel.elf")
+        inputs    = bindir + "vexpress-kernel.elf")
 
-n.build(outputs   = "vexpress-boot.elf",
+n.build(outputs   = bindir + "vexpress-boot.elf",
         rule      = "link",
         inputs    = map(lambda f: get_object_file(f, config="vm"), vexpress_boot_files + system_utility_files),
         variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
         implicit  = ["System/arch/vexpress/boot/loader.ld", builddir + "vexpress-kernel.ld"])
-n.build(outputs   = "vexpress-boot.bin",
+n.build(outputs   = bindir + "vexpress-boot.bin",
         rule      = "objcopy",
-        inputs    = "vexpress-boot.elf",
+        inputs    = bindir + "vexpress-boot.elf",
         variables = {'ocflags': '-O binary'})
-n.build(outputs   = "vexpress-boot.uimg",
+n.build(outputs   = bindir + "vexpress-boot.uimg",
         rule      = "mkimage",
-        inputs    = "vexpress-boot.bin",
+        inputs    = bindir + "vexpress-boot.bin",
         variables = {'image_address': '0x60100000'})
 
 
@@ -251,8 +252,8 @@ n.build(outputs = "cscope.out",
         inputs = list(set.union(app_fs,fs)))
 
 for a in applications:
-    elffile           = a + ".elf"
-    ldfile            = a + ".ld"
+    elffile           = bindir + a + ".elf"
+    ldfile            = builddir + a + ".ld"
     n.build(outputs   = elffile,
             rule      = "link",
             inputs    = map(lambda f: get_object_file(f, in_app = True, config="no_vm"), applications[a]),
@@ -262,4 +263,4 @@ for a in applications:
             rule      = "app_ld",
             inputs    = elffile)
 
-n.default(["vexpress-boot.uimg", "system.uimg", "cloc_report.log", "cscope.out"])
+n.default([bindir + "vexpress-boot.uimg", bindir + "system.uimg", "cloc_report.log", "cscope.out"])
