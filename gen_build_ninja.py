@@ -119,7 +119,9 @@ freertos_files = ["Source/croutine.c",
                   "Source/tasks.c",
                   "Source/timers.c",
                   "Source/portable/GCC/ARM_Cortex-A9/port.c",
-                  "Source/portable/MemMang/heap_4.c"]
+                  ]
+
+freertos_memmang_files = map(lambda n: "Source/portable/MemMang/heap_%i.c" % n, [2,3,4])
 
 applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
                  'writer': ['App/app_startup.S', 'App/writer.c'],
@@ -160,7 +162,7 @@ for a in applications:
         app_fs.add(f)
 
 fs = set()
-for f in system_files + vexpress_boot_files + vexpress_kernel_files:
+for f in system_files + freertos_memmang_files + vexpress_boot_files + vexpress_kernel_files:
     fs.add(f)
 
 for c in configs:
@@ -210,14 +212,15 @@ def gen_step_build(name, inputs, implicit, ldfiles):
             inputs    = name + ".bin")
 
 
-gen_step_build("system", map(lambda f: get_object_file(f, config="no_vm"), system_files),
+gen_step_build("system", map(lambda f: get_object_file(f, config="no_vm"),
+                             system_files + ["Source/portable/MemMang/heap_3.c"]),
                map(lambda f: f + ".ld", applications) + ["System/applications.ld"],
                ["System/system.0.ld", "System/system.1.ld", "System/system.2.ld"])
 
 n.build(outputs   = builddir + "vexpress-kernel.elf",
         rule      = "link",
-        inputs    = map(lambda f: get_object_file(f, config="vm"), freertos_files + vexpress_kernel_files +
-                        system_utility_files),
+        inputs    = map(lambda f: get_object_file(f, config="vm"), freertos_files + ["Source/portable/MemMang/heap_4.c"] +
+                        vexpress_kernel_files + system_utility_files),
         variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
         implicit  = ["System/arch/vexpress/kernel.ld"])
 n.build(outputs   = builddir + "vexpress-kernel.ld",
