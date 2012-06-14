@@ -75,6 +75,8 @@ task.h is included from an application file. */
 
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
+#include <umm_malloc.h>
+
 /*-----------------------------------------------------------*/
 
 void *pvPortMalloc( size_t xWantedSize )
@@ -83,7 +85,7 @@ void *pvReturn;
 
 	vTaskSuspendAll();
 	{
-		pvReturn = malloc( xWantedSize );
+		pvReturn = umm_malloc( xWantedSize );
 	}
 	xTaskResumeAll();
 
@@ -107,7 +109,7 @@ void vPortFree( void *pv )
 	{
 		vTaskSuspendAll();
 		{
-			free( pv );
+			umm_free( pv );
 		}
 		xTaskResumeAll();
 	}
