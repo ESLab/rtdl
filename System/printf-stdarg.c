@@ -36,10 +36,10 @@
 
 static int putchar(int c)
 {
-	xUARTSendCharacter(0,c,0);
+	xUARTSendCharacter(portCORE_ID(),c,0);
 #ifdef ADD_CARRIGE_RETURN
 	if (c == '\n')
-		xUARTSendCharacter(0,'\r',0);
+		xUARTSendCharacter(portCORE_ID(),'\r',0);
 #endif
 	return 0;
 }
