@@ -37,7 +37,7 @@
 #include <System/system.h>
 #include <System/pl011.h>
 
-#include <System/arch/vexpress/memory_layout.h>
+#include <System/arch/vexpress_vm/memory_layout.h>
 
 extern ma_t _kernel_elf_start;
 extern ma_t _kernel_elf_end;

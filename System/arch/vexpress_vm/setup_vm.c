@@ -29,7 +29,7 @@
 
 #include <FreeRTOS.h>
 
-#include <System/arch/vexpress/memory_layout.h>
+#include <System/arch/vexpress_vm/memory_layout.h>
 
 #include <System/types.h>
 #include <System/system.h>

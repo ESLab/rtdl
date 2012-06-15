@@ -38,7 +38,7 @@
 #include <System/types.h>
 #include <System/system.h>
 #include <System/task_manager.h>
-#include <System/arch/vexpress/memory_layout.h>
+#include <System/arch/vexpress_vm/memory_layout.h>
 #include <System/umm/umm_malloc.h>
 
 portTASK_FUNCTION_PROTO(ohai_task, arg);
