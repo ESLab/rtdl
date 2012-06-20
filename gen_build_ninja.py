@@ -47,6 +47,7 @@ class NinjaFile(str):
     def get_object_files(self, config):
         return NinjaSet([self.get_object_file(config)])
     def write_builds(self, n, config):
+        config.preprocess()
         n.build(outputs   = self.get_object_file(config),
                 rule      = "cc",
                 variables = config,
@@ -60,9 +61,7 @@ class NinjaFile(str):
 class NinjaSet(set):
     def get_real_config(self, config):
         if hasattr(self, 'config'):
-            new_config = config.copy()
-            new_config.update(self.config)
-            config = new_config
+            config = self.config + config
         return config
     def get_object_files(self, config):
         config = self.get_real_config(config)
@@ -89,8 +88,32 @@ class NinjaSet(set):
             ret += i.__hash__()
         return ret
 
-def get_ninja_set_of_files(flist):
-    return NinjaSet(map(lambda f: NinjaFile(f), flist))
+class NinjaConfig(dict):
+    def __add__(self, op):
+        ret = NinjaConfig(self.copy())
+        ret.update(op)
+        for k in self:
+            if op.has_key(k):
+                ret[k] = self[k] + op[k]
+        return ret
+    def preprocess(self):
+        includedir_args = get_include_args(self['includedirs']) if self.has_key('includedirs') else ""
+        cflags_args = ""
+        if self.has_key('cflags'):
+            for arg in self['cflags'][0:-1]:
+                cflags_args += arg + " "
+            if len(self['cflags']) > 0:
+                cflags_args += self['cflags'][-1]
+        new_config = NinjaConfig({'includedir_args': includedir_args,
+                                  'cflags_args': cflags_args})
+        self.update(new_config)
+        return self
+
+def get_ninja_set_of_files(flist, config = {}):
+    ret = NinjaSet(map(lambda f: NinjaFile(f), flist))
+    if config != {}:
+        ret.config = config
+    return ret
 
 def get_sets_in_dict(dictionary):
     return NinjaSet(itertools.chain(map(lambda c: dictionary[c], dictionary)))
@@ -100,17 +123,6 @@ def get_include_args(dirs):
     for d in dirs:
         ret += "-I" + d + " "
     return ret
-
-def preprocess_configs(config_list):
-    for c in config_list:
-        includedir_args = get_include_args(c['includedirs'])
-        nc = {'includedir_args': includedir_args}
-        c.update(nc)
-
-def inherit_dictionary(dict_parent, dict_child):
-    new_dict = dict_parent.copy()
-    new_dict.update(dict_child)
-    return new_dict
 
 #####################
 # Parameter section #
@@ -142,9 +154,9 @@ n.variable(key="cloc", value="cloc")
 n.variable(key="cscope", value="cscope")
 n.variable(key="image_address", value="0x10000")
 
-n.variable(key="cflags",
-           value="-O0 -Wall -fmessage-length=0 " +
-                 "-mcpu=cortex-a9 -g3 -Werror -fno-builtin-printf -fPIC")
+default_cflags = ["-O0", "-Wall", "-fmessage-length=0",
+                  "-mcpu=cortex-a9", "-g3", "-Werror",
+                  "-fno-builtin-printf", "-fPIC"]
 
 ######################
 # Source set section #
@@ -190,18 +202,23 @@ system_files = get_ninja_set_of_files(
 ##################
 
 configs = \
-    [{'name': "rtudemo",
-      'includedirs': common_includedirs + ["./libdwarf", "./System/config/rtudemo/include"],
-      'image_address': '0x10000'
-      },
+    [NinjaConfig(
+        {'name': "rtudemo",
+         'includedirs': common_includedirs + ["./libdwarf", "./System/config/rtudemo/include"],
+         'cflags': default_cflags,
+         'image_address': '0x10000'
+         }),
      
-     {'name': "taskmigr",
-      'includedirs': common_includedirs + ["./System/config/taskmigr/include"],
-      'image_address': '0x60100000'
-      }
+     NinjaConfig(
+            {'name': "taskmigr",
+             'includedirs': common_includedirs + \
+                 ["./System/config/taskmigr/include"],
+             'cflags': default_cflags,
+             'image_address': '0x60100000'
+             })
      ]
 
-preprocess_configs(configs)
+map(lambda config: config.preprocess(), configs)
 
 config_source_files = \
     { 'rtudemo': get_ninja_set_of_files(
@@ -246,7 +263,7 @@ includedirs = common_includedirs + \
 includedirs = list(set(includedirs))
 
 n.rule(name = "cc",
-       command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $includedir_args $cflags $app_cflags $in -o $out",
+       command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $includedir_args $cflags_args $app_cflags $in -o $out",
        description = "CC $out",
        depfile = "$out.d")
 
@@ -286,7 +303,7 @@ for c in configs:
     s = config_source_files[c['name']]
     s.write_builds(n, c)
     s = NinjaSet()
-    app_c = inherit_dictionary(c, {'app_cflags': '-DIN_APPTASK'})
+    app_c = c + NinjaConfig({'cflags': ['-DIN_APPTASK']})
     s = reduce(lambda s, a: s.union(applications[a]), applications, NinjaSet())
     for a in applications:
         #s = s.union(applications[a])
@@ -295,7 +312,7 @@ for c in configs:
         ldfile  = builddir + a + "-" + c['name'] + ".ld"
         n.build(outputs   = elffile,
                 rule      = "link",
-                inputs    = list(app_s.get_object_files(inherit_dictionary(app_c, {}))),
+                inputs    = list(app_s.get_object_files(app_c)),
                 variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
                 implicit  = "App/app.ld")
         n.build(outputs   = ldfile,
@@ -324,12 +341,12 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
         n.build(outputs   = elffile,
                 rule      = "link",
                 inputs    = list(inputs.get_object_files(config)),
-                variables = inherit_dictionary(config, {'ldflags': '-nostartfiles -Wl,-T,' + ldf + ' -mcpu=cortex-a9 -g3 -gdwarf-3'}),
+                variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldf + ' -mcpu=cortex-a9 -g3 -gdwarf-3'}),
                 implicit  = [builddir + name + "." + str(i - 1) + ".ld", ldf] if i > 0 else [ldf] + implicit)
         n.build(outputs   = symelffile,
                 rule      = "objcopy",
                 inputs    = elffile,
-                variables = inherit_dictionary(config, {'ocflags':'--extract-symbol'}))
+                variables = config + NinjaConfig({'ocflags':'--extract-symbol'}))
         n.build(outputs   = ldfile,
                 rule      = "app_ld",
                 inputs    = symelffile)
@@ -338,12 +355,12 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
     n.build(outputs   = bindir + name + ".elf",
             rule      = "link",
             inputs    = list(inputs.get_object_files(config)),
-            variables = inherit_dictionary(config, {'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9 -g3 -gdwarf-3'}),
+            variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9 -g3 -gdwarf-3'}),
             implicit  = [lastnldfile] + implicit)
     n.build(outputs   = bindir + name + ".bin",
             rule      = "objcopy",
             inputs    = bindir + name + ".elf",
-            variables = inherit_dictionary(config, {'ocflags': '-O binary'}))
+            variables = config + NinjaConfig({'ocflags': '-O binary'}))
     n.build(outputs   = bindir + name + ".uimg",
             rule      = "mkimage",
             inputs    = bindir + name + ".bin",
@@ -366,7 +383,7 @@ n.build(outputs   = bindir + "kernel-taskmigr.elf",
         inputs    = list((config_source_files['taskmigr'].get_flattened() -
                           vexpress_vm_boot_files).get_object_files(c)) +  \
             ['./WittCore2Core.a'],
-        variables = inherit_dictionary(c, {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'}),
+        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3', 'libs': '-lm'}),
         implicit  = map(lambda f: builddir + f + "-taskmigr.ld", list(applications)) + \
             ["System/arch/vexpress_vm/kernel.ld", builddir + "applications-taskmigr.ld"])
 n.build(outputs   = builddir + "kernel-taskmigr.ld",
@@ -375,12 +392,12 @@ n.build(outputs   = builddir + "kernel-taskmigr.ld",
 n.build(outputs = bindir + "boot-taskmigr.elf",
         rule = "link",
         inputs = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
-        variables = inherit_dictionary(c, {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'}),
+        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'}),
         implicit = ["System/arch/vexpress_vm/boot/loader.ld", builddir + "kernel-taskmigr.ld"])
 n.build(outputs   = bindir + "boot-taskmigr.bin",
         rule      = "objcopy",
         inputs    = bindir + "boot-taskmigr.elf",
-        variables = inherit_dictionary(c, {'ocflags': '-O binary'}))
+        variables = c + NinjaConfig({'ocflags': '-O binary'}))
 n.build(outputs   = bindir + "boot-taskmigr.uimg",
         rule      = "mkimage",
         inputs    = bindir + "boot-taskmigr.bin",
