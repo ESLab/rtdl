@@ -112,12 +112,12 @@ int main()
 	xMemoryInformationType	*mit = MIS_START_ADDRESS;
 	binary_register_entry	*bre = (binary_register_entry *)mit[portCORE_ID()].phys_binary_register_begin;
 
-	printf("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
+	INFO_MSG("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
 
 	void	*heap	   = mit[portCORE_ID()].phys_heap_begin;
-	size_t	 heap_size = mit[portCORE_ID()].phys_heap_size;
+	size_t	 heap_size = mit[portCORE_ID()].phys_heap_size - 0x10000;
 
-	printf("Heap @ 0x%x, heap size = %u\n", (npi_t)heap, heap_size);
+	INFO_MSG("Heap @ 0x%x, heap size = %u\n", (npi_t)heap, heap_size);
 
 	umm_init(heap, heap_size);
 

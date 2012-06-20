@@ -645,6 +645,8 @@ void umm_init( void *heap, unsigned int size ) {
   //umm_numblocks = (size / sizeof(umm_block)) & 0x7fff;
   umm_numblocks = (size / sizeof(umm_block));
   umm_numblocks = umm_numblocks >= 0x7fff ? 0x7fff - 1 : umm_numblocks;
+  DBG_LOG_DEBUG("Putting umm_heap @ 0x%x, with %u number of block of size %u.\n",
+		(unsigned int)heap, umm_numblocks, sizeof(umm_block));
   bzero(heap, size);
 
 }
