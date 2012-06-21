@@ -106,6 +106,9 @@ typedef struct xMIT {
 #define portBYTE_ALIGNMENT			8
 #define portHEAP_END				( ( (char * )&_data + (unsigned long)configTOTAL_HEAP_SIZE ) )
 #define portMAX_CORE_ID			(3)
+
+extern void vPortCleanDataCache();
+
 /*-----------------------------------------------------------*/	
 
 /* Critical section management. */
