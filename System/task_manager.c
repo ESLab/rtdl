@@ -244,6 +244,10 @@ int task_alloc(task_register_cons *trc)
 
 	trc->request_hook = migrator_find_request_hook(trc);
 
+#ifdef DATA_CACHE_ENABLED
+	vPortCleanDataCache();
+#endif /* DATA_CACHE_ENABLED */
+
 	return 1;
 }
 
