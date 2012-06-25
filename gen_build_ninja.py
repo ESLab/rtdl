@@ -154,9 +154,9 @@ n.variable(key="cloc", value="cloc")
 n.variable(key="cscope", value="cscope")
 n.variable(key="image_address", value="0x10000")
 
-default_cflags = ["-O0", "-Wall", "-fmessage-length=0",
-                  "-mcpu=cortex-a9", "-g3", "-Werror",
-                  "-fno-builtin-printf", "-fPIC"]
+default_cflags = ["-Wall", "-fmessage-length=0", "-mcpu=cortex-a9",
+                  "-g3", "-Werror", "-fno-builtin-printf",
+                  "-fPIC"]
 
 ######################
 # Source set section #
@@ -205,7 +205,7 @@ configs = \
     [NinjaConfig(
         {'name': "rtudemo",
          'includedirs': common_includedirs + ["./libdwarf", "./System/config/rtudemo/include"],
-         'cflags': default_cflags,
+         'cflags': ["-O1"] + default_cflags,
          'image_address': '0x10000'
          }),
      
@@ -213,7 +213,7 @@ configs = \
             {'name': "taskmigr",
              'includedirs': common_includedirs + \
                  ["./System/config/taskmigr/include"],
-             'cflags': default_cflags,
+             'cflags': ["-O1"] + default_cflags,
              'image_address': '0x60100000'
              })
      ]
