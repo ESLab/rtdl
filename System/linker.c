@@ -140,7 +140,7 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 			 task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_register_tree *other_trcs)
 {
 	Elf32_Sym *final_symbol = NULL;
-	task_register_cons *final_symbol_trc;
+	task_register_cons *final_symbol_trc = NULL;
 	Elf32_Shdr *strtab_sect = find_section(".dynstr", app_trc->elfh);
 	char *symbol_name = get_shstr(app_trc->elfh, strtab_sect, in_symbol->st_name);
 	INFO_MSG("Relocating symbol %s\n", symbol_name);
@@ -161,6 +161,8 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 					continue;
 				DEBUG_MSG("looking for symbol \"%s\" in \"%s\"\n", symbol_name, trcp->name);
 				final_symbol = find_symbol(symbol_name, trcp->elfh);
+				if (final_symbol == NULL)
+					continue;
 				if (final_symbol->st_shndx == SHN_UNDEF)
 					final_symbol = NULL;
 				if (final_symbol != NULL) {
