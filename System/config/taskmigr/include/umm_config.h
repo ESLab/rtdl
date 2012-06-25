@@ -29,5 +29,6 @@
 #define UMM_CONFIG_H
 
 #define UMM_CONFIGURABLE_HEAP 1
+#define UMM_BLOCK_SIZE (64)
 
 #endif /* UMM_CONFIG_H */

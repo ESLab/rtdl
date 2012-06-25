@@ -560,7 +560,7 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
   } header;
   union {
     umm_ptr free;
-    unsigned char data[4];
+    unsigned char data[UMM_BLOCK_SIZE - sizeof(umm_ptr)];
   } body;
 } UMM_H_ATTPACKSUF umm_block;
 
