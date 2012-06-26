@@ -32,13 +32,13 @@
 #include <System/types.h>
 
 typedef struct effect_field_state_t {
-	u_int16_t	width;
-	u_int16_t	height;
-	u_int32_t	t;
+	u_int16_t	 width;
+	u_int16_t	 height;
+	int16_t		*rayarray;
+	u_int32_t	 t;
 } effect_field_state;
 
-void InitializeField();
-void DrawField(u_int8_t *pixels,int t);
-//void DrawField(effect_field_state *state);
+void InitializeField(effect_field_state *state, u_int16_t width, u_int16_t height);
+void DrawField(effect_field_state *state, u_int16_t *pixels);
 
 #endif /* FIELD_EFFECT_H */

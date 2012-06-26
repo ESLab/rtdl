@@ -180,7 +180,7 @@ applications = { 'simple': get_ninja_set_of_files(['App/app_startup.S', 'App/sim
                  'tunnel': get_ninja_set_of_files(['App/app_startup.S', 'App/effects/tunnel.c',
                                                    'App/effects/tunnel_effect.c', 'App/effects/Utils.c']),
                  'field': get_ninja_set_of_files(['App/app_startup.S', 'App/effects/field.c',
-                                                  'App/effects/effects.c', 'App/effects/Utils.c'])}
+                                                  'App/effects/field_effect.c', 'App/effects/Utils.c'])}
 
 vexpress_vm_boot_files = get_ninja_set_of_files(
     map(lambda f: "System/arch/vexpress_vm/" + f,
@@ -217,7 +217,7 @@ configs = \
             {'name': "taskmigr",
              'includedirs': common_includedirs + \
                  ["./System/config/taskmigr/include"],
-             'cflags': ["-O3"] + default_cflags,
+             'cflags': ["-O2"] + default_cflags,
              'image_address': '0x60100000'
              })
      ]

@@ -35,11 +35,10 @@
 #include <System/types.h>
 #include <System/pl111.h>
 
-#include <App/effects/effects.h>
+#include <App/effects/field_effect.h>
 #include <App/effects/Utils.h>
 
-u_int8_t mem_fb[640*480];
-
+#if 0
 static void write_fb_8bit_to_16bit(u_int8_t *fb8bit, u_int16_t *fb16bit)
 {
 	int i;
@@ -56,22 +55,24 @@ static void write_fb_8bit_to_16bit(u_int8_t *fb8bit, u_int16_t *fb16bit)
 		fb32[i]		      = (p1 << 16) | p2;
 	}
 }
+#endif
 
 int main()
 {
 	int t;
+	effect_field_state effect_state;
 	u_int16_t *framebuffer1=(u_int16_t *)0x4c000000;
-	u_int16_t *framebuffer2=(u_int16_t *)0x4c400000;
+	//u_int16_t *framebuffer2=(u_int16_t *)0x4c400000;
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
-	InitializeField();
+	InitializeField(&effect_state, 640, 480);
 
 	SetScreenFrameBuffer(framebuffer1);
 
 	int lasttime=0;
 
-	for(t=0;;t+=2)
+	for(t=0;;t++)
 	{
 		if((t&15)==0)
 		{
@@ -85,14 +86,12 @@ int main()
 
 		taskYIELD();
 
-		DrawField(mem_fb, t);
-		write_fb_8bit_to_16bit(mem_fb, framebuffer2);
-		SetScreenFrameBuffer(framebuffer2);
+		DrawField(&effect_state, framebuffer1);
+		/* SetScreenFrameBuffer(framebuffer2); */
 
-		taskYIELD();
+		/* taskYIELD(); */
 
-		DrawField(mem_fb, t + 1);
-		write_fb_8bit_to_16bit(mem_fb, framebuffer1);
-		SetScreenFrameBuffer(framebuffer1);
+		/* DrawField(&effect_state, framebuffer1); */
+		/* SetScreenFrameBuffer(framebuffer1); */
 	}
 }
