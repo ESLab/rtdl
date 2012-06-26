@@ -42,14 +42,18 @@ int main()
 {
 	effect_tunnel_state ets;
 	u_int16_t *framebuffer1=(u_int16_t *)0x4c000000;
+#ifdef TUNNEL_DBL_BUFFER
 	u_int16_t *framebuffer2=(u_int16_t *)0x4c400000;
+#endif /* TUNNEL_DBL_BUFFER */
 	int t;
 
 	printf("Initializing tunnel effect...\n");
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
-	if (!InitializeTunnel(&ets, 640, 480)) {
+	if (!InitializeTunnel(&ets, 320, 240, 640, 480,
+			      320 * ((portCORE_ID() & 0x2) >> 1),
+			      240 * ( portCORE_ID() & 0x1)     )) {
 		printf("Could not initiate tunnel effect.\n");
 		while (1)
 			;
@@ -59,8 +63,12 @@ int main()
 
 	printf("Starting rendering tunnel effect...\n");
 
-	for(t=0;;t+=2)
-	{
+#ifdef TUNNEL_DBL_BUFFER
+	for(t=0;;t+=2) {
+#else /* TUNNEL_DBL_BUFFER */
+        for(t=0;;t++) {
+#endif /* TUNNEL_DBL_BUFFER */
+
 		if((t&15)==0)
 		{
 			int time=xTaskGetTickCount();
@@ -70,7 +78,7 @@ int main()
 
 			lasttime=time;
 		}
-
+#ifdef TUNNEL_DBL_BUFFER
 		taskYIELD();
 
 		SetScreenFrameBuffer(framebuffer1);
@@ -80,5 +88,10 @@ int main()
 
 		SetScreenFrameBuffer(framebuffer2);
 		DrawTunnel(&ets, framebuffer1);
+#else /* TUNNEL_DBL_BUFFER */
+		taskYIELD();
+
+		DrawTunnel(&ets, framebuffer1);
+#endif /* TUNNEL_DBL_BUFFER */
 	}
 }

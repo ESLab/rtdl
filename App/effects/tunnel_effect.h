@@ -34,14 +34,27 @@
 typedef struct effect_tunnel_state_t {
 	u_int16_t	 width;
 	u_int16_t	 height;
+	u_int16_t	 phys_width;
+	u_int16_t	 phys_height;
+	u_int16_t	 w_offset;
+	u_int16_t	 h_offset;
 	u_int32_t	 t;
 	u_int32_t	*lookup32;
 	u_int16_t	*texture;
 } effect_tunnel_state;
 
-int InitializeTunnel(effect_tunnel_state *state, u_int16_t width, u_int16_t height);
-//void DrawTunnel(u_int16_t *pixels,int t);
-void DrawTunnel(effect_tunnel_state *state, u_int16_t *pixels);
+int InitializeTunnel
+(effect_tunnel_state	*state,
+ u_int16_t		 width,
+ u_int16_t		 height,
+ u_int16_t		 phys_width,
+ u_int16_t		 phys_height,
+ u_int16_t		 w_offset,
+ u_int16_t		 h_offset);
+
+void DrawTunnel
+(effect_tunnel_state	*state,
+ u_int16_t		*pixels);
 
 
 

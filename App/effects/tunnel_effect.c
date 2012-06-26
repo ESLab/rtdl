@@ -55,11 +55,22 @@ static uint16_t RGB(int r,int g,int b)
 	return (r<<11)|(g<<5)|b;
 }
 
-int InitializeTunnel(effect_tunnel_state *state, uint16_t width, uint16_t height) 
+int InitializeTunnel
+(effect_tunnel_state	*state,
+ uint16_t		 width,
+ uint16_t		 height,
+ u_int16_t		 phys_width,
+ u_int16_t		 phys_height,
+ u_int16_t		 w_offset,
+ u_int16_t		 h_offset)
 {
 	int		 x,y;
        	state->width		= width;
 	state->height		= height;
+	state->phys_width	= phys_width;
+	state->phys_height	= phys_height;
+	state->w_offset		= w_offset;
+	state->h_offset		= h_offset;
 	state->t		= 0;
 	state->lookup32		= apptask_malloc(state->width * state->height * sizeof(uint32_t) / 2);
 	uint16_t	*lookup = (uint16_t *)state->lookup32;
@@ -96,57 +107,29 @@ int InitializeTunnel(effect_tunnel_state *state, uint16_t width, uint16_t height
 	return 1;
 }
 
-#if 0
-void InitializeTunnel()
+void DrawTunnel
+(effect_tunnel_state	*state,
+ uint16_t		*pixels)
 {
-	uint16_t *lookup=(uint16_t *)lookup32;
-
-	for(int y=0;y<Height;y++)
-	for(int x=0;x<Width;x++)
-	{
-		float fx=(float)(2*x+1-Width)/(2*Width);
-		float fy=(float)(2*y+1-Height)/(2*Width);
-
-		float r=sqrtf(fx*fx+fy*fy);
-		float a=atan2f(fy,fx);
-
-		float z=0.3*sinf(a*3)/r;
-
-		int tu=256*(a/(2*M_PI)+z/6);
-		int tv=256*z;
-
-		lookup[x+y*Width]=((tv&0xff)<<8)|(tu&0xff);
-	}
-
-	for(int v=0;v<256;v++)
-	for(int u=0;u<256;u++)
-	{
-		int32_t bright=(isin(u*16)+Fix(1))/3;
-		texture[u+v*256]=RGB(
-		imul((isin(v*16)-1)/4,bright),
-		imul((isin(v*16+4096/3)-1)/4,bright),
-		imul((isin(v*16+2*4096/3)-1)/4,bright)
-		);
-	}
-}
-#endif
-
-void DrawTunnel(effect_tunnel_state *state, uint16_t *pixels)
-{
-	int i;
-	uint32_t *pixels32=(uint32_t *)pixels;
-
-	uint32_t t = state->t * 4;
-	int du=isin(t)>>2;
-	int dv=2*t;
-	int d=(dv<<8)+du;
+	int		 i;
+	uint32_t	*pixels32 = (uint32_t *)pixels;
+	uint32_t	 t	  = state->t * 4;
+	int		 du	  = isin(t)>>2;
+	int		 dv	  = 2*t;
+	int		 d	  = (dv<<8)+du;
 
 	for(i=0;i<state->width*state->height/2;i++)
 	{
-		uint32_t	val    = state->lookup32[i];
-		uint32_t	pixel1 = state->texture[((val>>16)+d)&0xffff];
-		uint32_t	pixel2 = state->texture[((val&0xffff)+d)&0xffff];
-		pixels32[i]	       = (pixel1<<16)|pixel2;
+		uint32_t	val		= state->lookup32[i];
+		uint32_t	pixel1		= state->texture[((val>>16)+d)&0xffff];
+		uint32_t	pixel2		= state->texture[((val&0xffff)+d)&0xffff];
+		u_int16_t	phys_col	= (2*i) % state->width + state->w_offset;
+		u_int16_t	phys_row	= (2*i) / state->width + state->h_offset;
+		u_int32_t	phys_row_offset = phys_row * state->phys_width;
+
+		pixels32[(phys_row_offset + phys_col)/2] = (pixel1<<16)|pixel2;
+
+		//pixels32[i]	       = (pixel1<<16)|pixel2;
 	}
 	state->t++;
 }
