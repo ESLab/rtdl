@@ -87,7 +87,7 @@ int main()
 			int	time = xTaskGetTickCount();
 			int	fps  = 10*16*1000/(time-lasttime);
 
-			printf("%d.%01d FPS\r\n",fps/10,fps%10);
+			printf("field: %d.%01d FPS\r\n",fps/10,fps%10);
 
 			lasttime = time;
 		}
