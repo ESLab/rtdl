@@ -25,37 +25,44 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
+ifdef(`simple_app',
 _simple_elf_start = ALIGN(0x4);
 . = _simple_elf_start;
 INCLUDE "build/simple-CONFIG.ld";
-_simple_elf_end = .;
+_simple_elf_end = .;)
 
+ifdef(`writer_app',
 _writer_elf_start = ALIGN(0x4);
 . = _writer_elf_start;
 INCLUDE "build/writer-CONFIG.ld";
-_writer_elf_end = .;
+_writer_elf_end = .;)
 
+ifdef(`reader_app',
 _reader_elf_start = ALIGN(0x4);
 . = _reader_elf_start;
 INCLUDE "build/reader-CONFIG.ld";
-_reader_elf_end = .;
+_reader_elf_end = .;)
 
+ifdef(`rtuappv1_app',
 _rtuappv1_elf_start = ALIGN(0x4);
 . = _rtuappv1_elf_start;
 INCLUDE "build/rtuappv1-CONFIG.ld";
-_rtuappv1_elf_end = .;
+_rtuappv1_elf_end = .;)
 
+ifdef(`rtuappv2_app',
 _rtuappv2_elf_start = ALIGN(0x4);
 . = _rtuappv2_elf_start;
 INCLUDE "build/rtuappv2-CONFIG.ld";
-_rtuappv2_elf_end = .;
+_rtuappv2_elf_end = .;)
 
+ifdef(`tunnel_app',
 _tunnel_elf_start = ALIGN(0x4);
 . = _tunnel_elf_start;
 INCLUDE "build/tunnel-CONFIG.ld";
-_tunnel_elf_end = .;
+_tunnel_elf_end = .;)
 
+ifdef(`field_app',
 _field_elf_start = ALIGN(0x4);
 . = _field_elf_start;
 INCLUDE "build/field-CONFIG.ld";
-_field_elf_end = .;
+_field_elf_end = .;)

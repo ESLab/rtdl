@@ -63,7 +63,7 @@ SECTIONS
     .dynamic : { *(.dynamic) }
     .kernel : {
 	    _kernel_elf_start = .;
-	    INCLUDE "build/kernel-taskmigr.ld"
+	    INCLUDE "build/kernel-taskmigr_nodbg.ld"
 	    _kernel_elf_end = .;
     } > ram
     .applications : {

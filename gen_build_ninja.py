@@ -209,16 +209,18 @@ configs = \
     [NinjaConfig(
         {'name': "rtudemo",
          'includedirs': common_includedirs + ["./libdwarf", "./System/config/rtudemo/include"],
-         'cflags': ["-O1"] + default_cflags,
-         'image_address': '0x10000'
+         'cflags': ["-O1", "-g3", "-gdwarf-3"] + default_cflags,
+         'image_address': '0x10000',
+         'include_apps': ["simple", "writer", "reader", "rtuappv1", "rtuappv2"]
          }),
-     
+
      NinjaConfig(
             {'name': "taskmigr",
              'includedirs': common_includedirs + \
                  ["./System/config/taskmigr/include"],
-             'cflags': ["-O2"] + default_cflags,
-             'image_address': '0x60100000'
+             'cflags': ["-O3"] + default_cflags,
+             'image_address': '0x60100000',
+             'include_apps': ["simple", "tunnel", "field"]
              })
      ]
 
@@ -267,7 +269,7 @@ includedirs = common_includedirs + \
 includedirs = list(set(includedirs))
 
 n.rule(name = "cc",
-       command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $includedir_args $cflags_args $app_cflags $in -o $out",
+       command = "$cc -MMD -MT $out -MF $out.d -c $includedir_args $cflags_args $app_cflags $in -o $out",
        description = "CC $out",
        depfile = "$out.d")
 
@@ -317,7 +319,7 @@ for c in configs:
         n.build(outputs   = elffile,
                 rule      = "link",
                 inputs    = list(app_s.get_object_files(app_c)),
-                variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
+                variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -fPIC -shared' },
                 implicit  = "App/app.ld")
         n.build(outputs   = ldfile,
                 rule      = "app_ld",
@@ -326,7 +328,7 @@ for c in configs:
     n.build(outputs   = builddir + "applications-" + c['name'] + ".ld",
             rule      = "m4",
             inputs    = "System/applications.ld.m4",
-            variables = {'m4flags': '-DCONFIG=' + c['name']})
+            variables = {'m4flags': '-DCONFIG=' + c['name'] + reduce(lambda s, a: s + ' -D' + a + "_app", c['include_apps'], "")})
 
 #######################
 # Link configurations #
@@ -345,7 +347,7 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
         n.build(outputs   = elffile,
                 rule      = "link",
                 inputs    = list(inputs.get_object_files(config)),
-                variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldf + ' -mcpu=cortex-a9 -g3 -gdwarf-3'}),
+                variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldf + ' -mcpu=cortex-a9'}),
                 implicit  = [builddir + name + "." + str(i - 1) + ".ld", ldf] if i > 0 else [ldf] + implicit)
         n.build(outputs   = symelffile,
                 rule      = "objcopy",
@@ -359,7 +361,7 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
     n.build(outputs   = bindir + name + ".elf",
             rule      = "link",
             inputs    = list(inputs.get_object_files(config)),
-            variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9 -g3 -gdwarf-3'}),
+            variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9'}),
             implicit  = [lastnldfile] + implicit)
     n.build(outputs   = bindir + name + ".bin",
             rule      = "objcopy",
@@ -373,7 +375,7 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
 c = configs[0]
 
 gen_step_build("rtudemo", config_source_files['rtudemo'],
-               map(lambda f: builddir + f + "-rtudemo.ld", applications) + [builddir + "applications-rtudemo.ld"],
+               map(lambda f: builddir + f + "-rtudemo.ld", c['include_apps']) + [builddir + "applications-rtudemo.ld"],
                ["System/rtudemo.0.ld", "System/rtudemo.1.ld", "System/rtudemo.2.ld"], c)
 
  #######################
@@ -382,22 +384,32 @@ gen_step_build("rtudemo", config_source_files['rtudemo'],
 
 c = configs[1]
 
+debug_in_kernel = False
+
 n.build(outputs   = bindir + "kernel-taskmigr.elf",
         rule      = "link",
         inputs    = list((config_source_files['taskmigr'].get_flattened() -
-                          vexpress_vm_boot_files).get_object_files(c)) +  \
+                          vexpress_vm_boot_files).get_object_files(c)) +              \
             ['./WittCore2Core.a'],
-        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3', 'libs': '-lm'}),
-        implicit  = map(lambda f: builddir + f + "-taskmigr.ld", list(applications)) + \
+        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld -mcpu=cortex-a9', 'libs': '-lm'}),
+        implicit  = map(lambda f: builddir + f + "-taskmigr.ld", c['include_apps']) + \
             ["System/arch/vexpress_vm/kernel.ld", builddir + "applications-taskmigr.ld"])
 n.build(outputs   = builddir + "kernel-taskmigr.ld",
         rule      = "app_ld",
         inputs    = bindir + "kernel-taskmigr.elf")
-n.build(outputs = bindir + "boot-taskmigr.elf",
-        rule = "link",
-        inputs = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
-        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'}),
-        implicit = ["System/arch/vexpress_vm/boot/loader.ld", builddir + "kernel-taskmigr.ld"])
+n.build(outputs   = bindir + "kernel-taskmigr_nodbg.elf",
+        rule      = "objcopy",
+        inputs    = bindir + "kernel-taskmigr.elf",
+        variables = c + NinjaConfig({'ocflags' : "-g"}))
+n.build(outputs   = builddir + "kernel-taskmigr_nodbg.ld",
+        rule      = "app_ld",
+        inputs    = bindir + "kernel-taskmigr_nodbg.elf")
+n.build(outputs   = bindir + "boot-taskmigr.elf",
+        rule      = "link",
+        inputs    = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
+        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9'}),
+        implicit  = ["System/arch/vexpress_vm/boot/loader.ld",
+                    builddir + "kernel-taskmigr.ld" if debug_in_kernel else builddir + "kernel-taskmigr_nodbg.ld"])
 n.build(outputs   = bindir + "boot-taskmigr.bin",
         rule      = "objcopy",
         inputs    = bindir + "boot-taskmigr.elf",
