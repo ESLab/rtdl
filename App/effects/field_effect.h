@@ -34,11 +34,25 @@
 typedef struct effect_field_state_t {
 	u_int16_t	 width;
 	u_int16_t	 height;
+	u_int16_t	 phys_width;
+	u_int16_t	 phys_height;
+	u_int16_t	 w_offset;
+	u_int16_t	 h_offset;
 	int16_t		*rayarray;
 	u_int32_t	 t;
 } effect_field_state;
 
-void InitializeField(effect_field_state *state, u_int16_t width, u_int16_t height);
-void DrawField(effect_field_state *state, u_int16_t *pixels);
+void InitializeField
+(effect_field_state	*state,
+ u_int16_t		 width,
+ u_int16_t		 height,
+ u_int16_t		 phys_width,
+ u_int16_t		 phys_height,
+ u_int16_t		 w_offset,
+ u_int16_t		 h_offset);
+
+void DrawField
+(effect_field_state	*state,
+ u_int16_t		*pixels);
 
 #endif /* FIELD_EFFECT_H */

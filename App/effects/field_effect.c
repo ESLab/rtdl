@@ -37,17 +37,27 @@
 #include <stdio.h>
 #include <math.h>
 
-void InitializeField(effect_field_state *state, u_int16_t width, u_int16_t height)
+void InitializeField
+(effect_field_state	*state,
+ u_int16_t		 width,
+ u_int16_t		 height,
+ u_int16_t		 phys_width,
+ u_int16_t		 phys_height,
+ u_int16_t		 w_offset,
+ u_int16_t		 h_offset)
 {
 	int		x,y;
 	u_int16_t	half_width  = width / 2;
 	u_int16_t	half_height = height / 2;
 	state->width		    = width;
 	state->height		    = height;
+	state->phys_width	    = phys_width;
+	state->phys_height	    = phys_height;
+	state->w_offset		    = w_offset;
+	state->h_offset		    = h_offset;
 	state->rayarray		    =
 		apptask_malloc(half_width * half_height * 3 * sizeof(*state->rayarray));
 	state->t		    = 0;
-
 
 	for(y=0; y < half_height; y++) {
 		for(x=0; x < half_width; x++)
@@ -78,7 +88,9 @@ static inline u_int16_t get_16bit_from_8bit(u_int8_t p)
 	return ret;
 }
 
-void DrawField(effect_field_state *state, uint16_t *pixels)
+void DrawField
+(effect_field_state	*state,
+ uint16_t		*pixels)
 {
 	int		 x,y;
 	int16_t		*rays	     = state->rayarray;
@@ -86,6 +98,7 @@ void DrawField(effect_field_state *state, uint16_t *pixels)
 	u_int16_t	 half_width  = state->width / 2;
 	u_int16_t	 half_height = state->height / 2;
 	u_int32_t	 vi	     = 0;
+	//u_int32_t	 view_base   = state->h_offset * state->phys_width + state->w_offset;
 
 	switch(t&3)
 	{
@@ -205,7 +218,14 @@ void DrawField(effect_field_state *state, uint16_t *pixels)
 				i--;
 			}
 
-			pixels[vi]=get_16bit_from_8bit(i);
+			u_int16_t pixel = get_16bit_from_8bit(i);
+
+			u_int16_t phys_col = vi % state->width + state->w_offset;
+			u_int32_t phys_row = vi / state->width + state->h_offset;
+			u_int32_t phys_row_offset = phys_row * state->phys_width;
+
+			//pixels[view_base + phys_col_offset + phys_row] = pixel;
+			pixels[phys_row_offset + phys_col] = pixel;
 			vi += 2;
 		}
 		vi += state->width;

@@ -62,36 +62,49 @@ int main()
 	int t;
 	effect_field_state effect_state;
 	u_int16_t *framebuffer1=(u_int16_t *)0x4c000000;
+#ifdef FIELD_DBL_BUFFER
 	//u_int16_t *framebuffer2=(u_int16_t *)0x4c400000;
+#endif /* FIELD_DBL_BUFFER */
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
-	InitializeField(&effect_state, 640, 480);
+	InitializeField(&effect_state, 320, 240, 640, 480,
+			320 * ((portCORE_ID() & 0x2) >> 1),
+			240 * ( portCORE_ID() & 0x1)     );
 
 	SetScreenFrameBuffer(framebuffer1);
 
 	int lasttime=0;
 
-	for(t=0;;t++)
-	{
-		if((t&15)==0)
-		{
-			int time=xTaskGetTickCount();
-			int fps=10*16*1000/(time-lasttime);
+#ifdef FIELD_DBL_BUFFER
+	for(t = 0; ; t += 2) {
+#else /* FIELD_DBL_BUFFER */
+	for(t = 0; ; t++) {
+#endif /* FIELD_DBL_BUFFER */
+
+		if((t&15)==0) {
+
+			int	time = xTaskGetTickCount();
+			int	fps  = 10*16*1000/(time-lasttime);
 
 			printf("%d.%01d FPS\r\n",fps/10,fps%10);
 
-			lasttime=time;
+			lasttime = time;
 		}
+#ifdef FIELD_DBL_BUFFER
+		taskYIELD();
+
+		DrawField(&effect_state, framebuffer2);
+		SetScreenFrameBuffer(framebuffer2);
 
 		taskYIELD();
 
 		DrawField(&effect_state, framebuffer1);
-		/* SetScreenFrameBuffer(framebuffer2); */
+		SetScreenFrameBuffer(framebuffer1);
+#else /* FIELD_DBL_BUFFER */
+		taskYIELD();
 
-		/* taskYIELD(); */
-
-		/* DrawField(&effect_state, framebuffer1); */
-		/* SetScreenFrameBuffer(framebuffer1); */
+		DrawField(&effect_state, framebuffer1);
+#endif /* FIELD_DBL_BUFFER */
 	}
 }
