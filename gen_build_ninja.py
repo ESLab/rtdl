@@ -253,8 +253,7 @@ config_source_files = \
 
 contributed_files = \
     get_sets_in_dict(applications) + vexpress_vm_boot_files + vexpress_novm_boot_files + \
-    system_utility_files + system_files + get_sets_in_dict(config_source_files) + \
-    get_ninja_set_of_files(["gen_build_ninja.py"])
+    system_utility_files + system_files + get_ninja_set_of_files(["gen_build_ninja.py"])
 
 
 all_files = \
