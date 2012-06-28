@@ -227,25 +227,35 @@ configs = \
 map(lambda config: config.preprocess(), configs)
 
 config_source_files = \
-    { 'rtudemo': get_ninja_set_of_files(
-        ['System/arch/vexpress_novm/main.c',
-         'Source/portable/MemMang/heap_3.c']) + \
-          system_files + \
-          system_utility_files + \
-          freertos_files + \
-          libdwarf_files + \
-          vexpress_novm_boot_files,
+    {
 
-      'taskmigr': get_ninja_set_of_files(
-        ['System/arch/vexpress_vm/main.c',
-         'System/arch/vexpress_vm/kernel-startup.S',
-         'System/arch/vexpress_vm/setup_vm.c',
-         'Source/portable/MemMang/heap_4.c']) + \
-          freertos_files + \
-          vexpress_vm_boot_files + \
-          (system_files - NinjaSet(["System/dwarfif.c", "System/pointer_tracer.c"])) + \
-          system_utility_files
-      }
+    'rtudemo': get_ninja_set_of_files([
+                'System/arch/vexpress_novm/rtudemo/main.c',
+                'Source/portable/MemMang/heap_3.c',
+                ]) +
+    system_files +
+    system_utility_files +
+    freertos_files +
+    libdwarf_files +
+    vexpress_novm_boot_files +
+    NinjaSet(),
+
+    'taskmigr': get_ninja_set_of_files([
+                'System/arch/vexpress_vm/main.c',
+                'System/arch/vexpress_vm/kernel-startup.S',
+                'System/arch/vexpress_vm/setup_vm.c',
+                'Source/portable/MemMang/heap_4.c',
+                ]) +
+    freertos_files +
+    vexpress_vm_boot_files +
+    (system_files - NinjaSet(
+                ["System/dwarfif.c",
+                 "System/pointer_tracer.c",
+                 ])) +
+    system_utility_files +
+    NinjaSet(),
+
+    }
 
 ################
 # Rule section #
