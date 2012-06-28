@@ -43,7 +43,7 @@ class NinjaFile(str):
         for s in self.split('/')[0:-1]:
             dirprefix += s.lower() + "_"
         return builddir + dirprefix + self.get_basename() + \
-            ("-" + config['name'] if config.has_key('name') else '')  + ".o"
+            ("-" + config['name'] if config.has_key('name') else '') + ("_app" if config.has_key('app') else '')  + ".o"
     def get_object_files(self, config):
         return NinjaSet([self.get_object_file(config)])
     def write_builds(self, n, config):
@@ -318,7 +318,10 @@ for c in configs:
     s = config_source_files[c['name']]
     s.write_builds(n, c)
     s = NinjaSet()
-    app_c = c + NinjaConfig({'cflags': ['-DIN_APPTASK']})
+    app_c = c + NinjaConfig({
+            'cflags': ['-DIN_APPTASK'],
+            'app': [],
+            })
     s = reduce(lambda s, a: s.union(applications[a]), applications, NinjaSet())
     for a in applications:
         #s = s.union(applications[a])
