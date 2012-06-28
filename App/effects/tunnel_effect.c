@@ -72,9 +72,17 @@ int InitializeTunnel
 	state->w_offset		= w_offset;
 	state->h_offset		= h_offset;
 	state->t		= 0;
+#ifdef IN_APPTASK
 	state->lookup32		= apptask_malloc(state->width * state->height * sizeof(uint32_t) / 2);
+#else
+	state->lookup32		= pvPortMalloc(state->width * state->height * sizeof(uint32_t) / 2);
+#endif /* IN_APPTASK */
 	uint16_t	*lookup = (uint16_t *)state->lookup32;
+#ifdef IN_APPTASK
 	state->texture		= apptask_malloc(256*256*sizeof(uint16_t));
+#else
+	state->texture		= pvPortMalloc(256*256*sizeof(uint16_t));
+#endif /* IN_APPTASK */
 
 	if (state->lookup32 == NULL || state->texture == NULL) {
 		printf("Malloc failed!\n");

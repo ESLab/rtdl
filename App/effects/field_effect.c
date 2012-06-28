@@ -56,7 +56,11 @@ void InitializeField
 	state->w_offset		    = w_offset;
 	state->h_offset		    = h_offset;
 	state->rayarray		    =
+#ifdef IN_APPTASK
 		apptask_malloc(half_width * half_height * 3 * sizeof(*state->rayarray));
+#else
+		pvPortMalloc(half_width * half_height * 3 * sizeof(*state->rayarray));
+#endif /* IN_APPTASK */
 	state->t		    = 0;
 
 	for(y=0; y < half_height; y++) {
