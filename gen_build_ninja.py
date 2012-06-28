@@ -308,6 +308,8 @@ config_source_files = \
 
     'rtupid': get_ninja_set_of_files([
                 'System/arch/vexpress_novm/rtupid/main.c',
+                'App/effects/field_effect.c',
+                'App/effects/Utils.c',
                 'Source/portable/MemMang/heap_3.c',
                 ]) +
     system_files +
