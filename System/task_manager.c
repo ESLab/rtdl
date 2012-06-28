@@ -299,6 +299,11 @@ int task_start(task_register_cons *trc)
 {
 	Elf32_Sym *entry_sym = find_symbol("_start", trc->elfh);
 
+	if (entry_sym == NULL) {
+		ERROR_MSG("Could not find entry symbol for task \"%s\"\n", trc->name);
+		return 0;
+	}
+
 	entry_ptr_t entry_point = trc->cont_mem + entry_sym->st_value;
 
 	if (entry_sym != NULL)
