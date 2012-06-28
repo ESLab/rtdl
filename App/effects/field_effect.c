@@ -62,6 +62,7 @@ void InitializeField
 		pvPortMalloc(half_width * half_height * 3 * sizeof(*state->rayarray));
 #endif /* IN_APPTASK */
 	state->t		    = 0;
+	state->last_buffer	    = NULL;
 
 	for(y=0; y < half_height; y++) {
 		for(x=0; x < half_width; x++)
@@ -102,7 +103,11 @@ void DrawField
 	u_int16_t	 half_width  = state->width / 2;
 	u_int16_t	 half_height = state->height / 2;
 	u_int32_t	 vi	     = 0;
-	//u_int32_t	 view_base   = state->h_offset * state->phys_width + state->w_offset;
+#if 0
+	int		 dbl_buf     = state->last_buffer == NULL ? 0 : (pixels != state->last_buffer);
+#else
+	int		 dbl_buf     = 0;
+#endif
 
 	switch(t&3)
 	{
@@ -222,17 +227,29 @@ void DrawField
 				i--;
 			}
 
-			u_int16_t pixel = get_16bit_from_8bit(i);
+			{
+				u_int16_t	pixel		   = get_16bit_from_8bit(i);
+				u_int16_t	phys_col	   = vi % state->width + state->w_offset;
+				u_int32_t	phys_row	   = vi / state->width + state->h_offset;
+				u_int32_t	phys_row_offset	   = phys_row * state->phys_width;
+				pixels[phys_row_offset + phys_col] = pixel;
+			}
 
-			u_int16_t phys_col = vi % state->width + state->w_offset;
-			u_int32_t phys_row = vi / state->width + state->h_offset;
-			u_int32_t phys_row_offset = phys_row * state->phys_width;
+			if (dbl_buf) {
+				u_int16_t	phys_col	   = (vi + 1) % state->width + state->w_offset;
+				u_int32_t	phys_row	   = (vi + 1) / state->width + state->h_offset;
+				u_int32_t	phys_row_offset	   = phys_row * state->phys_width;
+				pixels[phys_row_offset + phys_col] = state->last_buffer[phys_row_offset + phys_col];
+			}
 
-			//pixels[view_base + phys_col_offset + phys_row] = pixel;
-			pixels[phys_row_offset + phys_col] = pixel;
 			vi += 2;
+		}
+		if (dbl_buf) {
+			u_int32_t i_start = vi % state->width + state->w_offset;
+			memcpy(&pixels[i_start], &state->last_buffer[i_start], state->width);
 		}
 		vi += state->width;
 	}
 	state->t++;
+	state->last_buffer = pixels;
 }

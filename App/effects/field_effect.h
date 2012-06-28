@@ -39,6 +39,7 @@ typedef struct effect_field_state_t {
 	u_int16_t	 w_offset;
 	u_int16_t	 h_offset;
 	int16_t		*rayarray;
+	u_int16_t	*last_buffer;
 	u_int32_t	 t;
 } effect_field_state;
 
