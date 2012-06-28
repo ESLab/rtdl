@@ -115,6 +115,9 @@ void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address, xMemoryInform
 			bzero(section_addr, s[i].sh_size);
 		}
 	}
+	DEBUG_MSG("Kernel occupying %u bytes from 0x%x to 0x%x\n",
+		  (unsigned int)mit->phys_data_size, (npi_t)start_address,
+		  (npi_t)(start_address + mit->phys_data_size));
 }
 
 void *stack_ps[NUMBER_OF_CORES];
