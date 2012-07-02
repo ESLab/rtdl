@@ -28,6 +28,11 @@
 #ifndef RTU_H
 #define RTU_H
 
+#include <System/task_manager.h>
+#include <System/migrator.h>
+
+#include <semphr.h>
+
 #define RTU_DATA_SECTION_NAME ".rtu_data"
 
 #define _RTU_DATA_ __attribute__ ((section (RTU_DATA_SECTION_NAME)))
@@ -37,12 +42,5 @@
   xSemaphoreGive(migrator_semaphore); \
   vTaskSuspend(NULL); \
   } while (0);
-
-typedef enum {
-  cp_req_rtu,
-  cp_req_tm
-} cp_req_t;
-
-typedef void (*request_hook_fn_t)(cp_req_t req_type);
 
 #endif /* RTU_H */
