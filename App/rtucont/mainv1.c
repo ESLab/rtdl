@@ -25,41 +25,65 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef _APPLICATIONS_H_
-#define _APPLICATIONS_H_
-
 #include <FreeRTOS.h>
 
+#define SYSTEM_MODULE_NAME "CONTROLLER_V1"
+
 #include <System/system.h>
-#include <System/elf.h>
-#include <System/types.h>
 
-#define APPLICATION_TASK_PRIORITY 2
+#include <App/rtucont/rtu_controller.h>
+#include <App/rtu.h>
 
-extern u_int8_t _simple_elf_start;
-extern u_int8_t _simple_elf_end;
+#include <stdio.h>
 
-extern u_int8_t _writer_elf_start;
-extern u_int8_t _reader_elf_start;
-extern u_int8_t _rtuappv1_elf_start;
-extern u_int8_t _rtuappv2_elf_start;
-extern u_int8_t _rtucontv1_elf_start;
+#define SET_VALUE (40.0)
 
-extern u_int8_t _system_elf_start;
+#define P (-0.2)
+#define I (-0.5)
+#define D (0.0)
 
-#define APPLICATION_ELF(app) ((Elf32_Ehdr *)&_ ## app ## _elf_start)
+#define SIGNAL_MAX 500
 
-#ifdef HAS_SYSTEM_ELF_SYMBOL
-#define SYSTEM_ELF ((Elf32_Ehdr *)&_system_elf_start)
-#else /* HAS_SYSTEM_ELF_SYMBOL */
-#ifdef HAS_BINARY_REGISTER
-#include <System/arch/vexpress_vm/memory_layout.h>
-#define MIS_STRUCT ((xMemoryInformationType *)MIS_START_ADDRESS)
-#define BINARY_REGISTER ((binary_register_entry *)MIS_STRUCT->phys_binary_register_begin)
-#define SYSTEM_ELF (BINARY_REGISTER[0].elfh)
-#else /* HAS_BINARY_REGISTER */
-#define SYSTEM_ELF ((Elf32_Ehdr *)NULL)
-#endif /* HAS_BINARY_REGISTER */
-#endif /* HAS_SYSTEM_ELF_SYMBOL */
+_RTU_DATA_ volatile float integrator = 0.0;
 
-#endif /* _APPLICATIONS_H_ */
+volatile int rtu_requested = 0;
+
+void cpRequestHook(cp_req_t req_type)
+{
+	if (req_type == cp_req_rtu) {
+		INFO_MSG("Controller run-time update request recieved.\n");
+		rtu_requested = 1;
+	}
+	return;
+}
+
+int main()
+{
+	measurement_t	input;
+	float		last_error = 0.0;
+
+	while (!rtu_requested) {
+		if (xQueueReceive(MeasurementQueue, (void *)&input, (portTickType)portMAX_DELAY) != pdPASS) {
+			ERROR_MSG("Failed to receive measurement from plant.\n");
+		} else {
+			float fps = (float)input * (float)FRAME_COUNTING_FREQUENCY;
+			float error = SET_VALUE - fps;
+
+			integrator	   += error;
+			float	difference  = error - last_error;
+			last_error	    = error;
+
+			float		fsignal = P*error + I*integrator + D*difference;
+			int32_t		signal	= fsignal;
+			controlsignal_t output	= signal < 0 ? 0 : (signal > SIGNAL_MAX ? SIGNAL_MAX : signal);
+
+			if (xQueueSendToBack(ControlSignalQueue, (void *)&output, (portTickType)portMAX_DELAY) != pdPASS) {
+				ERROR_MSG("Failed to send control signal to plant.\n");
+			}
+		}
+	}
+
+	TASK_IN_SAFE_STATE();
+
+	return 0;
+}

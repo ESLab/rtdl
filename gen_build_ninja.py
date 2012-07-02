@@ -172,15 +172,44 @@ freertos_memmang_files = \
     get_ninja_set_of_files(
     map(lambda n: NinjaFile("Source/portable/MemMang/heap_%i.c" % n), [2,3,4]))
 
-applications = { 'simple': get_ninja_set_of_files(['App/app_startup.S', 'App/simple.c']),
-                 'writer': get_ninja_set_of_files(['App/app_startup.S', 'App/writer.c']),
-                 'reader': get_ninja_set_of_files(['App/app_startup.S', 'App/reader.c']),
-                 'rtuappv1': get_ninja_set_of_files(['App/app_startup.S', 'App/rtu_appv1.c']),
-                 'rtuappv2': get_ninja_set_of_files(['App/app_startup.S', 'App/rtu_appv2.c']),
-                 'tunnel': get_ninja_set_of_files(['App/app_startup.S', 'App/effects/tunnel.c',
-                                                   'App/effects/tunnel_effect.c', 'App/effects/Utils.c']),
-                 'field': get_ninja_set_of_files(['App/app_startup.S', 'App/effects/field.c',
-                                                  'App/effects/field_effect.c', 'App/effects/Utils.c'])}
+applications = {
+    'simple': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/simple.c',
+            ]),
+    'writer': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/writer.c',
+            ]),
+    'reader': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/reader.c',
+            ]),
+    'rtuappv1': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/rtu_appv1.c',
+            ]),
+    'rtuappv2': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/rtu_appv2.c',
+            ]),
+    'tunnel': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/effects/tunnel.c',
+            'App/effects/tunnel_effect.c',
+            'App/effects/Utils.c',
+            ]),
+    'field': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/effects/field.c',
+            'App/effects/field_effect.c',
+            'App/effects/Utils.c',
+            ]),
+    'rtucontv1': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/rtucont/mainv1.c',
+            ]),
+    }
 
 vexpress_vm_boot_files = get_ninja_set_of_files(
     map(lambda f: "System/arch/vexpress_vm/" + f,
@@ -260,7 +289,7 @@ configs = [
             common_includedirs +
             [],
             'cflags': [
-                "-O1",
+                "-O3",
                 "-g3",
                 "-gdwarf-3",
                 ] +
@@ -270,6 +299,7 @@ configs = [
             'include_apps': [
                 "rtuappv1",
                 "rtuappv2",
+                "rtucontv1",
                 ],
             }),
 

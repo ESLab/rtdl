@@ -66,3 +66,9 @@ _field_elf_start = ALIGN(0x4);
 . = _field_elf_start;
 INCLUDE "build/field-CONFIG.ld";
 _field_elf_end = .;)
+
+ifdef(`rtucontv1_app',
+_rtucontv1_elf_start = ALIGN(0x4);
+. = _rtucontv1_elf_start;
+INCLUDE "build/rtucontv1-CONFIG.ld";
+_rtucontv1_elf_end = .;)
