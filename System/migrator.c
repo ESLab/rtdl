@@ -105,7 +105,12 @@ static int runtime_update_die_cb(pt_pstate *pstate, Dwarf_Die die, void *arg)
 		DEBUG_MSG("Found variable @ 0x%x, we have lower_bound = 0x%x and upper_bound = 0x%x\n",
 			  address, bounds->lower_bound, bounds->upper_bound);
 		if (p != NULL && address >= bounds->lower_bound && address < bounds->upper_bound) {
-			DEBUG_MSG("Found static variable \"%s\" @ 0x%x.\n", name, (u_int32_t)p);
+			const char *s;
+			if (dwarf_get_TAG_name(tag, &s) != DW_DLV_OK) {
+				ERROR_MSG("%s: Could not get tag name.\n", __func__);
+				return 0;
+			}
+			DEBUG_MSG("Found static variable \"%s\" @ 0x%x, with type %s.\n", name, (u_int32_t)p, s);
 			INFO_MSG("Found type for variable %s\n", name);
 
 			if (!pt_trace_pointer(pstate, type_die, p)) {
