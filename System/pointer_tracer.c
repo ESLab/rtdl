@@ -38,6 +38,7 @@
 #include <libdwarf.h>
 
 static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v);
+static int pt_internal_trace_type(pt_pstate *state, pt_visited_variable *v);
 
 RB_GENERATE(pt_dyn_memsect_tree_t, pt_dyn_memsect_t, tree_e, pt_dyn_memsect_tree_cmp)
 RB_GENERATE(pt_visited_variable_tree_t, pt_visited_variable_t, tree_e, pt_visited_variable_tree_cmp)
@@ -88,6 +89,28 @@ int pt_trace_pointer(pt_pstate *state, Dwarf_Die type_die, void *p)
 	v->mem_p    = p;
 
 	return pt_internal_trace_pointer(state, v);
+}
+
+static int pt_internal_trace_type(pt_pstate *state, pt_visited_variable *v)
+{
+	while ((v->type_die = dwarfif_follow_attr(state->dbg, v->type_die, DW_AT_type)) != NULL) {
+
+		Dwarf_Error	err;
+		Dwarf_Half	tag;
+
+		if (dwarf_tag(v->type_die, &tag, &err) != DW_DLV_OK) {
+			return 0;
+		}
+
+		switch (tag) {
+		case DW_TAG_pointer_type:
+			return pt_internal_trace_pointer(state, v);
+		case DW_TAG_structure_type:
+			DEBUG_MSG("Not yet implemented!\n");
+			return 0;
+		}
+	}
+	return 1;
 }
 
 static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
@@ -169,15 +192,13 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 	 * Make a new visited_variable node.
 	 */
 
-	Dwarf_Die new_type_die = dwarfif_follow_attr(state->dbg, v->type_die, DW_AT_type);
-	new_type_die = dwarfif_follow_attr_until(state->dbg, new_type_die, DW_AT_type, DW_TAG_pointer_type);
+	Dwarf_Die	next_type_die = dwarfif_follow_attr(state->dbg, v->type_die, DW_AT_type);
 
-	if (new_type_die == NULL) {
+	if (next_type_die == NULL) {
 		/*
-		 * We did not find a new pointer (variable atomic),
-		 * return.
+		 * No new type die, we can't continue.
 		 */
-		DEBUG_MSG("Did not find a new pointer.\n");
+		DEBUG_MSG("Did not find any new type.\n");
 		return 1;
 	}
 
@@ -189,7 +210,6 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 		return 1;
 	}
 
-
 	pt_visited_variable *new_v;
 
 	if ((new_v = SYSTEM_MALLOC_CALL(sizeof(pt_visited_variable))) == NULL) {
@@ -197,13 +217,17 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 		return 0;
 	}
 
-	new_v->type_die	 = new_type_die;
+	new_v->type_die	 = next_type_die;
 	new_v->mem_p	 = (void *)new_p;
 	new_v->section_p = new_section_p;
+	DEBUG_MSG("Following variable @ 0x%x\n", (u_int32_t)new_p);
 
-	DEBUG_MSG("Following pointer 0x%x\n", (u_int32_t)new_p);
-
-	return pt_internal_trace_pointer(state, new_v);
+	if (!pt_internal_trace_type(state, new_v)) {
+		SYSTEM_FREE_CALL(new_v);
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 static int pt_iterate_die_1(pt_pstate *pstate, Dwarf_Die die, pt_die_cb_fun_t *fun, void *arg)
