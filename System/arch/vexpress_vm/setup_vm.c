@@ -25,7 +25,8 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#define SYSTEM_MODULE_NAME "VX_VM_SETUP"
+#define VX_VM_SETUP VX_VM_SETUP
+#define SYSTEM_MODULE VX_VM_SETUP
 
 #include <FreeRTOS.h>
 

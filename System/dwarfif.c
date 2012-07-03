@@ -27,7 +27,8 @@
 
 #include <FreeRTOS.h>
 
-#define SYSTEM_MODULE_NAME "DWARFIF"
+#define DWARFIF DWARFIF
+#define SYSTEM_MODULE DWARFIF
 
 #include <System/types.h>
 #include <System/dwarfif.h>

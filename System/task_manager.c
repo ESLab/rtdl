@@ -27,7 +27,8 @@
 
 #include <FreeRTOS.h>
 
-#define SYSTEM_MODULE_NAME "TASK_MANAGER"
+#define TASK_MANAGER TASK_MANAGER
+#define SYSTEM_MODULE TASK_MANAGER
 
 #include <task.h>
 #include <semphr.h>

@@ -27,7 +27,8 @@
 
 #include <FreeRTOS.h>
 
-#define SYSTEM_MODULE_NAME "VX_LOADER"
+#define VX_LOADER VX_LOADER
+#define SYSTEM_MODULE VX_LOADER
 
 #include <stdio.h>
 #include <string.h>

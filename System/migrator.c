@@ -27,7 +27,8 @@
 
 #include <FreeRTOS.h>
 
-#define SYSTEM_MODULE_NAME "MIGRATOR"
+#define MIGRATOR MIGRATOR
+#define SYSTEM_MODULE MIGRATOR
 
 #include <task.h>
 #include <semphr.h>

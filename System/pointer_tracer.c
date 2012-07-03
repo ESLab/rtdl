@@ -27,7 +27,8 @@
 
 #include <FreeRTOS.h>
 
-#define SYSTEM_MODULE_NAME "POINTER_TRACER"
+#define POINTER_TRACER POINTER_TRACER
+#define SYSTEM_MODULE POINTER_TRACER
 
 #include <System/pointer_tracer.h>
 #include <System/tree.h>

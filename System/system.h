@@ -37,31 +37,34 @@
 #define SYSTEM_DWARFIF
 #endif /* RUNTIME_UPDATING */
 
+#define XMACRO_STR(MACRO) MACRO_STR(MACRO)
+#define MACRO_STR(MACRO) #MACRO
+
 #ifdef DEBUG
-#ifdef SYSTEM_MODULE_NAME
-#define DEBUG_MSG(...)	printf(SYSTEM_MODULE_NAME ": DEBUG>>> "  __VA_ARGS__)
-#else				/* SYSTEM_MODULE_NAME */
+#ifdef SYSTEM_MODULE
+#define DEBUG_MSG(...)	printf(XMACRO_STR(SYSTEM_MODULE) ": DEBUG>>> "  __VA_ARGS__)
+#else				/* SYSTEM_MODULE */
 #define DEBUG_MSG(...)	printf("DEBUG>>> "  __VA_ARGS__)
-#endif /* SYSTEM_MODULE_NAME */
+#endif /* SYSTEM_MODULE */
 #else
 #define DEBUG_MSG(...)
 #endif
 
 #ifdef INFO
-#ifdef SYSTEM_MODULE_NAME
-#define INFO_MSG(...)	printf(SYSTEM_MODULE_NAME ": INFO >>> " __VA_ARGS__)
-#else				/* SYSTEM_MODULE_NAME */
+#ifdef SYSTEM_MODULE
+#define INFO_MSG(...)	printf(XMACRO_STR(SYSTEM_MODULE) ": INFO >>> " __VA_ARGS__)
+#else				/* SYSTEM_MODULE */
 #define INFO_MSG(...)	printf("INFO >>> " __VA_ARGS__)
-#endif /* SYSTEM_MODULE_NAME */
+#endif /* SYSTEM_MODULE */
 #else
 #define INFO_MSG(...)
 #endif
 
-#ifdef SYSTEM_MODULE_NAME
-#define ERROR_MSG(...)	printf(SYSTEM_MODULE_NAME ": ERROR>>> " __VA_ARGS__)
-#else				/* SYSTEM_MODULE_NAME */
+#ifdef SYSTEM_MODULE
+#define ERROR_MSG(...)	printf(XMACRO_STR(SYSTEM_MODULE) ": ERROR>>> " __VA_ARGS__)
+#else				/* SYSTEM_MODULE */
 #define ERROR_MSG(...)	printf("ERROR>>> " __VA_ARGS__)
-#endif /* SYSTEM_MODULE_NAME */
+#endif /* SYSTEM_MODULE */
 
 #define SYSTEM_MALLOC_CALL(s) pvPortMalloc(s)
 #define SYSTEM_FREE_CALL(p) vPortFree(p)
