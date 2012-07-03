@@ -35,4 +35,9 @@
 #define RTU_POINTER_TRACING
 #define HAS_SYSTEM_ELF_SYMBOL
 
+#if defined(LINKER) || defined(TASK_MANAGER)
+#undef DEBUG
+#undef INFO
+#endif
+
 #endif /* SYSTEM_CONFIG_H */ 
