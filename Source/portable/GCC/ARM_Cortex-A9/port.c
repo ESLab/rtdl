@@ -549,6 +549,11 @@ static void WriteACTLR(unsigned long ACTLR)
 }
 #endif
 
+void vPortInvalidateInstructionCache(void)
+{
+	__asm volatile ("mcr   p15, 0, %[zero], c7, c5, 0"::[zero] "r" (0):);
+}
+
 void vPortCleanDataCache(void)
 {
 
@@ -644,7 +649,7 @@ extern unsigned long _data;*/
 	WriteSCTLR(ReadSCTLR()&~(1<<0));
 
 	// Invalidate instruction cache.
-	__asm volatile ("mcr   p15, 0, %[zero], c7, c5, 0"::[zero] "r" (0):);
+	vPortInvalidateInstructionCache();
 
 	// Invalidate data cache.
 	__asm volatile("mrc p15, 1, %[csir], c0, c0, 0"
