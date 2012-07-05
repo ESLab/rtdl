@@ -217,16 +217,14 @@ int main()
 		goto error;
 	}
 
-#if 0
 	/*
 	 * Create migration task.
 	 */
 
 	if (!migrator_start()) {
 		ERROR_MSG("Could not start migrator.\n");
-		goto exit;
+		goto error;
 	}
-#endif
 
 	INFO_MSG("Starting scheduler\n");
 	vTaskStartScheduler();

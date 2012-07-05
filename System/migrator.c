@@ -542,7 +542,10 @@ void migrator_task(void *arg)
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv2_elf_start;
 
 			INFO_MSG("Starting runtime update.\n");
-			runtime_update(trc, new_sw);
+			if (!runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				goto error;
+			}
 			INFO_MSG("Runtime update complete. (-> v2)\n");
 			xSemaphoreGive(migrator_semaphore);
 		}
@@ -560,12 +563,95 @@ void migrator_task(void *arg)
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv1_elf_start;
 
 			INFO_MSG("Starting runtime update.\n");
-			runtime_update(trc, new_sw);
+			if (!runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				goto error;
+			}
 			INFO_MSG("Runtime update complete. (-> v1)\n");
 			xSemaphoreGive(migrator_semaphore);
 		}
 	}
 #endif /* RTUDEMO_UPDATING */
+#ifdef RTUCONT_UPDATING
+	task_register_cons *trc;
+
+	while (1) {
+		vTaskDelay(1000/portTICK_RATE_MS);
+
+		if ((trc = task_find("rtucont"))) {
+			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
+			INFO_MSG("Calling request hook.\n");
+			(trc->request_hook)(cp_req_rtu);
+			INFO_MSG("Returned from request hook.\n");
+			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
+			DEBUG_MSG("BOO! (-> v2)\n");
+
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv2_elf_start;
+
+			INFO_MSG("Starting runtime update.\n");
+			if (!runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				goto error;
+			}
+			INFO_MSG("Runtime update complete. (-> v2)\n");
+			xSemaphoreGive(migrator_semaphore);
+		} else {
+			goto error;
+		}
+
+		vTaskDelay(1000/portTICK_RATE_MS);
+
+		if ((trc = task_find("rtucont"))) {
+			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
+			INFO_MSG("Calling request hook.\n");
+			(trc->request_hook)(cp_req_rtu);
+			INFO_MSG("Returned from request hook.\n");
+			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
+			DEBUG_MSG("BOO! (-> v2)\n");
+
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv3_elf_start;
+
+			INFO_MSG("Starting runtime update.\n");
+			if (!runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				goto error;
+			}
+			INFO_MSG("Runtime update complete. (-> v3)\n");
+			xSemaphoreGive(migrator_semaphore);
+		} else {
+			goto error;
+		}
+
+		vTaskDelay(1000/portTICK_RATE_MS);
+
+		if ((trc = task_find("rtucont"))) {
+			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
+			INFO_MSG("Calling request hook.\n");
+			(trc->request_hook)(cp_req_rtu);
+			INFO_MSG("Returned from request hook.\n");
+			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
+			DEBUG_MSG("BOO! (-> v2)\n");
+
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv1_elf_start;
+
+			INFO_MSG("Starting runtime update.\n");
+			if (!runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				goto error;
+			}
+			INFO_MSG("Runtime update complete. (-> v1)\n");
+			xSemaphoreGive(migrator_semaphore);
+		} else {
+			goto error;
+		}
+
+
+	}
+#endif /* RTUCONT_UPDATING */
+error:
+	ERROR_MSG("Migrator in error state, going into infinite loop.\n");
+	while (1)
+		;
 #else /* RUNTIME_UPDATING */
 	while(1) {
 		vTaskDelay(1000/portTICK_RATE_MS);
