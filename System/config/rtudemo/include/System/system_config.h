@@ -31,6 +31,8 @@
 #define DEBUG
 #define INFO
 
+#define RTUDEMO_UPDATING
+
 #define RUNTIME_UPDATING
 #define RTU_POINTER_TRACING
 #define HAS_SYSTEM_ELF_SYMBOL

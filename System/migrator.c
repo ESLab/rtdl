@@ -525,6 +525,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 void migrator_task(void *arg)
 {
 #ifdef RUNTIME_UPDATING
+#ifdef RTUDEMO_UPDATING
 	task_register_cons *trc;
 
 	while (1) {
@@ -564,6 +565,7 @@ void migrator_task(void *arg)
 			xSemaphoreGive(migrator_semaphore);
 		}
 	}
+#endif /* RTUDEMO_UPDATING */
 #else /* RUNTIME_UPDATING */
 	while(1) {
 		vTaskDelay(1000/portTICK_RATE_MS);
