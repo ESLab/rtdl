@@ -121,7 +121,7 @@ static int runtime_update_die_cb(pt_pstate *pstate, Dwarf_Die die, void *arg)
 			}
 		}
 	} else {
-		INFO_MSG("Could not get type die for variable.\n");
+		INFO_MSG("Could not get type die for variable, ignoring.\n");
 	}
 	return 1;
 }
@@ -247,8 +247,8 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 * Allocate memory for the new software.
 	 */
 
-	struct task_register_cons_t *new_trc =
-	  (struct task_register_cons_t *)SYSTEM_MALLOC_CALL(sizeof(task_register_cons));
+	task_register_cons *new_trc =
+		(task_register_cons *)SYSTEM_MALLOC_CALL(sizeof(task_register_cons));
 
 	if (new_trc == NULL) {
 		ERROR_MSG("could not allocate memory while run-time updating task \"%s\"\n", trc->name);
