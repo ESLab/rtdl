@@ -408,9 +408,10 @@ void *task_apptask_malloc(size_t size, task_register_cons *trc)
 void task_apptask_free(void *ptr, task_register_cons *trc)
 {
 	APPTASK_FREE_CALL(ptr);
+	task_dynmemsect_cons criterion = { .ptr = ptr };
 	task_dynmemsect_cons *dms =
 		SPLAY_FIND(task_dynmemsect_tree_t,
-			   &trc->dynmemsects, ptr);
+			   &trc->dynmemsects, &criterion);
 	if (dms != NULL) {
 		SPLAY_REMOVE(task_dynmemsect_tree_t, &trc->dynmemsects, dms);
 		SYSTEM_FREE_CALL(dms);
