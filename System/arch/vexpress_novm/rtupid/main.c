@@ -27,7 +27,7 @@
 
 #include <FreeRTOS.h>
 
-#define SYSTEM_MODULE_NAME "MAIN"
+#define SYSTEM_MODULE MAIN_RTUCONT
 
 #include <task.h>
 #include <queue.h>

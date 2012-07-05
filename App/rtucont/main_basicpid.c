@@ -27,7 +27,7 @@
 
 #include <FreeRTOS.h>
 
-#define SYSTEM_MODULE_NAME "CONTROLLER_V1"
+#define SYSTEM_MODULE CONTROLLER_V1
 
 #include <System/system.h>
 
