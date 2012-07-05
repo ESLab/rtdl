@@ -48,8 +48,7 @@
 #define PRBS_HIGH_VAL ( 1.0)
 #define PRBS_LOW_VAL  (-1.0)
 
-_RTU_DATA_ volatile float	integrator = 0.0;
-_RTU_DATA_ volatile float	last_mv_u  = 0.0;
+_RTU_DATA_ controller_state_v3 *state = NULL;
 
 #define F1 (0.7905)
 #define G0 (0.0770)
@@ -78,29 +77,94 @@ static void print_data_row(int32_t input, int32_t output)
 	}
 }
 
+static int setup_rtu_state( void )
+{
+	if (state == NULL) {
+		INFO_MSG("Allocating state struct.\n");
+		state		  = apptask_malloc(sizeof(controller_state_v3));
+		if (state == NULL) {
+			ERROR_MSG("Could not allocate state.\n");
+			goto error;
+		}
+		state->ver	  = controller_version_3;
+		state->integrator = 0.0;
+		state->last_mv_u  = 0.0;
+	}
+
+	switch (state->ver) {
+	case controller_version_1:
+		INFO_MSG("Found old state with version 1 version, transforming.\n");
+		{
+			controller_state_v1	*old_state = (controller_state_v1 *)state;
+			controller_state_v3	*new_state = apptask_malloc(sizeof(controller_state_v3));
+			if (new_state == NULL) {
+				ERROR_MSG("Could not allocate new state.\n");
+				goto error;
+			}
+			new_state->ver	      = controller_version_3;
+			new_state->integrator = old_state->integrator;
+			new_state->last_mv_u  = 0.0;
+			apptask_free(state);
+			state		      = new_state;
+		}
+		break;
+	case controller_version_2:
+		INFO_MSG("Found old state with version 2, transforming.\n");
+		{
+			controller_state_v2	*old_state = (controller_state_v2 *)state;
+			controller_state_v3	*new_state = apptask_malloc(sizeof(controller_state_v3));
+			if (new_state == NULL) {
+				ERROR_MSG("Could not allocate new state.\n");
+				goto error;
+			}
+			new_state->ver	      = controller_version_3;
+			new_state->integrator = old_state->integrator;
+			new_state->last_mv_u  = 0.0;
+			apptask_free(state);
+			state		      = new_state;
+		}
+		break;
+
+	case controller_version_3:
+		INFO_MSG("Found old state with version 3, ok.\n");
+		break;
+	}
+
+	return 1;
+
+error:
+	return 0;
+}
+
 int main()
 {
 	measurement_t	input;
 	float		last_error = 0.0;
 
+	if (!setup_rtu_state()) {
+		ERROR_MSG("Could not setup rtu state.\n");
+		goto error;
+	}
+
+
 	while (!rtu_requested) {
 		if (xQueueReceive(MeasurementQueue, (void *)&input, (portTickType)portMAX_DELAY) != pdPASS) {
 			ERROR_MSG("Failed to receive measurement from plant.\n");
 		} else {
-			float fps = (float)input * (float)FRAME_COUNTING_FREQUENCY;
-			float error = SET_VALUE - fps;
+			float	fps		= (float)input * (float)FRAME_COUNTING_FREQUENCY;
+			float	error		= SET_VALUE - fps;
 
-			integrator	   += error;
-			float	difference  = error - last_error;
-			last_error	    = error;
+			state->integrator      += error;
+			float	difference	= error - last_error;
+			last_error		= error;
 
-			float	fsignal	    = P*error + I*integrator + D*difference;
-			float	mv_y	    = error;
-			float	mv_u	    = -F1*last_mv_u + (G0/B0)*mv_y;
+			float	fsignal		= P*error + I*state->integrator + D*difference;
+			float	mv_y		= error;
+			float	mv_u		= -F1*state->last_mv_u + (G0/B0)*mv_y;
+			state->last_mv_u	= mv_u;
+			fsignal		       += mv_u;
 
-			fsignal		   += mv_u;
-
-			int32_t		signal	= fsignal;
+			int32_t	signal		= fsignal;
 			controlsignal_t output	= signal < 0 ? 0 : (signal > SIGNAL_MAX ? SIGNAL_MAX : signal);
 
 			print_data_row(error, mv_u);
@@ -112,6 +176,17 @@ int main()
 	}
 
 	TASK_IN_SAFE_STATE();
+	ERROR_MSG("Task got out of state state, entering infinite loop.\n");
+
+	while (1)
+		;
 
 	return 0;
+
+error:
+	ERROR_MSG("Task in error state, entering infinite loop.\n");
+	while (1)
+		;
+	return 0;
+
 }

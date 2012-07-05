@@ -38,7 +38,30 @@
 typedef u_int32_t	measurement_t;
 typedef u_int32_t	controlsignal_t;
 
+typedef enum controller_version_t {
+	controller_version_1,
+	controller_version_2,
+	controller_version_3
+} controller_version;
+
 extern xQueueHandle	MeasurementQueue;
 extern xQueueHandle	ControlSignalQueue;
+
+typedef struct controller_state_v1_t {
+	controller_version	ver;
+	volatile float		integrator;
+} controller_state_v1;
+
+typedef struct controller_state_v2_t {
+	controller_version	ver;
+	volatile float		integrator;
+} controller_state_v2;
+
+typedef struct controller_state_v3_t {
+	controller_version	ver;
+	volatile float		integrator;
+	volatile float		last_mv_u;
+} controller_state_v3;
+
 
 #endif /* APP_RTUCONT_CONTQUEUES_H */
