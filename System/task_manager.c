@@ -247,6 +247,7 @@ int task_alloc(task_register_cons *trc)
 
 #ifdef DATA_CACHE_ENABLED
 	vPortCleanDataCache();
+	vPortInvalidateInstructionCache();
 #endif /* DATA_CACHE_ENABLED */
 
 	return 1;
