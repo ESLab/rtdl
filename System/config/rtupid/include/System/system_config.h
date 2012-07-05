@@ -31,10 +31,18 @@
 #define DEBUG
 #define INFO
 
+#define RTUCONT_UPDATING
+
 #define RUNTIME_UPDATING
 #define RTU_POINTER_TRACING
 #define HAS_SYSTEM_ELF_SYMBOL
 
 #define DATA_CACHE_ENABLED
+
+#if defined(LINKER)
+#undef DEBUG
+#undef INFO
+#endif
+
 
 #endif /* SYSTEM_CONFIG_H */ 
