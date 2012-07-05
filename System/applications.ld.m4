@@ -76,11 +76,11 @@ _rtucontv1_elf_end = .;)
 ifdef(`rtucontv2_app',
 _rtucontv2_elf_start = ALIGN(0x4);
 . = _rtucontv2_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
+INCLUDE "build/rtucontv2-CONFIG.ld";
 _rtucontv2_elf_end = .;)
 
 ifdef(`rtucontv3_app',
 _rtucontv3_elf_start = ALIGN(0x4);
 . = _rtucontv3_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
+INCLUDE "build/rtucontv3-CONFIG.ld";
 _rtucontv3_elf_end = .;)

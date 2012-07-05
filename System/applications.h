@@ -44,6 +44,8 @@ extern u_int8_t _reader_elf_start;
 extern u_int8_t _rtuappv1_elf_start;
 extern u_int8_t _rtuappv2_elf_start;
 extern u_int8_t _rtucontv1_elf_start;
+extern u_int8_t _rtucontv2_elf_start;
+extern u_int8_t _rtucontv3_elf_start;
 
 extern u_int8_t _system_elf_start;
 
