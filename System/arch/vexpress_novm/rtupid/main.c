@@ -88,13 +88,25 @@ portTASK_FUNCTION(plant_task, arg)
 	}
 }
 
+static void print_data_row(int32_t fps, int32_t cs)
+{
+	int i;
+	char ostr[40];
+
+	sprintf(ostr, "%i, %i;\n", fps, cs);
+
+	for (i = 0; ostr[i] != '\0'; i++) {
+		xUARTSendCharacter(3, ostr[i], 0);
+	}
+}
+
 portTASK_FUNCTION(frame_counting_task, arg)
 {
-	const u_int32_t funit	       = RTUCONT_FIXED_UNIT;
-	const u_int32_t alpha	       = funit / 0x100;
+	
+	const float	alpha	       = 0.1;
 	u_int32_t	old_fc;
 	u_int32_t	new_fc	       = fc;
-	u_int32_t	average	       = funit;
+	float		average	       = 1.0;
 	portTickType	last_wake_time = xTaskGetTickCount();
 
 	while(1) {
@@ -102,9 +114,10 @@ portTASK_FUNCTION(frame_counting_task, arg)
 		vTaskDelayUntil(&last_wake_time, 1000/FRAME_COUNTING_FREQUENCY);
 		new_fc = fc;
 
+
 		u_int32_t	d   = new_fc - old_fc;
-		average		    = alpha * d + (funit - alpha) * average;
-		u_int32_t       fps = (funit * d) * FRAME_COUNTING_FREQUENCY;
+		float		fps = (float)d * (double)FRAME_COUNTING_FREQUENCY;
+		average             = alpha * fps + (1 - alpha) * average;
 
 		if (xQueueSendToBack(MeasurementQueue, (void *)&d, (portTickType)0) != pdPASS) {
 			ERROR_MSG("Failed to send measurement to the controller\n");
@@ -119,7 +132,10 @@ portTASK_FUNCTION(frame_counting_task, arg)
 			sl = (u_int32_t)cs;
 		}
 
-		INFO_MSG("Fps: %d.%01d\n", fps / funit, fps % funit);
+		print_data_row(fps, cs);
+
+		//INFO_MSG("Fps: %d.%01d, average = %i\n", fps / funit, fps % funit, (int)average);
+		INFO_MSG("Fps: %d\n", (int)fps);
 	}
 }
 
@@ -201,7 +217,7 @@ int main()
 	}
 
 	if (xTaskCreate(plant_task, (const signed char *)"plant_task",
-			configMINIMAL_STACK_SIZE, NULL, 2, NULL) != pdPASS) {
+			configMINIMAL_STACK_SIZE, NULL, 1, NULL) != pdPASS) {
 		ERROR_MSG("Could not start up plant_task.\n");
 		goto error;
 	}
@@ -237,6 +253,7 @@ error:
 
 void vApplicationMallocFailedHook( void )
 {
+	ERROR_MSG("Malloc failed.\n");
 	__asm volatile (" smc #0 ");
 }
 

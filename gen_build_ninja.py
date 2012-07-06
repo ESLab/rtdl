@@ -306,8 +306,6 @@ configs = [
             [],
             'image_address': '0x10000',
             'include_apps': [
-                "rtuappv1",
-                "rtuappv2",
                 "rtucontv1",
                 "rtucontv2",
                 "rtucontv3",

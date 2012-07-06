@@ -39,7 +39,11 @@
 
 #define DATA_CACHE_ENABLED
 
-#if defined(LINKER)
+#if defined(LINKER) || defined(TASK_MANAGER)
+#undef DEBUG
+#undef INFO
+#endif
+#if defined(MIGRATOR) || defined(POINTER_TRACER) || defined(DWARFIF)
 #undef DEBUG
 #undef INFO
 #endif

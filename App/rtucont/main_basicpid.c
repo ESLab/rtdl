@@ -40,7 +40,7 @@
 
 #define P (-0.2)
 #define I (-0.5)
-#define D (0.0)
+#define D (0.3)
 
 #define SIGNAL_MAX 500
 

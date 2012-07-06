@@ -576,7 +576,8 @@ void migrator_task(void *arg)
 	task_register_cons *trc;
 
 	while (1) {
-		vTaskDelay(1000/portTICK_RATE_MS);
+#if 0
+		vTaskDelay(20000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtucont"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
@@ -598,8 +599,8 @@ void migrator_task(void *arg)
 		} else {
 			goto error;
 		}
-
-		vTaskDelay(1000/portTICK_RATE_MS);
+#endif
+		vTaskDelay(20000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtucont"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
@@ -622,7 +623,7 @@ void migrator_task(void *arg)
 			goto error;
 		}
 
-		vTaskDelay(1000/portTICK_RATE_MS);
+		vTaskDelay(20000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtucont"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);

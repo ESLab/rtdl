@@ -65,6 +65,7 @@ void cpRequestHook(cp_req_t req_type)
 	return;
 }
 
+#if 0
 static void print_data_row(int32_t input, int32_t output)
 {
 	int i;
@@ -76,6 +77,7 @@ static void print_data_row(int32_t input, int32_t output)
 		xUARTSendCharacter(3, ostr[i], 0);
 	}
 }
+#endif
 
 static int setup_rtu_state( void )
 {
@@ -166,8 +168,6 @@ int main()
 
 			int32_t	signal		= fsignal;
 			controlsignal_t output	= signal < 0 ? 0 : (signal > SIGNAL_MAX ? SIGNAL_MAX : signal);
-
-			print_data_row(error, mv_u);
 
 			if (xQueueSendToBack(ControlSignalQueue, (void *)&output, (portTickType)portMAX_DELAY) != pdPASS) {
 				ERROR_MSG("Failed to send control signal to plant.\n");
