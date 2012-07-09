@@ -63,11 +63,11 @@ SECTIONS
     .dynamic : { *(.dynamic) }
     .kernel : {
 	    _kernel_elf_start = .;
-	    INCLUDE "build/kernel-taskmigr_nodbg.ld"
+	    INCLUDE "build/kernel-CONFIG`_'nodbg.ld"
 	    _kernel_elf_end = .;
     } > ram
     .applications : {
-	    INCLUDE "build/applications-taskmigr.ld"
+	    INCLUDE "build/applications-CONFIG.ld"
     } > ram
     .bss :
     {

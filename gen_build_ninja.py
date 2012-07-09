@@ -560,14 +560,20 @@ def gen_kernel_boot_build(name, c):
     n.build(outputs   = builddir + "kernel-" + name + "_nodbg.ld",
             rule      = "app_ld",
             inputs    = bindir + "kernel-" + name +  "_nodbg.elf")
+    n.build(outputs   = builddir + "system_arch_vexpress_vm_boot_loader-" + name + ".ld",
+            rule      = "m4",
+            inputs    = "System/arch/vexpress_vm/boot/loader.ld.m4",
+            variables = c + NinjaConfig({
+                'm4flags': "-DCONFIG=" + name,
+                }))
     n.build(outputs   = bindir + "boot-" + name + ".elf",
             rule      = "link",
             inputs    = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
             variables = c + NinjaConfig({
-            'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9',
+            'ldflags': '-nostartfiles -fPIC -Wl,-T,' + builddir + "system_arch_vexpress_vm_boot_loader-" + name + ".ld " + ' -mcpu=cortex-a9',
             }),
             implicit  = [
-            "System/arch/vexpress_vm/boot/loader.ld",
+            builddir + "system_arch_vexpress_vm_boot_loader-" + name + ".ld",
             builddir + "kernel-" + name + ".ld" if debug_in_kernel else builddir + "kernel-" + name + "_nodbg.ld",
             ])
     n.build(outputs   = bindir + "boot-" + name + ".bin",
