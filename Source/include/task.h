@@ -1326,6 +1326,12 @@ unsigned portBASE_TYPE uxTaskGetTaskNumber( xTaskHandle xTask );
  */
 void vTaskSetTaskNumber( xTaskHandle xTask, unsigned portBASE_TYPE uxHandle );
 
+/*-----------------------------------------------------------
+ * TASK ATTACH / DETACH API prototypes
+ *----------------------------------------------------------*/
+
+signed portBASE_TYPE xTaskAttach( xTaskHandle pxTaskToAttach );
+signed portBASE_TYPE xTaskDetach( xTaskHandle pxTaskToDetach );
 
 #ifdef __cplusplus
 }

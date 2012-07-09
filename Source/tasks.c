@@ -613,9 +613,113 @@ tskTCB * pxNewTCB;
 
 #endif
 
+/*-----------------------------------------------------------
+ * TASK ATTACH / DETACH API
+ *----------------------------------------------------------*/
 
+#if ( INCLUDE_xTaskAttach == 1 )
 
+	signed portBASE_TYPE xTaskAttach( xTaskHandle pxTaskToAttach )
+	{
+	signed portBASE_TYPE xReturn;
+	tskTCB *pxTCB;
 
+		pxTCB = ( tskTCB * ) pxTaskToAttach;
+
+		if( pxTCB != NULL )
+		{
+			/*
+			 * Initialize ??
+			 */
+			taskENTER_CRITICAL();
+			{
+				uxCurrentNumberOfTasks++;
+				if( pxCurrentTCB == NULL)
+				{
+					pxCurrentTCB = pxTCB;
+					if( uxCurrentNumberOfTasks == ( unsigned portBASE_TYPE ) 1 )
+					{
+						prvInitialiseTaskLists();
+					}
+				}
+				else
+				{
+					if ( xSchedulerRunning == pdFALSE )
+					{
+						if( pxCurrentTCB->uxPriority <= pxTCB->uxPriority )
+						{
+							pxCurrentTCB = pxTCB;
+						}
+					}
+				}
+				if( pxTCB->uxPriority > uxTopUsedPriority )
+				{
+					uxTopUsedPriority = pxTCB->uxPriority;
+				}
+
+				prvAddTaskToReadyQueue( pxTCB );
+
+				xReturn = pdPASS;
+			}
+			taskEXIT_CRITICAL();
+		}
+		else
+		{
+			xReturn = pdFALSE;
+		}
+
+		if( xReturn == pdPASS )
+		{
+			if( xSchedulerRunning != pdFALSE )
+			{
+				if( pxCurrentTCB->uxPriority < pxTCB->uxPriority )
+				{
+					portYIELD_WITHIN_API();
+				}
+			}
+		}
+
+		return xReturn;
+	}
+
+#endif
+
+#if ( INCLUDE_xTaskDetach == 1 )
+
+	signed portBASE_TYPE xTaskDetach( xTaskHandle pxTaskToDetach )
+	{
+	signed portBASE_TYPE xReturn;
+	tskTCB *pxTCB;
+
+		taskENTER_CRITICAL();
+		{
+			if( pxTaskToDetach == pxCurrentTCB )
+			{
+				pxTaskToDetach = NULL;
+			}
+
+			pxTCB = prvGetTCBFromHandle( pxTaskToDetach );
+
+			vListRemove( &( pxTCB->xGenericListItem ) );
+			vListRemove( &( pxTCB->xEventListItem ) );
+
+			--uxCurrentNumberOfTasks;
+
+			xReturn = pdPASS;
+		}
+		taskEXIT_CRITICAL();
+
+		if ( xSchedulerRunning != pdFALSE )
+		{
+			if( ( void * ) pxTaskToDetach == NULL )
+			{
+				portYIELD_WITHIN_API();
+			}
+		}
+		return xReturn;
+	}
+
+#endif
 
 
 /*-----------------------------------------------------------
