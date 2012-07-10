@@ -478,3 +478,12 @@ int task_attach(task_register_cons *trc)
 	return 1;
 }
 #endif /* TASK_MIGRATION */
+
+int task_call_crh(task_register_cons *trc, cp_req_t req_type)
+{
+	if (trc->request_hook != NULL)
+		(trc->request_hook)(req_type);
+	else
+		return 0;
+	return 1;
+}
