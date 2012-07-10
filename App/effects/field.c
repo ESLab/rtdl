@@ -37,6 +37,9 @@
 
 #include <App/effects/field_effect.h>
 #include <App/effects/Utils.h>
+#include <App/rtu.h>
+
+int tm_requested = 0;
 
 #if 0
 static void write_fb_8bit_to_16bit(u_int8_t *fb8bit, u_int16_t *fb16bit)
@@ -56,6 +59,13 @@ static void write_fb_8bit_to_16bit(u_int8_t *fb8bit, u_int16_t *fb16bit)
 	}
 }
 #endif
+
+void cpRequestHook(cp_req_t req_type)
+{
+	if (req_type == cp_req_tm) {
+		tm_requested = 1;
+	}
+}
 
 int main()
 {
@@ -81,6 +91,11 @@ int main()
 #else /* FIELD_DBL_BUFFER */
 	for(t = 0; ; t++) {
 #endif /* FIELD_DBL_BUFFER */
+
+		if (tm_requested) {
+			TASK_IN_SAFE_STATE();
+			tm_requested = 0;
+		}
 
 		if((t&15)==0) {
 
