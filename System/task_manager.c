@@ -452,3 +452,29 @@ void apptask_free(void *ptr)
 
 	return task_apptask_free(ptr, trc);
 }
+
+#ifdef TASK_MIGRATION
+int task_detach(task_register_cons *trc)
+{
+	task_register_tree *root = task_get_trc_root();
+	RB_REMOVE(task_register_tree_t, root, trc);
+
+	if (xTaskDetach(trc->task_handle) != pdPASS) {
+		ERROR_MSG("Could not detach task handle for task \"%s\".\n", trc->name);
+		return 0;
+	}
+	return 1;
+}
+
+int task_attach(task_register_cons *trc)
+{
+	task_register_tree *root = task_get_trc_root();
+	RB_INSERT(task_register_tree_t, root, trc);
+
+	if (xTaskAttach(trc->task_handle) != pdPASS) {
+		ERROR_MSG("Could not attach task handle for task \"%s\".\n", trc->name);
+		return 0;
+	}
+	return 1;
+}
+#endif /* TASK_MIGRATION */

@@ -153,6 +153,8 @@ int			 task_free(task_register_cons *trc);
 int			 task_start(task_register_cons *trc);
 task_register_cons	*task_register(const char *name, Elf32_Ehdr *elfh);
 task_dynmemsect_cons    *task_find_dynmemsect(task_register_cons *trc, void *p);
+int			 task_detach(task_register_cons *trc);
+int			 task_attach(task_register_cons *trc);
 
 #ifdef IN_APPTASK
 void			*apptask_malloc(size_t size);
