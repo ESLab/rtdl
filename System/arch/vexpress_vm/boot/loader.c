@@ -63,8 +63,6 @@ binary_register_entry binary_register[] = {
 #define KERNEL_ELFH	((Elf32_Ehdr *)&_kernel_elf_start)
 #define KERNEL_ELF_SIZE ((ms_t)((npi_t)&_kernel_elf_end - (npi_t)&_kernel_elf_start))
 
-#define MULTICORE
-
 xMemoryInformationType *mit = MIS_START_ADDRESS;
 
 static int check_elf_magic(Elf32_Ehdr *hdr)
@@ -207,7 +205,7 @@ int _init()
 		allocate_elf_at_offset(KERNEL_ELFH, mit[i].phys_start, &mit[i]);
 	}
 
-#ifdef MULTICORE
+#ifndef MULTICORE_DISABLED
 	launch_kernels();
 #else
 	asm( "ldr               sp, [%0]\n\t"
