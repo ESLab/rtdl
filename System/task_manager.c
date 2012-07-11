@@ -324,6 +324,16 @@ int task_start(task_register_cons *trc)
 		return 0;
 	}
 
+	/*
+	 * Initialize migrator sempahore.
+	 */
+
+	trc->migrator_lock = task_control;
+
+	/*
+	 * Create FreeRTOS task.
+	 */
+
 	DEBUG_MSG("Entry point for task \"%s\" = 0x%x\n", trc->name, (u_int32_t)entry_point);
 
 	if (xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)trc->name,
@@ -421,9 +431,7 @@ void task_apptask_free(void *ptr, task_register_cons *trc)
 
 void *apptask_malloc(size_t size)
 {
-	task_register_tree	*root	   = task_get_trc_root();
-	task_register_cons	 criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
-	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
+	task_register_cons	*trc = task_get_current_trc();
 
 	/*
 	 * If the task is not found in the register we should not
@@ -438,9 +446,7 @@ void *apptask_malloc(size_t size)
 
 void apptask_free(void *ptr)
 {
-	task_register_tree	*root	   = task_get_trc_root();
-	task_register_cons	 criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
-	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
+	task_register_cons	*trc = task_get_current_trc();
 
 	/*
 	 * If the task is not found in the register we should not free
@@ -459,22 +465,38 @@ int task_detach(task_register_cons *trc)
 	task_register_tree *root = task_get_trc_root();
 	RB_REMOVE(task_register_tree_t, root, trc);
 
+	vTaskSuspend(trc->task_handle);
+
 	if (xTaskDetach(trc->task_handle) != pdPASS) {
 		ERROR_MSG("Could not detach task handle for task \"%s\".\n", trc->name);
 		return 0;
 	}
+
+#ifdef DATA_CACHE_ENABLED
+	vPortCleanDataCache();
+	vPortInvalidateInstructionCache();
+#endif /* DATA_CACHE_ENABLED */
+
 	return 1;
 }
 
 int task_attach(task_register_cons *trc)
 {
-	task_register_tree *root = task_get_trc_root();
-	RB_INSERT(task_register_tree_t, root, trc);
+#ifdef DATA_CACHE_ENABLED
+	vPortCleanDataCache();
+	vPortInvalidateInstructionCache();
+#endif /* DATA_CACHE_ENABLED */
+
+	trc->migrator_lock = task_control;
 
 	if (xTaskAttach(trc->task_handle) != pdPASS) {
 		ERROR_MSG("Could not attach task handle for task \"%s\".\n", trc->name);
 		return 0;
 	}
+
+	task_register_tree *root = task_get_trc_root();
+	RB_INSERT(task_register_tree_t, root, trc);
+
 	return 1;
 }
 #endif /* TASK_MIGRATION */
@@ -485,5 +507,36 @@ int task_call_crh(task_register_cons *trc, cp_req_t req_type)
 		(trc->request_hook)(req_type);
 	else
 		return 0;
+	return 1;
+}
+
+task_register_cons *task_get_current_trc()
+{
+	task_register_tree	*root	   = task_get_trc_root();
+	task_register_cons	 criterion = { .task_handle = xTaskGetCurrentTaskHandle() };
+	task_register_cons	*trc	   = RB_FIND(task_register_tree_t, root, &criterion);
+
+	return trc;
+}
+
+int task_wait_for_checkpoint(task_register_cons *trc, cp_req_t req_type)
+{
+	if (!task_call_crh(trc, req_type)) {
+		ERROR_MSG("%s: Could not call checkpoint request hook for task \"%s\".\n",
+			  __func__, trc->name);
+		return 0;
+	} else {
+		DEBUG_MSG("%s: Returned from checkpoint request hook for task \"%s\".\n",
+			  __func__, trc->name);
+	}
+
+	/*
+	 * Waiting for task to reach requested checkpoint.
+	 */
+
+	while (trc->migrator_lock != migrator_control) {
+		vTaskDelay(1);
+	}
+
 	return 1;
 }

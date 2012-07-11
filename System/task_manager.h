@@ -47,6 +47,15 @@ typedef enum {
 typedef void (*request_hook_fn_t)(cp_req_t req_type);
 
 /*
+ * Migrator lock type define.
+ */
+
+typedef enum {
+	task_control,
+	migrator_control
+} migrator_lock;
+
+/*
  * Defines for task_section structure. Implemented as a double-linked
  * list.
  */
@@ -91,6 +100,7 @@ typedef struct task_register_cons_t {
 	size_t			 cont_mem_size;
 	task_section_list	 sections;
 	task_dynmemsect_tree	 dynmemsects;
+	volatile migrator_lock	 migrator_lock;
 	RB_ENTRY(task_register_cons_t) tasks;
 } task_register_cons;
 
@@ -156,6 +166,8 @@ task_dynmemsect_cons    *task_find_dynmemsect(task_register_cons *trc, void *p);
 int			 task_detach(task_register_cons *trc);
 int			 task_attach(task_register_cons *trc);
 int			 task_call_crh(task_register_cons *trc, cp_req_t req_type);
+task_register_cons	*task_get_current_trc();
+int			 task_wait_for_checkpoint(task_register_cons *trc, cp_req_t req_type);
 
 #ifdef IN_APPTASK
 void			*apptask_malloc(size_t size);
