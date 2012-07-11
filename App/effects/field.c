@@ -78,9 +78,7 @@ int main()
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
-	InitializeField(&effect_state, 320, 240, 640, 480,
-			320 * ((portCORE_ID() & 0x2) >> 1),
-			240 * ( portCORE_ID() & 0x1)     );
+	InitializeField(&effect_state, 320, 240, 640, 480, 320,0);
 
 	SetScreenFrameBuffer(framebuffer1);
 

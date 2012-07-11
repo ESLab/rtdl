@@ -38,4 +38,13 @@
 
 #define DATA_CACHE_ENABLED
 
+#if defined(LINKER)
+#undef DEBUG
+#undef INFO
+#endif
+
+#if defined(TASK_MANAGER)
+#undef INFO
+#endif
+
 #endif /* SYSTEM_CONFIG_H */ 

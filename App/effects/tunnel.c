@@ -61,9 +61,7 @@ int main()
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
-	if (!InitializeTunnel(&ets, 320, 240, 640, 480,
-			      320 * ((portCORE_ID() & 0x2) >> 1),
-			      240 * ( portCORE_ID() & 0x1)     )) {
+	if (!InitializeTunnel(&ets, 320, 240, 640, 480, 0,0)) {
 		printf("Could not initiate tunnel effect.\n");
 		while (1)
 			;
@@ -76,7 +74,7 @@ int main()
 #ifdef TUNNEL_DBL_BUFFER
 	for(t=0;;t+=2) {
 #else /* TUNNEL_DBL_BUFFER */
-        for(t=0;;t++) {
+	for(t=0;;t++) {
 #endif /* TUNNEL_DBL_BUFFER */
 
 		if (tm_requested) {
