@@ -291,7 +291,6 @@ configs = [
             [],
             'image_address': '0x60100000',
             'include_apps': [
-                "simple",
                 "tunnel",
                 "field",
                 ],

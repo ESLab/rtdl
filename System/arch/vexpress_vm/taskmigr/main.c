@@ -189,9 +189,6 @@ int main()
 
 	umm_init(heap, heap_size);
 
-	if (!alloc_link_start_from_binary_register("simple"))
-		goto error;
-
 	switch (portCORE_ID()) {
 	case 0:
 		if (!alloc_link_start_from_binary_register("tunnel"))
