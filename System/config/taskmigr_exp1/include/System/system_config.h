@@ -38,6 +38,8 @@
 
 #define DATA_CACHE_ENABLED
 
+#define TAKE_MEASUREMENT
+
 #if defined(LINKER)
 #undef DEBUG
 #undef INFO

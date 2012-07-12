@@ -60,7 +60,9 @@ int migrator_loop()
 	while (1) {
 		vTaskDelay(10000);
 		if ((trc = task_find("field"))) {
+#ifndef TAKE_MEASUREMENT
 			INFO_MSG("%s: Found tunnel task, migrating...\n", __func__);
+#endif /* TAKE_MEASUREMENT */
 
 			if (!task_wait_for_checkpoint(trc, cp_req_tm)) {
 				ERROR_MSG("%s: Failed to reach migration checkpoint for task \"%s\"\n",
@@ -77,7 +79,9 @@ int migrator_loop()
 			ms->trc		   = trc;
 
 		} else {
+#ifndef TAKE_MEASUREMENT
 			INFO_MSG("%s: Did not find tunnel task, waiting...\n", __func__);
+#endif /* TAKE_MEASUREMENT */
 		}
 	}
 

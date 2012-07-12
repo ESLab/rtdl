@@ -554,8 +554,10 @@ int task_wait_for_checkpoint(task_register_cons *trc, cp_req_t req_type)
 			  __func__, trc->name);
 		return 0;
 	} else {
+#ifndef TAKE_MEASUREMENT
 		DEBUG_MSG("%s: Returned from checkpoint request hook for task \"%s\".\n",
 			  __func__, trc->name);
+#endif /* TAKE_MEASUREMENT */
 	}
 
 	/*
