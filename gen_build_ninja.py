@@ -358,9 +358,7 @@ config_source_files = \
     NinjaSet(),
 
     'taskmigr': get_ninja_set_of_files([
-                'System/arch/vexpress_vm/main.c',
-                'System/arch/vexpress_vm/kernel-startup.S',
-                'System/arch/vexpress_vm/setup_vm.c',
+                'System/arch/vexpress_vm/taskmigr/main.c',
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
     freertos_files +
