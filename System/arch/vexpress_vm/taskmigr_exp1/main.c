@@ -46,6 +46,9 @@
 
 #include <App/effects/config_effect.h>
 
+const char *effect_name[] = { "effect00", "effect01",
+			      "effect10", "effect11" };
+
 int migrator_loop()
 {
 	task_register_cons	*trc;
@@ -102,33 +105,29 @@ int main()
 
 	INFO_MSG("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
 
-	void	*heap	   = mit[portCORE_ID()].phys_heap_begin;
-	size_t	 heap_size = mit[portCORE_ID()].phys_heap_size - 0x10000;
+	void		*heap	   = mit[portCORE_ID()].phys_heap_begin;
+	size_t		 heap_size = mit[portCORE_ID()].phys_heap_size - 0x10000;
+
+	unsigned int	 i;
+	unsigned int     j;
 
 	INFO_MSG("Heap @ 0x%x, heap size = %u\n", (npi_t)heap, heap_size);
 
 	umm_init(heap, heap_size);
 
-	switch (portCORE_ID()) {
-	case 0:
-		if (!effect_start_and_config("tunnel", "tunnel",
-					     320, 240,
-					     0, 0)) {
-			ERROR_MSG("Could not start tunnel effect.\n");
-			goto error;
-		}
-		break;
-	}
+	{
 
-	switch (portCORE_ID()) {
-	case 0:
-		if (!effect_start_and_config("field", "field",
-					     320, 240,
-					     320, 0)) {
-			ERROR_MSG("Could not start field effect.\n");
+		i = portCORE_ID() & 0x1;
+		j = portCORE_ID() & 0x2;
+
+
+		const char *effects[]	  = { "tunnel", "field" };
+		if (!effect_start_and_config(effect_name[2*i+j], effects[j == i],
+					     160, 120,
+					     i*160, j*120)) {
+			ERROR_MSG("Could not start effect \"%s\" in quadrand (%u,%u).\n", effects[j == i],  i, j);
 			goto error;
 		}
-		break;
 	}
 
 	if (!migrator_start()) {
