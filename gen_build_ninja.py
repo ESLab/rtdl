@@ -468,6 +468,8 @@ n.rule(name = "m4",
 
 for c in configs:
     s = config_source_files[c['name']]
+    for a in c['include_apps']:
+        c['cflags'] += ["-DAPP_" + a.upper() + "_INCLUDED"]
     s.write_builds(n, c)
     s = NinjaSet()
     app_c = c + NinjaConfig({

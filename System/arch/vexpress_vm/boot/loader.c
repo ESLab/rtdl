@@ -54,9 +54,15 @@ extern ma_t _field_elf_start;
 
 binary_register_entry binary_register[] = {
   { "kernel", APPLICATION_ELF(kernel) },
+#ifdef APP_SIMPLE_INCLUDED
   { "simple", APPLICATION_ELF(simple) },
+#endif /* APP_SIMPLE_INCLUDED */
+#ifdef APP_TUNNEL_INCLUDED
   { "tunnel", APPLICATION_ELF(tunnel) },
+#endif /* APP_TUNNEL_INCLUDED */
+#ifdef APP_FIELD_INCLUDED
   { "field", APPLICATION_ELF(field) },
+#endif /* APP_FIELD_INCLUDED */
   { NULL, NULL }
 };
 
