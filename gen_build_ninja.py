@@ -437,6 +437,7 @@ config_source_files = \
 
     'taskmigr_exp1': get_ninja_set_of_files([
                 'System/arch/vexpress_vm/taskmigr_exp1/main.c',
+                'App/effects/config_effect.c',
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
     freertos_files +
@@ -451,6 +452,7 @@ config_source_files = \
 
     'taskmigr_exp2': get_ninja_set_of_files([
                 'System/arch/vexpress_vm/taskmigr_exp2/main.c',
+                'App/effects/config_effect.c',
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
     freertos_files +

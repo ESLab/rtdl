@@ -28,14 +28,24 @@
 #ifndef APP_CONFIG_EFFECT_H
 #define APP_CONFIG_EFFECT_H
 
+#include <FreeRTOS.h>
+
 #include <System/types.h>
 #include <System/task_manager.h>
 
 int effect_config
-(task_register_cons *trc,
- u_int16_t init_width,
- u_int16_t init_height,
- u_int16_t init_w_offset,
- u_int16_t init_h_offset);
+(task_register_cons	*trc,
+ u_int16_t		 init_width,
+ u_int16_t		 init_height,
+ u_int16_t		 init_w_offset,
+ u_int16_t		 init_h_offset);
+
+int effect_start_and_config
+(const char	*new_task_name,
+ const char	*binary_name,
+ u_int16_t	 init_width,
+ u_int16_t	 init_height,
+ u_int16_t	 init_w_offset,
+ u_int16_t	 init_h_offset);
 
 #endif /* APP_CONFIG_EFFECT_H */

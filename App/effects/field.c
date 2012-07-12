@@ -74,11 +74,11 @@ u_int16_t	init_h_offset = 0xffff;
 
 int main()
 {
-	int t;
-	effect_field_state effect_state;
-	u_int16_t *framebuffer1=(u_int16_t *)0x4c000000;
+	int			 t;
+	effect_field_state	 effect_state;
+	u_int16_t		*framebuffer1 =	(u_int16_t *)0x4c000000;
 #ifdef FIELD_DBL_BUFFER
-	//u_int16_t *framebuffer2=(u_int16_t *)0x4c400000;
+	//u_int16_t		*framebuffer2 =	(u_int16_t *)0x4c400000;
 #endif /* FIELD_DBL_BUFFER */
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
@@ -91,10 +91,10 @@ int main()
 		goto error;
 	}
 
-	if (InitializeField(&effect_state,
-			init_width, init_height,
-			640, 480,
-			    init_w_offset, init_h_offset)) {
+	if (!InitializeField(&effect_state,
+			     init_width, init_height,
+			     640, 480,
+			     init_w_offset, init_h_offset)) {
 		printf("Could not initiate field effect.\n");
 		goto error;
 	}

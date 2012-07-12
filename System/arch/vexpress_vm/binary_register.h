@@ -35,6 +35,7 @@ binary_register_entry *find_binary_register_entry
  binary_register_entry *bre);
 
 int alloc_link_start_from_binary_register
-(const char *name);
+(const char *new_task_name,
+ const char *binary_name);
 
 #endif /* VEXPRESS_BINARY_REGISTER_H */

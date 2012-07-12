@@ -44,6 +44,8 @@
 #include <System/arch/vexpress_vm/binary_register.h>
 #include <System/umm/umm_malloc.h>
 
+#include <App/effects/config_effect.h>
+
 int migrator_loop()
 {
 	task_register_cons	*trc;
@@ -90,6 +92,8 @@ static void setup_hardware()
 	void vPortInstallInterruptHandler( void (*vHandler)(void *), void *pvParameter, unsigned long ulVector, unsigned char ucEdgeTriggered, unsigned char ucPriority, unsigned char ucProcessorTargets );
 }
 
+
+
 int main()
 {
 	xMemoryInformationType	*mit = MIS_START_ADDRESS;
@@ -105,20 +109,25 @@ int main()
 
 	umm_init(heap, heap_size);
 
-	if (!alloc_link_start_from_binary_register("simple"))
-		goto error;
-
 	switch (portCORE_ID()) {
 	case 0:
-		if (!alloc_link_start_from_binary_register("tunnel"))
+		if (!effect_start_and_config("tunnel", "tunnel",
+					     320, 240,
+					     0, 0)) {
+			ERROR_MSG("Could not start tunnel effect.\n");
 			goto error;
+		}
 		break;
 	}
 
 	switch (portCORE_ID()) {
 	case 0:
-		if (!alloc_link_start_from_binary_register("field"))
+		if (!effect_start_and_config("field", "field",
+					     320, 240,
+					     320, 0)) {
+			ERROR_MSG("Could not start field effect.\n");
 			goto error;
+		}
 		break;
 	}
 

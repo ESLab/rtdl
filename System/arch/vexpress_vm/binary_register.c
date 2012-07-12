@@ -35,6 +35,7 @@
 #include <System/types.h>
 #include <System/system.h>
 #include <System/task_manager.h>
+#include <System/arch/vexpress_vm/binary_register.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
 
 binary_register_entry *find_binary_register_entry(const char *name, binary_register_entry *bre)
@@ -47,36 +48,36 @@ binary_register_entry *find_binary_register_entry(const char *name, binary_regis
 	return NULL;
 }
 
-int alloc_link_start_from_binary_register(const char *name)
+int alloc_link_start_from_binary_register(const char *new_task_name, const char *binary_name)
 {
-	xMemoryInformationType	*mit = MIS_START_ADDRESS;
-	binary_register_entry *bin_register = (binary_register_entry *)mit[portCORE_ID()].phys_binary_register_begin;
-	binary_register_entry *bre = find_binary_register_entry(name, bin_register);
+	xMemoryInformationType	*mit	      = MIS_START_ADDRESS;
+	binary_register_entry	*bin_register = (binary_register_entry *)mit[portCORE_ID()].phys_binary_register_begin;
+	binary_register_entry	*bre	      = find_binary_register_entry(binary_name, bin_register);
 
 	if (bre == NULL) {
-		ERROR_MSG("Could not find application \"%s\"\n", name);
+		ERROR_MSG("Could not find binary with name \"%s\"\n", binary_name);
 		goto error0;
 	}
 
-	task_register_cons *trc = task_register(name, bre->elfh);
+	task_register_cons *trc = task_register(new_task_name, bre->elfh);
 
 	if (trc == NULL) {
-		ERROR_MSG("Could not register task \"%s\"\n", name);
+		ERROR_MSG("Could not register task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
 		goto error0;
 	}
 
 	if (!task_alloc(trc)) {
-		ERROR_MSG("Could not alloc memory for task \"%s\"\n", name);
+		ERROR_MSG("Could not alloc memory for task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
 		goto error0;
 	}
 
 	if (!task_link(trc)) {
-		ERROR_MSG("Could not link task \"%s\"\n", name);
+		ERROR_MSG("Could not link task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
 		goto error0;
 	}
 
 	if (!task_start(trc)) {
-		ERROR_MSG("Could not start task \"%s\" \n", name);
+		ERROR_MSG("Could not start task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
 		goto error0;
 	}
 

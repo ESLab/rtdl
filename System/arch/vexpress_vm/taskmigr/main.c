@@ -191,14 +191,14 @@ int main()
 
 	switch (portCORE_ID()) {
 	case 0:
-		if (!alloc_link_start_from_binary_register("tunnel"))
+		if (!alloc_link_start_from_binary_register("tunnel", "tunnel"))
 			goto error;
 		break;
 	}
 
 	switch (portCORE_ID()) {
 	case 0:
-		if (!alloc_link_start_from_binary_register("field"))
+		if (!alloc_link_start_from_binary_register("field", "field"))
 			goto error;
 		break;
 	}
