@@ -100,8 +100,10 @@ int main()
 
 	INFO_MSG("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
 
-	void	*heap	   = mit[portCORE_ID()].phys_heap_begin;
-	size_t	 heap_size = mit[portCORE_ID()].phys_heap_size - 0x10000;
+	void		*heap	   = mit[portCORE_ID()].phys_heap_begin;
+	size_t		 heap_size = mit[portCORE_ID()].phys_heap_size - 0x10000;
+	unsigned int	 i;
+	unsigned int	 j;
 
 	INFO_MSG("Heap @ 0x%x, heap size = %u\n", (npi_t)heap, heap_size);
 
@@ -109,22 +111,18 @@ int main()
 
 	switch (portCORE_ID()) {
 	case 0:
-		if (!effect_start_and_config("tunnel", "tunnel",
-					     320, 240,
-					     0, 0)) {
-			ERROR_MSG("Could not start tunnel effect.\n");
-			goto error;
-		}
-		break;
-	}
-
-	switch (portCORE_ID()) {
-	case 0:
-		if (!effect_start_and_config("field", "field",
-					     320, 240,
-					     320, 0)) {
-			ERROR_MSG("Could not start field effect.\n");
-			goto error;
+		for (i = 0; i < 2; i++) {
+			for (j = 0; j < 2; j++) {
+				const char *effects[]	  = { "tunnel", "field" };
+				const char *effect_name[] = { "effect00", "effect01",
+							      "effect10", "effect11" };
+				if (!effect_start_and_config(effect_name[2*i+j], effects[j == i],
+							     320, 240,
+							     i*320, j*240)) {
+					ERROR_MSG("Could not start effect \"%s\" in quadrand (%u,%u).\n", effects[j == i],  i, j);
+					goto error;
+				}
+			}
 		}
 		break;
 	}
