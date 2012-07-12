@@ -80,6 +80,19 @@ int main()
 #ifdef FIELD_DBL_BUFFER
 	//u_int16_t		*framebuffer2 =	(u_int16_t *)0x4c400000;
 #endif /* FIELD_DBL_BUFFER */
+	task_register_cons	*trc;
+	const char		*task_name;
+	portTickType		 last_wake;
+	const portTickType	 delay	      = 1000 * portTICK_RATE_MS / 25;
+
+	trc = task_get_current_trc();
+
+	if (trc == NULL) {
+		printf("field effect: could not find trc.\n");
+		goto error;
+	}
+
+	task_name = trc->name;
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
@@ -87,7 +100,7 @@ int main()
 	    init_height   == 0xffff ||
 	    init_w_offset == 0xffff ||
 	    init_h_offset == 0xffff) {
-		printf("field: Config parameters not setup.\n");
+		printf("%s: Config parameters not setup.\n", task_name);
 		goto error;
 	}
 
@@ -95,13 +108,15 @@ int main()
 			     init_width, init_height,
 			     640, 480,
 			     init_w_offset, init_h_offset)) {
-		printf("Could not initiate field effect.\n");
+		printf("%s: Could not initiate field effect.\n", task_name);
 		goto error;
 	}
 
 	SetScreenFrameBuffer(framebuffer1);
 
 	int lasttime=0;
+
+	last_wake = xTaskGetTickCount();
 
 #ifdef FIELD_DBL_BUFFER
 	for(t = 0; ; t += 2) {
@@ -119,7 +134,7 @@ int main()
 			int	time = xTaskGetTickCount();
 			int	fps  = 10*16*1000/(time-lasttime);
 
-			printf("field: %d.%01d FPS\r\n",fps/10,fps%10);
+			printf("%s: %d.%01d FPS\r\n",task_name,fps/10,fps%10);
 
 			lasttime = time;
 		}
@@ -128,6 +143,7 @@ int main()
 
 		DrawField(&effect_state, framebuffer2);
 		SetScreenFrameBuffer(framebuffer2);
+		vTaskDelayUntil(&last_wake, delay);
 
 		taskYIELD();
 
@@ -138,6 +154,8 @@ int main()
 
 		DrawField(&effect_state, framebuffer1);
 #endif /* FIELD_DBL_BUFFER */
+		vTaskDelayUntil(&last_wake, delay);
+
 	}
 
 error:
