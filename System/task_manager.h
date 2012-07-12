@@ -168,6 +168,7 @@ int			 task_detach(task_register_cons *trc);
 int			 task_attach(task_register_cons *trc);
 int			 task_call_crh(task_register_cons *trc, cp_req_t req_type);
 task_register_cons	*task_get_current_trc();
+void			*task_get_symbol_address(task_register_cons *trc, char *name);
 int			 task_wait_for_checkpoint(task_register_cons *trc, cp_req_t req_type);
 
 #ifdef IN_APPTASK

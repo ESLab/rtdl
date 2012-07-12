@@ -530,6 +530,23 @@ task_register_cons *task_get_current_trc()
 	return trc;
 }
 
+void *task_get_symbol_address(task_register_cons *trc, char *name)
+{
+	Elf32_Sym *symbol = find_symbol(name, trc->elfh);
+
+	if (symbol == NULL) {
+		return NULL;
+	}
+
+	if (trc->cont_mem == NULL) {
+		return NULL;
+	}
+
+	npi_t relative_address = symbol->st_value;
+
+	return (void *)((npi_t)trc->cont_mem  + relative_address);
+}
+
 int task_wait_for_checkpoint(task_register_cons *trc, cp_req_t req_type)
 {
 	if (!task_call_crh(trc, req_type)) {
