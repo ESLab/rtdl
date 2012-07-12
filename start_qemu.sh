@@ -32,11 +32,12 @@ if [ x$1 = x"" ]; then
     exit
 fi
 
+QEMU=qemu-system-arm
 
 DEBUG=$2
 
 if [ X$DEBUG == XDEBUG ]; then
-    qemu-system-arm -M vexpress-a9 -smp 4 -serial stdio -s -S -kernel $1
+    $QEMU -M vexpress-a9 -smp 4 -serial stdio -s -S -kernel $1
 else
-    qemu-system-arm -M vexpress-a9 -smp 4 -serial stdio -kernel $1
+    $QEMU -M vexpress-a9 -smp 4 -serial stdio -kernel $1
 fi
