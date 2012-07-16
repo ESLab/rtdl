@@ -110,6 +110,7 @@ int main()
 
 		if (tm_requested) {
 			TASK_IN_SAFE_STATE();
+			last_wake = xTaskGetTickCount();
 			tm_requested = 0;
 		}
 
