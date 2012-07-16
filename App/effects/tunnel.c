@@ -134,6 +134,11 @@ int main()
 #else /* TUNNEL_DBL_BUFFER */
 		DrawTunnel(&ets, framebuffer1);
 #endif /* TUNNEL_DBL_BUFFER */
+
+		if (last_wake + delay < xTaskGetTickCount()) {
+			last_wake += delay / 2;
+		}
+
 		vTaskDelayUntil(&last_wake, delay);
 	}
 
