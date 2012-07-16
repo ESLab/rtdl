@@ -62,6 +62,10 @@ int migrator_loop()
 
 	vTaskDelay(1000 * portCORE_ID());
 
+	if (portCORE_ID() != 0) {
+		vTaskSuspend(NULL);
+	}
+
 	while (1) {
 		last_idle_count = idle_counter;
 		vTaskDelay(1000);
