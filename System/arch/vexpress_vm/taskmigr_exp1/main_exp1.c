@@ -49,6 +49,9 @@
 const char *effect_name[] = { "effect00", "effect01",
 			      "effect10", "effect11" };
 
+#define EFFECT_W 128
+#define EFFECT_H 96
+
 int migrator_loop()
 {
 	task_register_cons	*trc;
@@ -121,14 +124,14 @@ int main()
 
 	{
 
-		i = portCORE_ID() & 0x1;
-		j = portCORE_ID() & 0x2;
+		i = (portCORE_ID() & 0x1) >> 0;
+		j = (portCORE_ID() & 0x2) >> 1;
 
 
 		const char *effects[]	  = { "tunnel", "field" };
 		if (!effect_start_and_config(effect_name[2*i+j], effects[j == i],
-					     160, 120,
-					     i*160, j*120)) {
+					     EFFECT_W, EFFECT_H,
+					     i*EFFECT_W, j*EFFECT_H)) {
 			ERROR_MSG("Could not start effect \"%s\" in quadrand (%u,%u).\n", effects[j == i],  i, j);
 			goto error;
 		}

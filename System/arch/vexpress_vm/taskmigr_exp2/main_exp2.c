@@ -51,6 +51,9 @@ u_int32_t idle_counter = 0;
 static const char *effect_name[] = { "effect00", "effect01",
 				     "effect10", "effect11" };
 
+#define EFFECT_W 256
+#define EFFECT_H 192
+
 int migrator_loop()
 {
 	task_register_cons	*trc;
@@ -149,8 +152,8 @@ int main()
 			for (j = 0; j < 2; j++) {
 				const char *effects[]	  = { "tunnel", "field" };
 				if (!effect_start_and_config(effect_name[2*i+j], effects[j == i],
-							     320, 240,
-							     i*320, j*240)) {
+							     EFFECT_W, EFFECT_H,
+							     i*EFFECT_W, j*EFFECT_H)) {
 					ERROR_MSG("Could not start effect \"%s\" in quadrand (%u,%u).\n", effects[j == i],  i, j);
 					goto error;
 				}
