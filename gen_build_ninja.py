@@ -437,6 +437,7 @@ config_source_files = \
 
     'taskmigr_exp1': get_ninja_set_of_files([
                 'System/arch/vexpress_vm/taskmigr_exp1/main_exp1.c',
+                'System/arch/vexpress_vm/cortex_power.c',
                 'App/effects/config_effect.c',
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
@@ -452,6 +453,7 @@ config_source_files = \
 
     'taskmigr_exp2': get_ninja_set_of_files([
                 'System/arch/vexpress_vm/taskmigr_exp2/main_exp2.c',
+                'System/arch/vexpress_vm/cortex_power.c',
                 'App/effects/config_effect.c',
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
@@ -690,6 +692,7 @@ def gen_kernel_boot_build(name, c):
 gen_kernel_boot_build("taskmigr", configs[1])
 gen_kernel_boot_build("adtachtest", configs[3])
 gen_kernel_boot_build("taskmigr_exp1", configs[4])
+#config_source_files["taskmigr_exp2"] = config_source_files["taskmigr_exp2"].get_flattened() - NinjaSet(["System/printf-stdarg.c"])
 gen_kernel_boot_build("taskmigr_exp2", configs[5])
 
 ################
