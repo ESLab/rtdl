@@ -45,6 +45,10 @@
 #undef INFO
 #endif
 
+#if defined(MIGRATOR)
+#undef DEBUG
+#endif
+
 #if defined(TASK_MANAGER)
 #undef INFO
 #endif

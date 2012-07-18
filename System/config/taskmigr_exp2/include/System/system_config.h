@@ -38,6 +38,8 @@
 
 #define DATA_CACHE_ENABLED
 
+#define TAKE_MEASUREMENT
+
 #if defined(LINKER)
 #undef DEBUG
 #undef INFO
@@ -45,6 +47,7 @@
 
 #if defined(TASK_MANAGER)
 #undef INFO
+#undef DEBUG
 #endif
 
 #endif /* SYSTEM_CONFIG_H */
