@@ -68,5 +68,12 @@ SECTIONS
         *(COMMON)
         _ebss = .;
     } > ram
+
+    /*******************************************************/
+    /* Set the address for PL310 base register, needed for */
+    /* System/pl310_l2cc.c.				   */
+    /*******************************************************/
+
+     PL310_L2CC_1 = 0x1e00a000;
 }
 
