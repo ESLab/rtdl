@@ -114,12 +114,12 @@ int main()
 			tm_requested = 0;
 		}
 
-		if((t&15)==0)
+		if((t % 32)==0)
 		{
 			int time=xTaskGetTickCount();
-			int fps=10*16*1000/(time-lasttime);
+			int fps=10*32*1000/(time-lasttime);
 
-			printf("%s: %d.%01d FPS\r\n",task_name,fps/10,fps%10);
+			printf("%s: %d.%01d FPS\n",task_name,fps/10,fps%10);
 
 			lasttime=time;
 		}
