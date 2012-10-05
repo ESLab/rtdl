@@ -40,8 +40,8 @@
 #include <System/system.h>
 #include <System/task_manager.h>
 #include <System/migrator.h>
+#include <System/binary_register.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
-#include <System/arch/vexpress_vm/binary_register.h>
 #include <System/arch/vexpress_vm/cortex_power.h>
 #include <System/umm/umm_malloc.h>
 
@@ -160,6 +160,7 @@ static void setup_hardware()
 int main()
 {
 	xMemoryInformationType	*mit = MIS_START_ADDRESS;
+	binary_register_entry	*bin_register = (binary_register_entry *)mit[portCORE_ID()].phys_binary_register_begin;
 
 	setup_hardware();
 
@@ -180,6 +181,7 @@ int main()
 			for (j = 0; j < 2; j++) {
 				const char *effects[]	  = { "tunnel", "field" };
 				if (!effect_start_and_config(effect_name[2*i+j], effects[j == i],
+							     bin_register,
 							     EFFECT_W, EFFECT_H,
 							     i*EFFECT_W, j*EFFECT_H)) {
 					ERROR_MSG("Could not start effect \"%s\" in quadrand (%u,%u).\n", effects[j == i],  i, j);

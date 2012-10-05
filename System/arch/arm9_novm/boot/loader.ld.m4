@@ -55,6 +55,8 @@ SECTIONS
 	__isr_vector_start = .;
 	*(.isr_vector)
 	__isr_vector_end = .;
+	. = _text + 0x100;
+	*(.binary_register*)
 	*(.text*)
 	*(.rodata*)
 	_etext = .;

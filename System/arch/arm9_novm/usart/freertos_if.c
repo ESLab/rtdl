@@ -25,39 +25,62 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include <FreeRTOS.h>
+#include <System/arch/arm9_novm/usart/freertos_if.h>
 
-#include <task.h>
-
-#include <stdio.h>
-
-#include <App/rtu.h>
-
-int _RTU_DATA_ c;
-
-int d = 1;
-
-extern int e;
-
-int a(int b)
+static AT91S_USART *get_usart(unsigned long ulUARTPeripheral)
 {
-	return b + 1;
+	AT91S_USART *usart;
+
+	switch (ulUARTPeripheral) {
+	case 0:
+		usart = AT91C_BASE_US0;
+		break;
+	case 1:
+		usart = AT91C_BASE_US1;
+		break;
+	case 2:
+		usart = AT91C_BASE_US2;
+		break;
+	default:
+		usart = NULL;
+		break;
+	}
+
+	return usart;
 }
 
-int main( void )
+void vUARTInitialise(unsigned long ulUARTPeripheral, unsigned long ulBaud, unsigned long ulQueueSize )
 {
-	c = 1;
-	d = 2;
-	printf("fuck yeah!!\n");
-	vTaskSuspend(NULL);
-	while(1)
-		;
-	return 0;
+	AT91S_USART *usart = get_usart(ulUARTPeripheral);
+
+	if (usart != NULL) 
+		USART_Configure(usart, USART_MODE_ASYNCHRONOUS, ulBaud, 100*1000*1000);
 }
 
-void vApplicationMallocFailedHook( void )
+portBASE_TYPE	xUARTReceiveCharacter( unsigned long ulUARTPeripheral, signed char *pcChar, portTickType xDelay )
 {
-#if defined(VEXPRESS_VM) || defined(VEXPRESS_NOVM)
-	__asm volatile (" smc #0 ");
-#endif
+	portBASE_TYPE xReturn = pdFALSE;
+	AT91S_USART *usart = get_usart(ulUARTPeripheral);
+
+	if (usart == NULL)
+		return xReturn;
+
+	*pcChar = USART_Read(usart, xDelay);
+	xReturn = pdTRUE;
+
+	return xReturn;
+}
+
+portBASE_TYPE xUARTSendCharacter( unsigned long ulUARTPeripheral, signed char cChar, portTickType xDelay )
+{
+	portBASE_TYPE xReturn = pdFALSE;
+	AT91S_USART *usart = get_usart(ulUARTPeripheral);
+
+	if (usart == NULL)
+		return xReturn;
+
+	USART_Write(usart, cChar, xDelay);
+	xReturn = pdTRUE;
+
+	return xReturn;
 }

@@ -25,39 +25,28 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
+#ifndef AT91_MEMORY_LAYOUT_H
+#define AT91_MEMORY_LAYOUT_H
+
 #include <FreeRTOS.h>
 
-#include <task.h>
+#include <System/types.h>
+#include <System/elf.h>
+#include <System/binary_register.h>
 
-#include <stdio.h>
+#define BOOTLOADER_START_ADDRESS ((npi_t)0x10000000)
 
-#include <App/rtu.h>
+/*
+ * The memory information section is put at the beginning of the SRAM.
+ */
+#define MIS_START_ADDRESS ((npi_t)0x00500000)
 
-int _RTU_DATA_ c;
+/*
+ * The binary register is put a bit after the exception vector of the
+ * bootloader. This is set in loader.ld.m4.
+ */
 
-int d = 1;
+#define BINARY_REGISTER_ADDRESS ((npi_t)(BOOTLOADER_START_ADDRESS + 0x100))
+#define BINARY_REGISTER ((binary_register_entry *)BINARY_REGISTER_ADDRESS)
 
-extern int e;
-
-int a(int b)
-{
-	return b + 1;
-}
-
-int main( void )
-{
-	c = 1;
-	d = 2;
-	printf("fuck yeah!!\n");
-	vTaskSuspend(NULL);
-	while(1)
-		;
-	return 0;
-}
-
-void vApplicationMallocFailedHook( void )
-{
-#if defined(VEXPRESS_VM) || defined(VEXPRESS_NOVM)
-	__asm volatile (" smc #0 ");
-#endif
-}
+#endif /* AT91_MEMORY_LAYOUT_H */

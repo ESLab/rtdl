@@ -36,7 +36,7 @@
 #include <System/types.h>
 #include <System/system.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
-#include <System/arch/vexpress_vm/binary_register.h>
+#include <System/binary_register.h>
 #include <System/umm/umm_malloc.h>
 
 static void setup_heap()

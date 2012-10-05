@@ -25,39 +25,19 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
+#ifndef FREERTOS_IF_H
+#define FREERTOS_IF_H
+
 #include <FreeRTOS.h>
 
+#include <queue.h>
 #include <task.h>
+#include <semphr.h>
 
-#include <stdio.h>
+#include <System/arch/arm9_novm/usart/usart.h>
 
-#include <App/rtu.h>
+extern void vUARTInitialise(unsigned long ulUARTPeripheral, unsigned long ulBaud, unsigned long ulQueueSize );
+extern portBASE_TYPE	xUARTReceiveCharacter( unsigned long ulUARTPeripheral, signed char *pcChar, portTickType xDelay );
+extern portBASE_TYPE	xUARTSendCharacter( unsigned long ulUARTPeripheral, signed char cChar, portTickType xDelay );
 
-int _RTU_DATA_ c;
-
-int d = 1;
-
-extern int e;
-
-int a(int b)
-{
-	return b + 1;
-}
-
-int main( void )
-{
-	c = 1;
-	d = 2;
-	printf("fuck yeah!!\n");
-	vTaskSuspend(NULL);
-	while(1)
-		;
-	return 0;
-}
-
-void vApplicationMallocFailedHook( void )
-{
-#if defined(VEXPRESS_VM) || defined(VEXPRESS_NOVM)
-	__asm volatile (" smc #0 ");
-#endif
-}
+#endif /* FREERTOS_IF_H */

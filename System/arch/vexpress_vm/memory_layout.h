@@ -32,6 +32,7 @@
 
 #include <System/types.h>
 #include <System/elf.h>
+#include <System/binary_register.h>
 
 #define ICCS_RCU_SECTION_SIZE 65536
 
@@ -40,10 +41,8 @@ typedef struct iccs_layout_t {
 	u_int32_t	notifications[4];
 } iccs_layout;
 
-typedef struct binary_register_entry_t {
-	char		*binary_name;
-	Elf32_Ehdr	*elfh;
-} binary_register_entry;
+#define MIS_STRUCT ((xMemoryInformationType *)MIS_START_ADDRESS)
+#define BINARY_REGISTER ((binary_register_entry *)MIS_STRUCT->phys_binary_register_begin)
 
 /*
  * Physical memory layout:

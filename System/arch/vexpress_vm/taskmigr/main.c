@@ -40,6 +40,7 @@
 #include <System/system.h>
 #include <System/task_manager.h>
 #include <System/migrator.h>
+#include <System/binary_register.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
 #include <System/umm/umm_malloc.h>
 
@@ -170,7 +171,6 @@ int alloc_link_start_from_binary_register(const char *name)
 		ERROR_MSG("Could not start task \"%s\" \n", name);
 		goto error0;
 	}
-
 	return 1;
 error0:
 	return 0;
@@ -191,14 +191,14 @@ int main()
 
 	switch (portCORE_ID()) {
 	case 0:
-		if (!alloc_link_start_from_binary_register("tunnel", "tunnel"))
+		if (!alloc_link_start_from_binary_register("tunnel", "tunnel", bin_register))
 			goto error;
 		break;
 	}
 
 	switch (portCORE_ID()) {
 	case 0:
-		if (!alloc_link_start_from_binary_register("field", "field"))
+		if (!alloc_link_start_from_binary_register("field", "field", bin_register))
 			goto error;
 		break;
 	}

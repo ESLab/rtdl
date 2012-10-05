@@ -27,8 +27,6 @@
 
 #include <App/effects/config_effect.h>
 
-#include <System/arch/vexpress_vm/binary_register.h>
-
 int effect_config
 (task_register_cons	*trc,
  u_int16_t		 init_width,
@@ -92,14 +90,15 @@ int effect_config
 }
 
 int effect_start_and_config
-(const char	*new_task_name,
- const char	*binary_name,
- u_int16_t	 init_width,
- u_int16_t	 init_height,
- u_int16_t	 init_w_offset,
- u_int16_t	 init_h_offset)
+(const char		*new_task_name,
+ const char		*binary_name,
+ binary_register_entry	*bre,
+ u_int16_t		 init_width,
+ u_int16_t		 init_height,
+ u_int16_t		 init_w_offset,
+ u_int16_t		 init_h_offset)
 {
-	if (!alloc_link_start_from_binary_register(new_task_name, binary_name)) {
+	if (!alloc_link_start_from_binary_register(new_task_name, binary_name, bre)) {
 		return 0;
 	}
 

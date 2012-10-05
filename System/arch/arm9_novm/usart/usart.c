@@ -32,7 +32,8 @@
 //------------------------------------------------------------------------------
 
 #include "usart.h"
-#include <utility/trace.h>
+//#include <utility/trace.h>
+
 
 //------------------------------------------------------------------------------
 //         Exported functions
@@ -127,7 +128,7 @@ void USART_Write(
 
             if (timeOut == 0) {
 
-                trace_LOG(trace_ERROR, "-E- USART_Write: Timed out.\n\r");
+	        //trace_LOG(trace_ERROR, "-E- USART_Write: Timed out.\n\r");
                 return;
             }
             timeOut--;
@@ -195,7 +196,7 @@ unsigned short USART_Read(
 
             if (timeOut == 0) {
 
-                trace_LOG(trace_ERROR, "-E- USART_Read: Timed out.\n\r");
+	        //trace_LOG(trace_ERROR, "-E- USART_Read: Timed out.\n\r");
                 return 0;
             }
             timeOut--;

@@ -25,39 +25,60 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
+#define BINARY_REGISTER BINARY_REGISTER
+#define SYSTEM_MODULE BINARY_REGISTER
+
 #include <FreeRTOS.h>
 
-#include <task.h>
+#include <string.h>
 
-#include <stdio.h>
+#include <System/types.h>
+#include <System/system.h>
+#include <System/task_manager.h>
+#include <System/binary_register.h>
 
-#include <App/rtu.h>
-
-int _RTU_DATA_ c;
-
-int d = 1;
-
-extern int e;
-
-int a(int b)
+binary_register_entry *find_binary_register_entry(const char *name, binary_register_entry *bre)
 {
-	return b + 1;
+	int i;
+	for (i = 0; bre[i].binary_name != NULL; i++) {
+		if (strcmp(name, bre[i].binary_name) == 0)
+			return &bre[i];
+	}
+	return NULL;
 }
 
-int main( void )
+int alloc_link_start_from_binary_register(const char *new_task_name, const char *binary_name, binary_register_entry *bre)
 {
-	c = 1;
-	d = 2;
-	printf("fuck yeah!!\n");
-	vTaskSuspend(NULL);
-	while(1)
-		;
+	bre = find_binary_register_entry(binary_name, bre);
+
+	if (bre == NULL) {
+		ERROR_MSG("Could not find binary with name \"%s\"\n", binary_name);
+		goto error0;
+	}
+
+	task_register_cons *trc = task_register(new_task_name, bre->elfh);
+
+	if (trc == NULL) {
+		ERROR_MSG("Could not register task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
+		goto error0;
+	}
+
+	if (!task_alloc(trc)) {
+		ERROR_MSG("Could not alloc memory for task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
+		goto error0;
+	}
+
+	if (!task_link(trc)) {
+		ERROR_MSG("Could not link task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
+		goto error0;
+	}
+
+	if (!task_start(trc)) {
+		ERROR_MSG("Could not start task \"%s\", made from binary \"%s\"\n", new_task_name, binary_name);
+		goto error0;
+	}
+
+	return 1;
+error0:
 	return 0;
-}
-
-void vApplicationMallocFailedHook( void )
-{
-#if defined(VEXPRESS_VM) || defined(VEXPRESS_NOVM)
-	__asm volatile (" smc #0 ");
-#endif
 }

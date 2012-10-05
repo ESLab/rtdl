@@ -55,9 +55,7 @@ extern u_int8_t _system_elf_start;
 #define SYSTEM_ELF ((Elf32_Ehdr *)&_system_elf_start)
 #else /* HAS_SYSTEM_ELF_SYMBOL */
 #ifdef HAS_BINARY_REGISTER
-#include <System/arch/vexpress_vm/memory_layout.h>
-#define MIS_STRUCT ((xMemoryInformationType *)MIS_START_ADDRESS)
-#define BINARY_REGISTER ((binary_register_entry *)MIS_STRUCT->phys_binary_register_begin)
+#include <System/memory_layout.h>
 #define SYSTEM_ELF (BINARY_REGISTER[0].elfh)
 #else /* HAS_BINARY_REGISTER */
 #define SYSTEM_ELF ((Elf32_Ehdr *)NULL)

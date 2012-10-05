@@ -25,39 +25,15 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include <FreeRTOS.h>
+#ifndef MEMORY_LAYOUT_H
+#define MEMORY_LAYOUT_H
 
-#include <task.h>
+#ifdef ARCH_VEXPRESS_VM
+#include <System/arch/vexpress_vm/memory_layout.h>
+#endif /* ARCH_VEXPRESS_VM */
 
-#include <stdio.h>
+#ifdef ARCH_ARM9_NOVM
+#include <System/arch/arm9_novm/memory_layout.h>
+#endif /* ARCH_ARM9_NOVM */
 
-#include <App/rtu.h>
-
-int _RTU_DATA_ c;
-
-int d = 1;
-
-extern int e;
-
-int a(int b)
-{
-	return b + 1;
-}
-
-int main( void )
-{
-	c = 1;
-	d = 2;
-	printf("fuck yeah!!\n");
-	vTaskSuspend(NULL);
-	while(1)
-		;
-	return 0;
-}
-
-void vApplicationMallocFailedHook( void )
-{
-#if defined(VEXPRESS_VM) || defined(VEXPRESS_NOVM)
-	__asm volatile (" smc #0 ");
-#endif
-}
+#endif /* MEMORY_LAYOUT_H */

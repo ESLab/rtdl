@@ -254,12 +254,17 @@ vexpress_vm_kernel_files = get_ninja_set_of_files(
     map(lambda f: "System/arch/vexpress_vm/" + f, [
             'kernel-startup.S',
             'setup_vm.c',
-            'binary_register.c',
             ]))
 vexpress_novm_boot_files = get_ninja_set_of_files(
     map(lambda f: "System/arch/vexpress_novm/" + f, [
             "boot/startup.S",
             ]))
+vexpress_utility_files = get_ninja_set_of_files(
+    [
+        'System/pl011.c',
+        'System/pl111.c',
+        ])
+
 at91_novm_boot_files = get_ninja_set_of_files(
     map(lambda f: "System/arch/arm9_novm/" + f, [
             'boot/loader-startup.S',
@@ -271,17 +276,30 @@ at91_novm_kernel_files = get_ninja_set_of_files(
             'boot/board_memories.c',
             "startup.S",
             ]))
+at91_utility_files = get_ninja_set_of_files([
+        'System/arch/arm9_novm/usart/freertos_if.c',
+        'System/arch/arm9_novm/usart/usart.c',
+        ])
 
 libdwarf_files = get_ninja_set_of_files(
     glob.glob('libdwarf/*.c'))
 
-system_utility_files = get_ninja_set_of_files(
-    ['System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c',
-     'System/pl111.c', 'System/umm/umm_malloc.c', 'System/qsort.c'])
+system_utility_files = get_ninja_set_of_files([
+        'System/printf-stdarg.c',
+        'System/serial.c',
+        'System/umm/umm_malloc.c',
+        'System/qsort.c',
+        ])
 
-system_files = get_ninja_set_of_files(
-    ['System/task_manager.c', 'System/pointer_tracer.c', 'System/linker.c',
-     'System/migrator.c', 'System/dwarfif.c', 'System/system_util.c'])
+system_files = get_ninja_set_of_files([
+        'System/task_manager.c',
+        'System/pointer_tracer.c',
+        'System/linker.c',
+        'System/migrator.c',
+        'System/dwarfif.c',
+        'System/system_util.c',
+        'System/binary_register.c',
+        ])
 
 ##################
 # Config section #
@@ -304,6 +322,7 @@ configs = [
                 "-g3",
                 "-gdwarf-3",
                 "-mcpu=cortex-a9",
+                "-DARCH_VEXPRESS_NOVM",
                 ] +
             default_cflags +
             [],
@@ -330,6 +349,7 @@ configs = [
             'cflags': [
                 "-O3",
                 "-mcpu=cortex-a9",
+                "-DARCH_VEXPRESS_VM",
                 ] +
             default_cflags +
             [],
@@ -356,6 +376,7 @@ configs = [
                 "-g3",
                 "-gdwarf-3",
                 "-mcpu=cortex-a9",
+                "-DARCH_VEXPRESS_NOVM",
                 ] +
             default_cflags +
             [],
@@ -380,6 +401,7 @@ configs = [
             'cflags': [
                 "-O3",
                 "-mcpu=cortex-a9",
+                "-DARCH_VEXPRESS_VM",
                 ] +
             default_cflags +
             [],
@@ -402,6 +424,7 @@ configs = [
             'cflags': [
                 "-O3",
                 "-mcpu=cortex-a9",
+                "-DARCH_VEXPRESS_VM",
                 ] +
             default_cflags +
             [],
@@ -425,6 +448,7 @@ configs = [
             'cflags': [
                 "-O3",
                 "-mcpu=cortex-a9",
+                "-DARCH_VEXPRESS_VM",
                 ] +
             default_cflags +
             [],
@@ -447,17 +471,19 @@ configs = [
             'arch_flags': '-mcpu=arm926ej-s -march=armv5te',
             'arch': 'arm9',
             'cflags': [
-                "-O1",
+                "-O0",
                 "-g3",
                 "-gdwarf-3",
                 "-mcpu=arm926ej-s",
+                "-DARCH_ARM9_NOVM",
                 ] +
             default_cflags +
             [],
-            'image_address': '0x10000',
+            'image_address': '0x300000',
             'include_apps': [
-                "rtuappv1",
-                "rtuappv2",
+                "simple",
+#                "rtuappv1",
+#                "rtuappv2",
                 ],
             }),
 
@@ -478,6 +504,7 @@ config_source_files = \
     freertos_vexpress_files +
     libdwarf_files +
     vexpress_novm_boot_files +
+    vexpress_utility_files +
     NinjaSet(),
 
     'taskmigr': get_ninja_set_of_files([
@@ -488,6 +515,7 @@ config_source_files = \
     freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
+    vexpress_utility_files +
     (system_files - NinjaSet(
                 ["System/dwarfif.c",
                  "System/pointer_tracer.c",
@@ -508,6 +536,7 @@ config_source_files = \
     freertos_vexpress_files +
     libdwarf_files +
     vexpress_novm_boot_files +
+    vexpress_utility_files +
     NinjaSet(),
 
     'adtachtest': get_ninja_set_of_files([
@@ -524,6 +553,7 @@ config_source_files = \
     freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
+    vexpress_utility_files +
     NinjaSet(),
 
     'taskmigr_exp1': get_ninja_set_of_files([
@@ -536,6 +566,7 @@ config_source_files = \
     freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
+    vexpress_utility_files +
     (system_files - NinjaSet(
                 ["System/dwarfif.c",
                  "System/pointer_tracer.c",
@@ -553,6 +584,7 @@ config_source_files = \
     freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
+    vexpress_utility_files +
     (system_files - NinjaSet(
                 ["System/dwarfif.c",
                  "System/pointer_tracer.c",
@@ -568,6 +600,7 @@ config_source_files = \
     freertos_arm9_files +
     at91_novm_boot_files +
     at91_novm_kernel_files +
+    at91_utility_files +
     libdwarf_files +
     system_files +
     system_utility_files +
@@ -583,6 +616,9 @@ contributed_files = \
     vexpress_vm_boot_files + \
     vexpress_vm_kernel_files + \
     vexpress_novm_boot_files +  \
+    at91_novm_boot_files + \
+    at91_novm_kernel_files + \
+    at91_utility_files + \
     system_utility_files + \
     system_files + \
     get_ninja_set_of_files([
@@ -792,7 +828,7 @@ def gen_kernel_boot_build(name, c):
                 }))
     n.build(outputs   = bindir + "boot-" + name + ".elf",
             rule      = "link",
-            inputs    = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
+            inputs    = list((vexpress_vm_boot_files + vexpress_utility_files + system_utility_files).get_object_files(c)),
             variables = c + NinjaConfig({
             'ldflags': '-nostartfiles -fPIC -Wl,-T,' + builddir + "system_arch_vexpress_vm_boot_loader-" + name + ".ld " + c['arch_flags']
             }),
@@ -859,7 +895,7 @@ def gen_AT91_boot_build(name, c):
                 }))
     n.build(outputs   = bindir + "boot-" + name + ".elf",
             rule      = "link",
-            inputs    = list((at91_novm_boot_files + system_utility_files).get_object_files(c)),
+            inputs    = list((at91_novm_boot_files + at91_utility_files + system_utility_files).get_object_files(c)),
             variables = c + NinjaConfig({
                 'ldflags': '-nostartfiles -fPIC -Wl,-T,' + builddir + "system_arch_arm9_novm_boot_loader-" + name + ".ld " + c['arch_flags']
                 }),

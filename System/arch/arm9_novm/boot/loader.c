@@ -47,6 +47,14 @@ extern ma_t _kernel_elf_end;
 #define KERNEL_ELFH	((Elf32_Ehdr *)&_kernel_elf_start)
 #define KERNEL_ELF_SIZE ((ms_t)((npi_t)&_kernel_elf_end - (npi_t)&_kernel_elf_start))
 
+__attribute__ ((section (".binary_register"))) binary_register_entry binary_register[] = {
+  { "kernel", APPLICATION_ELF(kernel) },
+#ifdef APP_SIMPLE_INCLUDED
+  { "simple", APPLICATION_ELF(simple) },
+#endif /* APP_SIMPLE_INCLUDED */
+  { NULL, NULL }
+};
+
 static int check_elf_magic(Elf32_Ehdr *hdr)
 {
 	if (hdr->e_ident[0] != ELFMAG0)

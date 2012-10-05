@@ -25,39 +25,21 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include <FreeRTOS.h>
+#ifndef BINARY_REGISTER_H
+#define BINARY_REGISTER_H
 
-#include <task.h>
+typedef struct binary_register_entry_t {
+	char		*binary_name;
+	Elf32_Ehdr	*elfh;
+} binary_register_entry;
 
-#include <stdio.h>
+binary_register_entry *find_binary_register_entry
+(const char		*name, 
+ binary_register_entry	*bre);
 
-#include <App/rtu.h>
+int alloc_link_start_from_binary_register
+(const char		*new_task_name,
+ const char		*binary_name,
+ binary_register_entry	*bre);
 
-int _RTU_DATA_ c;
-
-int d = 1;
-
-extern int e;
-
-int a(int b)
-{
-	return b + 1;
-}
-
-int main( void )
-{
-	c = 1;
-	d = 2;
-	printf("fuck yeah!!\n");
-	vTaskSuspend(NULL);
-	while(1)
-		;
-	return 0;
-}
-
-void vApplicationMallocFailedHook( void )
-{
-#if defined(VEXPRESS_VM) || defined(VEXPRESS_NOVM)
-	__asm volatile (" smc #0 ");
-#endif
-}
+#endif /* BINARY_REGISTER_H */

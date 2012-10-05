@@ -9,6 +9,8 @@
 #define RUNTIME_UPDATING
 #define RTU_POINTER_TRACING
 
+#define HAS_BINARY_REGISTER
+
 #if defined(LINKER) || defined(TASK_MANAGER)
 #undef DEBUG
 #undef INFO
