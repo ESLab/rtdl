@@ -482,8 +482,8 @@ configs = [
             'image_address': '0x300000',
             'include_apps': [
                 "simple",
-#                "rtuappv1",
-#                "rtuappv2",
+                "rtuappv1",
+                "rtuappv2",
                 ],
             }),
 

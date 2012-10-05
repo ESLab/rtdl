@@ -52,6 +52,12 @@ __attribute__ ((section (".binary_register"))) binary_register_entry binary_regi
 #ifdef APP_SIMPLE_INCLUDED
   { "simple", APPLICATION_ELF(simple) },
 #endif /* APP_SIMPLE_INCLUDED */
+#ifdef APP_RTUAPPV1_INCLUDED
+  { "rtuappv1", APPLICATION_ELF(rtuappv1) },
+#endif /* APP_RTUAPPV1_INCLUDED */
+#ifdef APP_RTUAPPV2_INCLUDED
+  { "rtuappv2", APPLICATION_ELF(rtuappv2) },
+#endif /* APP_RTUAPPV1_INCLUDED */
   { NULL, NULL }
 };
 
@@ -72,7 +78,7 @@ static int check_elf_magic(Elf32_Ehdr *hdr)
 	return 1;
 }
 
-void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address, xMemoryInformationType *mit)
+  void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address)
 {
 	int i;
 	Elf32_Shdr *s = (Elf32_Shdr *)((npi_t)elfh + elfh->e_shoff);
@@ -82,19 +88,8 @@ void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address, xMemoryInform
 			continue;
 
 		void *section_addr = (void *)((npi_t)start_address + (npi_t)s[i].sh_addr);
-		//void *section_addr = (void *)((npi_t)start_address + (npi_t)s[i].sh_offset);
 		DEBUG_MSG("Copying section #%i to 0x%x\n", i, (npi_t)section_addr);
 		
-		/* mit->phys_start = */
-		/* 	(npi_t)mit->phys_start < s[i].sh_addr  */
-		/* 	? (void *)s[i].sh_addr */
-		/* 	: mit->phys_start; */
-
-		/* mit->phys_end = */
-		/* 	(npi_t)mit->phys_end < s[i].sh_addr + s[i].sh_size */
-		/* 	? (void *)(s[i].sh_addr + s[i].sh_size) */
-		/* 	: mit->phys_end; */
-
 		if (s[i].sh_type != SHT_NOBITS) {
 			/*
 			 * Copy the section if it contains data.
@@ -111,7 +106,6 @@ void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address, xMemoryInform
 			bzero(section_addr, s[i].sh_size);
 		}
 	}
-	//mit->phys_data_size = mit->phys_end - mit->phys_start;
 }
 
 int main()
@@ -121,16 +115,10 @@ int main()
 		goto error;
 	}
 
-	//xMemoryInformationType	*mit		    = (xMemoryInformationType *)MIS_START_ADDRESS;
 	Elf32_Ehdr		*kernel_elfh	    = KERNEL_ELFH;
 	npi_t			 kernel_entry_point = kernel_elfh->e_entry;
 
-	allocate_elf_at_offset(KERNEL_ELFH, 0x0, NULL);
-	/* mit->phys_entry_point		= (void *)kernel_entry_point; */
-	/* mit->phys_heap_begin		= mit->phys_end; */
-	/* mit->phys_heap_size		= 0x10000000 - mit->phys_data_size; */
-	/* mit->phys_binary_register_begin = (void *)0x10000000; */
-	/* mit->phys_binary_register_size	= sizeof(binary_register_entry); */
+	allocate_elf_at_offset(KERNEL_ELFH, 0x0);
 	
 	/*
 	 * Set up the kernels stack somewhere??

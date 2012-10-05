@@ -65,20 +65,17 @@ resetVector:
 
 ResetEntryPointAddress:		.word ResetEntryPoint
 UndefinedEntryPointAddress:	.word UndefinedEntryPoint
-SWIEntryPointAddress:		.word SWIEntryPoint
+SWIEntryPointAddress:		.word SWIHandler
 PrefetchEntryPointAddress:	.word PrefetchEntryPoint
 DataEntryPointAddress:		.word DataEntryPoint
 IRQEntryPointAddress:		.word IRQEntryPoint
 FIQEntryPointAddress:		.word FIQEntryPoint
 
-//	.space	4096
-	.space	128
+	.space	256
 IRQStackEnd:
-//	.space	4096
-	.space	128
+	.space	256
 FIQStackEnd:
-//	.space	8192
-	.space	128
+	.space	256
 SWIStackEnd:
 	
 /*
@@ -150,7 +147,6 @@ ResetEntryPoint:
 	msr		cpsr_c,r0
 	ldr		sp,=SWIStackEnd
 	ldr		pc,MainEntryPointAddress
-//	bl		main	
 End:
 	b		End
 MainEntryPointAddress:		.word main
@@ -204,7 +200,7 @@ UndefinedHandler:
 
 	.weak  SWIHandler
 SWIHandler:
-	b		SWIHandler
+	b		vPortYieldProcessor
 
 	.weak  PrefetchHandler
 PrefetchHandler:

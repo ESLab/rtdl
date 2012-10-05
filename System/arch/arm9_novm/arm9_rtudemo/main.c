@@ -41,25 +41,35 @@
 #include <System/task_manager.h>
 #include <System/pl011.h>
 #include <System/elf.h>
+#include <System/binary_register.h>
+
+#include <System/arch/arm9_novm/memory_layout.h>
 
 #include <stdio.h>
 #include <string.h>
 
 int migrator_loop()
 {
-	task_register_cons *trc;
+	binary_register_entry	*bin_register = BINARY_REGISTER;
+	binary_register_entry	*bre;
+	task_register_cons	*trc;
 
 	while (1) {
 		vTaskDelay(1000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtuapp"))) {
+
+			bre = find_binary_register_entry("rtuappv2", bin_register);
+			if (bre == NULL)
+				goto error;
+
 			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
 				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
 					  __func__, trc->name);
 				return 0;
 			}
 
-			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv2_elf_start;
+			Elf32_Ehdr *new_sw = bre->elfh;
 
 			INFO_MSG("Starting runtime update.\n");
 			if (!migrator_runtime_update(trc, new_sw)) {
@@ -67,18 +77,25 @@ int migrator_loop()
 				return 0;
 			}
 			INFO_MSG("Runtime update complete. (-> v2)\n");
+		} else {
+			goto error;
 		}
 
 		vTaskDelay(1000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtuapp"))) {
+
+			bre = find_binary_register_entry("rtuappv1", bin_register);
+			if (bre == NULL)
+				goto error;
+
 			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
 				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
 					  __func__, trc->name);
 				return 0;
 			}
 
-			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv1_elf_start;
+			Elf32_Ehdr *new_sw = bre->elfh;
 
 			INFO_MSG("Starting runtime update.\n");
 			if (!migrator_runtime_update(trc, new_sw)) {
@@ -86,96 +103,38 @@ int migrator_loop()
 				return 0;
 			}
 			INFO_MSG("Runtime update complete. (-> v1)\n");
+		} else {
+			goto error;
 		}
 	}
+error:
+	ERROR_MSG("Migration in error state, entering infinite loop.\n");
+	while (1)
+		;
 }
 
 int main()
 {
-	while(1)
-		;
-	Elf32_Ehdr *simple_elfh = APPLICATION_ELF(simple);
-	Elf32_Ehdr *writer_elfh = APPLICATION_ELF(writer);
-	Elf32_Ehdr *reader_elfh = APPLICATION_ELF(reader);
-	Elf32_Ehdr *rtuapp_elfh = APPLICATION_ELF(rtuappv1);
+	binary_register_entry *bre = BINARY_REGISTER;
+
+	vUARTInitialise(0, 38400, 0);
 
 	Elf32_Ehdr *sys_elfh = SYSTEM_ELF;
 
 	if (check_elf_magic(sys_elfh))
 		INFO_MSG("System ELF magic checks out @ 0x%x\n", (u_int32_t)sys_elfh);
 	else {
-		ERROR_MSG("Wrong System ELF magic @ 0x%x\n", (u_int32_t)sys_elfh);	
+		ERROR_MSG("Wrong System ELF magic @ 0x%x\n", (u_int32_t)sys_elfh);
 		goto exit;
 	}
 
-	/*
-	 * Registering tasks
-	 */
-
-	task_register_cons *simplec = task_register("simple", simple_elfh);
-	task_register_cons *readerc = task_register("reader", reader_elfh);
-	task_register_cons *writerc = task_register("writer", writer_elfh);
-	task_register_cons *rtuappc = task_register("rtuapp", rtuapp_elfh);
-
-	if (!task_alloc(simplec)) {
-		ERROR_MSG("Could not alloc memory for task \"simple\"\n");
-		goto exit;
-	}
-	if (!task_alloc(readerc)) {
-		ERROR_MSG("Could not alloc memory for task \"reader\"\n");
-		goto exit;
-	}
-	if (!task_alloc(writerc)) {
-		ERROR_MSG("Could not alloc memory for task \"writer\"\n");
-		goto exit;
-	}
-	if (!task_alloc(rtuappc)) {
-		ERROR_MSG("Could not alloc memory for task \"rtuapp\"\n");
+	if (!alloc_link_start_from_binary_register("simple", "simple", bre)) {
+		ERROR_MSG("Failed to start task \"simple\" from binary register.\n");
 		goto exit;
 	}
 
-	/*
-	 * Linking tasks
-	 */
-
-	if (!task_link(simplec)) {
-		ERROR_MSG("Could not link \"simple\" task\n");
-		goto exit;
-	}
-	if (!task_link(readerc)) {
-		ERROR_MSG("Could not link \"reader\" task\n");
-		goto exit;
-	}
-	if (!task_link(writerc)) {
-		ERROR_MSG("Could not link \"writer\" task\n");
-		goto exit;
-	}
-	if (!task_link(rtuappc)) {
-		ERROR_MSG("Could not link \"rtuapp\" task\n");
-		goto exit;
-	}
-
-	/*
-	 * Starting tasks
-	 */
-	
-	if (!task_start(simplec)) {
-		ERROR_MSG("Could not start \"simple\" task\n");
-		goto exit;
-	}
-
-	if (!task_start(readerc)) {
-		ERROR_MSG("Could not start \"reader\" task\n");
-		goto exit;
-	}
-
-	if (!task_start(writerc)) {
-		ERROR_MSG("Could not start \"writer\" task\n");
-		goto exit;
-	}
-
-	if (!task_start(rtuappc)) {
-		ERROR_MSG("Could not start \"rtuapp\" task\n");
+	if (!alloc_link_start_from_binary_register("rtuapp", "rtuappv1", bre)) {
+		ERROR_MSG("Failed to start task \"rtuapp\" from binary \"rtuappv1\".\n");
 		goto exit;
 	}
 
@@ -187,19 +146,19 @@ int main()
 		ERROR_MSG("Could not start migrator.\n");
 		goto exit;
 	}
-	
+
 	INFO_MSG("Starting scheduler\n");
 	vTaskStartScheduler();
-
+	goto exit;
 exit:
-	INFO_MSG("Going into infinite loop...\n");
+	ERROR_MSG("Going into infinite loop...\n");
 	while(1)
 		;
 }
 
 void vApplicationMallocFailedHook( void )
 {
-	//__asm volatile (" smc #0 ");
+
 }
 
 void vApplicationIdleHook( void )
