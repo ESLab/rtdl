@@ -277,8 +277,8 @@ at91_novm_kernel_files = get_ninja_set_of_files(
             "startup.S",
             ]))
 at91_utility_files = get_ninja_set_of_files([
-        'System/arch/arm9_novm/usart/freertos_if.c',
-        'System/arch/arm9_novm/usart/usart.c',
+        'System/arch/arm9/usart/freertos_if.c',
+        'System/arch/arm9/usart/usart.c',
         ])
 
 libdwarf_files = get_ninja_set_of_files(

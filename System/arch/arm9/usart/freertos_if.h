@@ -34,7 +34,7 @@
 #include <task.h>
 #include <semphr.h>
 
-#include <System/arch/arm9_novm/usart/usart.h>
+#include <System/arch/arm9/usart/usart.h>
 
 extern void vUARTInitialise(unsigned long ulUARTPeripheral, unsigned long ulBaud, unsigned long ulQueueSize );
 extern portBASE_TYPE	xUARTReceiveCharacter( unsigned long ulUARTPeripheral, signed char *pcChar, portTickType xDelay );

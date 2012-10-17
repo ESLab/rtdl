@@ -25,7 +25,7 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include <System/arch/arm9_novm/usart/freertos_if.h>
+#include <System/arch/arm9/usart/freertos_if.h>
 
 static AT91S_USART *get_usart(unsigned long ulUARTPeripheral)
 {
