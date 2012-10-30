@@ -43,7 +43,9 @@
 #include <System/elf.h>
 #include <System/binary_register.h>
 
-#include <System/arch/arm9_novm/memory_layout.h>
+#include <System/arch/arm9_novm_bl/memory_layout.h>
+
+#include <board_memories.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -118,6 +120,8 @@ int main()
 	binary_register_entry *bre = BINARY_REGISTER;
 
 	vUARTInitialise(0, 38400, 0);
+
+	BOARD_RemapRam();
 
 	Elf32_Ehdr *sys_elfh = SYSTEM_ELF;
 

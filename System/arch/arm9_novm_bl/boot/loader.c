@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <System/arch/arm9_novm/memory_layout.h>
+#include <System/arch/arm9_novm_bl/memory_layout.h>
 
 #include <System/applications.h>
 #include <System/elf.h>

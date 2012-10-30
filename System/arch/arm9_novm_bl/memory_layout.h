@@ -34,7 +34,7 @@
 #include <System/elf.h>
 #include <System/binary_register.h>
 
-#define BOOTLOADER_START_ADDRESS ((npi_t)0x10000000)
+#define BOOTLOADER_START_ADDRESS ((npi_t)0x23E00000)
 
 /*
  * The memory information section is put at the beginning of the SRAM.

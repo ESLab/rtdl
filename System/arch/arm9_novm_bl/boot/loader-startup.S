@@ -26,17 +26,18 @@
 /***********************************************************************************/
 
         .section .isr_vector, "x"
+	.global  Entry_Point
 	.global  Vector_Init
 
+Entry_Point:
 Vector_Init:
-        LDR     PC, Reset_Addr
-        LDR     PC, Reset_Addr
-        LDR     PC, Reset_Addr
-        LDR     PC, Reset_Addr
-        LDR     PC, Reset_Addr
-        NOP
-        LDR     PC, Reset_Addr
-        LDR     PC, Reset_Addr
+	B	Reset_Handler
+	B	Reset_Handler
+	B	Reset_Handler
+	B	Reset_Handler
+	B	Reset_Handler
+	.word   0x00200000
+	B	Reset_Handler
 
 Reset_Addr:      .word     Reset_Handler
 

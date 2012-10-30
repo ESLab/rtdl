@@ -30,7 +30,8 @@ ENTRY(Kernel_Start);
 MEMORY
 {
 	sram (rwx) : ORIGIN = 0x00300000, LENGTH = 0x00014000
-	ram (rwx) : ORIGIN = 0x20000000, LENGTH = 0x10000000
+	ram  (rwx) : ORIGIN = 0x20000000, LENGTH = 0x10000000
+	fram (rwx) : ORIGIN = 0x20200000, LENGTH = (0x10000000 - 0x200000)
 }
 
 PROVIDE(__stack_offset = 0x00000);
@@ -50,7 +51,7 @@ SECTIONS
         *(.text*)
         *(.rodata*)
         _etext = .;
-    } > ram
+    } > fram
 
     .data : /* AT(ADDR(.text) + SIZEOF(.text)) */
     {
@@ -58,7 +59,7 @@ SECTIONS
         *(vtable)
         *(.data*)
         _edata = .;
-    } > ram
+    } > fram
     .dynamic : { *(.dynamic) }
     .bss :
     {
@@ -66,7 +67,7 @@ SECTIONS
         *(.bss*)
         *(COMMON)
         _ebss = .;
-    } > ram
+    } > fram
 }
 
 

@@ -25,12 +25,12 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-ENTRY(Vector_Init);
+ENTRY(Entry_Point);
 
 MEMORY
 {
-	flash (rwx) : ORIGIN = 0x10000000, LENGTH = 0x10000000
-	ram (rwx) : ORIGIN = 0x00300000, LENGTH = 0x00100000
+	boot_sdram (rwx) : ORIGIN = 0x23E00000, LENGTH = 0x00200000
+	ram (rwx)        : ORIGIN = 0x00300000, LENGTH = 0x00100000
 }
 
 PROVIDE(__stack = 0x00314000);
@@ -60,23 +60,23 @@ SECTIONS
 	*(.text*)
 	*(.rodata*)
 	_etext = .;
-    } > flash
+    } > boot_sdram
 
     .data : AT(ADDR(.text) + SIZEOF(.text))
     {
 	_data = .;
 	*(.data*)
 	_edata = .;
-    } > flash
+    } > boot_sdram
 
     .kernel : {
 	    _kernel_elf_start = .;
 	    INCLUDE "build/kernel-CONFIG`_'nodbg.ld"
 	    _kernel_elf_end = .;
-    } > flash
+    } > boot_sdram
 
     .applications : {
 	    INCLUDE "build/applications-CONFIG.ld"
-    } > flash
+    } > boot_sdram
 	
 }
