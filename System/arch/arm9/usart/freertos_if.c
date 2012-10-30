@@ -33,12 +33,15 @@ static AT91S_USART *get_usart(unsigned long ulUARTPeripheral)
 
 	switch (ulUARTPeripheral) {
 	case 0:
-		usart = AT91C_BASE_US0;
+		usart = (AT91S_USART *)AT91C_DBGU_CR;
 		break;
 	case 1:
-		usart = AT91C_BASE_US1;
+		usart = AT91C_BASE_US0;
 		break;
 	case 2:
+		usart = AT91C_BASE_US1;
+		break;
+	case 3:
 		usart = AT91C_BASE_US2;
 		break;
 	default:
@@ -53,8 +56,11 @@ void vUARTInitialise(unsigned long ulUARTPeripheral, unsigned long ulBaud, unsig
 {
 	AT91S_USART *usart = get_usart(ulUARTPeripheral);
 
-	if (usart != NULL) 
+	if (usart != NULL) {
 		USART_Configure(usart, USART_MODE_ASYNCHRONOUS, ulBaud, 100*1000*1000);
+		USART_SetTransmitterEnabled(usart, 1);
+	}
+
 }
 
 portBASE_TYPE	xUARTReceiveCharacter( unsigned long ulUARTPeripheral, signed char *pcChar, portTickType xDelay )
