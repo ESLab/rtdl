@@ -35,8 +35,10 @@
 #include "smc/smc_driverL.h"
 
 #define DECAY 0.9
-#define MAX_SENSORS 13
+#define MAX_SENSORS 14
 #define BUTTON_PRESSED 0x1
+#define OFFSET 0
+#define DEBUG 0
 
 rtu_app_state _RTU_DATA_ *state = NULL;
 
@@ -50,9 +52,17 @@ int get_chars(int in)
 	return 2;
   else if(in>=100 && in<1000)
 	return 3;
+  else if(in > 1000)
+	return 4;
+  else if(in<0 && in>-10)
+	return 2;
+  else if(in<=-10 && in>-100)
+	return 3;
+  else if(in<=-100 && in>-1000)
+	return 4;
   else return 0;
-  
 }
+
 void print_space(int in)
 {
   int i;
@@ -96,7 +106,9 @@ void clear_display()
 
 void cpRequestHook(cp_req_t req_type)
 {
+#if(DEBUG == 1)
 	printf("rtuACPv2 checkpoint request\n");
+#endif
 	rtu_requested = 1;
 }
 
@@ -106,12 +118,65 @@ int main()
   
   	int i;
 	uint32_t sensors[MAX_SENSORS];
-	uint32_t chip_temp = 0;
-	uint32_t voltage = 0;
+	double chip_temp = 0.0;
+	double voltage = 0.0;
+	double aux_voltage = 0.0;
 	uint32_t ext_temp = 0;
-	uint32_t psensors_loc[] = {0x101FF000,0x101FF004,0x101FF008,0x101FF00C,0x101FF010,0x101FF014,0x101FF018,0x101FF01C,0x101FF020,0x101FF024,0x101FF028,0x101FF02C,0x101FF030};
-
+	int panic = 0;
+	
+#if (OFFSET == 0)
+	uint32_t * psensors_loc[] = {
+	  (uint32_t *)0x10000000,	//sensor1
+	  (uint32_t *)0x10000004,	//sensor2
+	  (uint32_t *)0x10000008,	//sensor3
+	  (uint32_t *)0x1000000C,	//OnChip Temp
+	  (uint32_t *)0x10000040,	//VccIn
+	  (uint32_t *)0x10000044,	//VccAux
+	  (uint32_t *)0x10000048,	//MaxTemp
+	  (uint32_t *)0x1000004C,	//MaxVccIn
+	  (uint32_t *)0x10000080,	//MaxVccAux
+	  (uint32_t *)0x10000084,	//MinTemp
+	  (uint32_t *)0x10000088,	//MinVccIn
+	  (uint32_t *)0x1000008C,	//MinVccAux
+	  (uint32_t *)0x100000C0,	//StatusC0
+	  (uint32_t *)0x100000C4,	//StatusC1
+	  (uint32_t *)0x101FF0C8,	//Inconsistence core0
+	  (uint32_t *)0x101FF0CC	//Inconsistence core1
+	};
+#endif
+#if (OFFSET == 1)
+	uint32_t * psensors_loc[] = {
+	  (uint32_t *)0x101FF000,
+	  (uint32_t *)0x101FF004,
+	  (uint32_t *)0x101FF008,
+	  (uint32_t *)0x101FF00C,
+	  (uint32_t *)0x101FF040,
+	  (uint32_t *)0x101FF044,
+	  (uint32_t *)0x101FF048,
+	  (uint32_t *)0x101FF04C,
+	  (uint32_t *)0x101FF080,
+	  (uint32_t *)0x101FF084,
+	  (uint32_t *)0x101FF088,
+	  (uint32_t *)0x101FF08C,
+	  (uint32_t *)0x101FF0C0,
+	  (uint32_t *)0x101FF0C4,
+	  (uint32_t *)0x101FF0C8,
+	  (uint32_t *)0x101FF0CC
+	};
+#endif
+	
+#define EXT_TEMP sensors[0]
+#define ONCHIP_TEMP sensors[3]
+#define ONCHIP_VOLTAGE sensors[4]
+#define AUX_VOLTAGE sensors[5]	
+#define CORE0_PANIC sensors[12]
+#define CORE1_PANIC sensors[13]
+#define CORE0_INCONSITENCE sensors[14]
+#define CORE1_INCONSITENCE sensors[15]	
+	
+#if (DEBUG == 1)
 	printf("ACP application v2 started\n");
+#endif
 	vTaskDelay(100);
 
 	if (state == NULL) {
@@ -122,13 +187,13 @@ int main()
 		init_smc_ddr();
 			
 	for(i=0; i<MAX_SENSORS;i++){
-	  sensors[i] = psensors_loc[i];
+	  sensors[i] = *psensors_loc[i];
 	}
-#if 1
+#if 0
 	  printf("\nwriting:");
 	  for(i=0;i<MAX_SENSORS;i++)
 	  {
-		sensors[i] = i+10;
+		psensors_loc[i] = i+10;
 		printf(".");
 		vTaskDelay(10);
 	  }
@@ -137,36 +202,44 @@ int main()
 	  
 	  /*Check for update requests*/
 	  if (rtu_requested) {
-		/*
-		  * Go into safe state and suspend
-		  */
+		
+		/*Go into safe state and suspend*/
 		rtu_requested = 0;
+#if(DEBUG == 1)
 		printf("rtuACPv2 now in safe state\n");
+#endif
 		TASK_IN_SAFE_STATE();
 	  }
 	  
 	  /*Read values from shared memory*/
+	  for(i=0 ; i<MAX_SENSORS ; i++){
+		sensors[i] = * psensors_loc[i];
+#if (DEBUG == 1)
+		printf("v2 debug: item %d has value %d\n",i, sensors[i]);
+#endif
+	  }
+	  
+	  chip_temp = ((double)ONCHIP_TEMP * 503.975 / 1024.0) - 273.15;
+	  voltage = ((double)ONCHIP_VOLTAGE*1000.0 / 1024.0) * 3.0;			//for milli volts
+	  aux_voltage = ((double)AUX_VOLTAGE*1000.0 / 1024.0) * 3.0;			//for milli volts
+	  ext_temp = EXT_TEMP;
 	  
 	  /*Store max temperature state*/
-	  if(chip_temp > state->max_temp) state->max_temp = chip_temp;
-	  
-	  
-	  printf("v2 debug: External temperature is %d addr %x.\n",sensors[0], psensors_loc[0]);
-	  printf("v2 debug: Onchip temperature is %d addr %x.\n",sensors[3], psensors_loc[3]);
-	  printf("v2 debug: Chip voltage is %d mV addr %x.\n\n",sensors[6]*1000, psensors_loc[6]);
+	  if(chip_temp > state->max_temp) state->max_temp = chip_temp;	  
+
 	  /*Print out on display*/
 	  printf("#--------------Display v2.0-------------#\n");
 	  printf("| External temperature:         %d  ",ext_temp);
 	  print_space((int)(ext_temp)); printf("C |\n");
 	  printf("|                               %d  ",(int)((ext_temp)*(9.0/5.0)+32.0));
 	  print_space((int)((ext_temp)*(9.0/5.0)+32.0)); printf("F |\n");
-	  printf("| Chip temperature:             %d  ",chip_temp);
+	  printf("| Chip temperature:             %d  ",(int)chip_temp);
 	  print_space((int)(chip_temp)); printf("C |\n");
 	  printf("|                               %d  ",(int)((chip_temp)*(9.0/5.0)+32.0));
 	  print_space((int)((chip_temp)*(9.0/5.0)+32.0)); printf("F |\n");
 	  
-#if 1
-	  state->avg_temp = DECAY * sensors[0] + (1.0 - DECAY)*state->avg_temp_old;
+
+	  state->avg_temp = DECAY * chip_temp + (1.0 - DECAY)*state->avg_temp_old;
 	  state->avg_temp_old = state->avg_temp;
 
 	  printf("| Avg. external temperature:    %d.%d",(int)state->avg_temp, get_decimal(state->avg_temp));
@@ -177,19 +250,40 @@ int main()
 	  print_space((int)(state->max_temp)); printf("C |\n");
 	  printf("|                               %d  ", (int)((state->max_temp)*(9.0/5.0)+32.0)); 
 	  print_space((int)((state->max_temp)*(9.0/5.0)+32.0)); printf("F |\n");
-#endif 
-	  printf("| Chip voltage:                 %d ",voltage);
+
+	  printf("| Chip voltage:                 %d ",(int)voltage);
 	  print_space(voltage); printf("mV |\n");
+	  printf("| Aux voltage:                  %d ",(int)aux_voltage);
+	  print_space((int)aux_voltage); printf("mV |\n");
+	  
+	  CORE0_INCONSITENCE = * psensors_loc[14];
+	  CORE1_INCONSITENCE = * psensors_loc[15];
+	  if(CORE0_INCONSITENCE != 1)
+		printf("| Core 0 status: OK                     |\n");
+	  else
+		printf("| Core 0 status: SIGNAL                 |\n"); 
+	  if(CORE1_INCONSITENCE != 1)
+		printf("| Core 1 status: OK                     |\n");
+	  else
+		printf("| Core 1 status: SIGNAL                 |\n");
 	  printf("#---------------------------------------#\n\n");
-	  for(i=0 ; i<10 ; i++){
-#if 1
-		if(sensors[12] == BUTTON_PRESSED){
-		  printf("Panic button has been pressed!\nPlease reset system\n");
+	  if(panic == 1)
+		printf("**Panic button has been pressed!**\n**Please reset system**\n");
+	  printf("\n\n\n");
+	  
+	  /*loop and check if panic button is pressed*/
+	  for(i=0 ; i<100 ; i++){
+
+		CORE0_PANIC = * psensors_loc[12];
+		CORE1_PANIC = * psensors_loc[13];
+		if((CORE0_PANIC == BUTTON_PRESSED)||(CORE1_PANIC == BUTTON_PRESSED)){
+		  panic = 1;
+		  printf("**Panic button has been pressed!**\n**Please reset system**\n");
 		  while(1)
 			;
 		}
-#endif
-		vTaskDelay(500);
+
+		vTaskDelay(25);
 	  }
 	}
   return 0;
