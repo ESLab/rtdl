@@ -113,11 +113,12 @@ void cpRequestHook(cp_req_t req_type)
 
 int main()
 {
+  vTaskDelay(1000);
   	int i;
 	uint32_t sensors[MAX_SENSORS];
 	double chip_temp = 0;
 	double voltage = 0;
-	int panic = 0;
+	//int panic = 0;
 
 #if (OFFSET == 0)
 	uint32_t * psensors_loc[] = {
@@ -135,8 +136,8 @@ int main()
 	  (uint32_t *)0x1000008C,	//MinVccAux
 	  (uint32_t *)0x100000C0,	//StatusC0
 	  (uint32_t *)0x100000C4,	//StatusC1
-	  (uint32_t *)0x101FF0C8,	//Inconsistence core0
-	  (uint32_t *)0x101FF0CC	//Inconsistence core1
+	  (uint32_t *)0x100000C8,	//Error core0
+	  (uint32_t *)0x100000CC	//Error core1
 	};
 #endif
 #if (OFFSET == 1)
@@ -166,8 +167,8 @@ int main()
 #define ONCHIP_VOLTAGE sensors[4]
 #define CORE0_PANIC sensors[12]
 #define CORE1_PANIC sensors[13]
-#define CORE0_INCONSITENCE sensors[14]
-#define CORE1_INCONSITENCE sensors[15]
+#define CORE0_ERROR sensors[14]
+#define CORE1_ERROR sensors[15]
 	
 #if(DEBUG == 1)
 	printf("ACP application v1 started\n");
@@ -238,34 +239,51 @@ int main()
 	  printf("| Internal Chip voltage is        %d", (int)voltage);
 	  print_space(voltage); printf("mV |\n");
 	  
-	  CORE0_INCONSITENCE = * psensors_loc[14];
-	  CORE1_INCONSITENCE = * psensors_loc[15];
-	  if(CORE0_INCONSITENCE != 1)
+	  CORE0_PANIC = * psensors_loc[12];
+	  CORE1_PANIC = * psensors_loc[13];
+	  CORE0_ERROR = * psensors_loc[14];
+	  CORE1_ERROR = * psensors_loc[15];
+	  /*
+	  	printf("error0 %d\n",CORE0_ERROR);
+		printf("error1 %d\n",CORE1_ERROR);
+		printf("sto0 %d\n",CORE0_PANIC);
+		printf("sto1 %d\n",CORE1_PANIC);
+	  */
+	  if(CORE0_ERROR != 1)
 		printf("| Core 0 status: OK                      |\n");
 	  else
-		printf("| Core 0 status: SIGNAL                  |\n"); 
-	  if(CORE1_INCONSITENCE != 1)
+		printf("| Core 0 status: ERROR                   |\n"); 
+	  if(CORE1_ERROR != 1)
 		printf("| Core 1 status: OK                      |\n");
 	  else
-		printf("| Core 1 status: SIGNAL                  |\n");
+		printf("| Core 1 status: ERROR                   |\n");
 	  printf("#----------------------------------------#\n\n");
-	  if(panic == 1)
-		printf("**Panic button has been pressed!**\n**Please reset system**\n");
-	  printf("\n\n\n\n\n");
+	  
 	  /*loop and check if panic button is pressed*/
 	  for(i=0 ; i<100 ; i++){
+		
 
 		CORE0_PANIC = * psensors_loc[12];
 		CORE1_PANIC = * psensors_loc[13];
-		if((CORE0_PANIC == BUTTON_PRESSED)||(CORE1_PANIC == BUTTON_PRESSED)){
-		  panic = 1;
-		  printf("**Panic button has been pressed!****\n****Please reset system**\n");
-		  while(1)
-			;
+		CORE0_ERROR = * psensors_loc[14];
+		CORE1_ERROR = * psensors_loc[15];
+
+		
+		if(((CORE0_PANIC == BUTTON_PRESSED)||(CORE1_PANIC == BUTTON_PRESSED)) && ((CORE0_ERROR == 0) && (CORE1_ERROR == 0))){
+		  /*
+		  printf("error0 %d\n",CORE0_ERROR);
+		  printf("error1 %d\n",CORE1_ERROR);
+		  printf("sto0 %d\n",CORE0_PANIC);
+		  printf("sto1 %d\n",CORE1_PANIC);
+		  */
+		  printf("**STO is high!**\n**Please reset system**\n");
+		  vTaskDelay(25*100);
+		  break;
 		}
 
 		vTaskDelay(25);
 	  }
+	  printf("\n\n\n\n\n");
 	  
 	}
   return 0;

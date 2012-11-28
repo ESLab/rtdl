@@ -122,7 +122,6 @@ int main()
 	double voltage = 0.0;
 	double aux_voltage = 0.0;
 	uint32_t ext_temp = 0;
-	int panic = 0;
 	
 #if (OFFSET == 0)
 	uint32_t * psensors_loc[] = {
@@ -140,8 +139,8 @@ int main()
 	  (uint32_t *)0x1000008C,	//MinVccAux
 	  (uint32_t *)0x100000C0,	//StatusC0
 	  (uint32_t *)0x100000C4,	//StatusC1
-	  (uint32_t *)0x101FF0C8,	//Inconsistence core0
-	  (uint32_t *)0x101FF0CC	//Inconsistence core1
+	  (uint32_t *)0x100000C8,	//Inconsistence core0
+	  (uint32_t *)0x100000CC	//Inconsistence core1
 	};
 #endif
 #if (OFFSET == 1)
@@ -256,35 +255,38 @@ int main()
 	  printf("| Aux voltage:                  %d ",(int)aux_voltage);
 	  print_space((int)aux_voltage); printf("mV |\n");
 	  
+	  CORE0_PANIC = * psensors_loc[12];
+	  CORE1_PANIC = * psensors_loc[13];
 	  CORE0_INCONSITENCE = * psensors_loc[14];
 	  CORE1_INCONSITENCE = * psensors_loc[15];
+	  
 	  if(CORE0_INCONSITENCE != 1)
 		printf("| Core 0 status: OK                     |\n");
 	  else
-		printf("| Core 0 status: SIGNAL                 |\n"); 
+		printf("| Core 0 status: ERROR                  |\n"); 
 	  if(CORE1_INCONSITENCE != 1)
 		printf("| Core 1 status: OK                     |\n");
 	  else
-		printf("| Core 1 status: SIGNAL                 |\n");
-	  printf("#---------------------------------------#\n\n");
-	  if(panic == 1)
-		printf("**Panic button has been pressed!**\n**Please reset system**\n");
-	  printf("\n\n\n");
+		printf("| Core 1 status: ERROR                  |\n");
+	  printf("#---------------------------------------#\n\n");	  
 	  
 	  /*loop and check if panic button is pressed*/
 	  for(i=0 ; i<100 ; i++){
 
 		CORE0_PANIC = * psensors_loc[12];
 		CORE1_PANIC = * psensors_loc[13];
-		if((CORE0_PANIC == BUTTON_PRESSED)||(CORE1_PANIC == BUTTON_PRESSED)){
-		  panic = 1;
-		  printf("**Panic button has been pressed!**\n**Please reset system**\n");
-		  while(1)
-			;
+		CORE0_INCONSITENCE = * psensors_loc[14];
+		CORE1_INCONSITENCE = * psensors_loc[15];
+		
+		if(((CORE0_PANIC == BUTTON_PRESSED)||(CORE1_PANIC == BUTTON_PRESSED)) && ((CORE0_INCONSITENCE == 0) && (CORE1_INCONSITENCE == 0))){
+		  
+		  printf("**STO is high!**\n**Please reset system**\n");
+		  vTaskDelay(25*100);
+		  break;
 		}
-
 		vTaskDelay(25);
 	  }
+	  printf("\n\n\n");
 	}
   return 0;
 }
