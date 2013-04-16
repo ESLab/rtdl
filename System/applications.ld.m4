@@ -27,25 +27,25 @@
 
 _simple_elf_start = ALIGN(0x4);
 . = _simple_elf_start;
-INCLUDE "build/simple.ld";
+INCLUDE "build/simple-CONFIG.ld";
 _simple_elf_end = .;
 
 _writer_elf_start = ALIGN(0x4);
 . = _writer_elf_start;
-INCLUDE "build/writer.ld";
+INCLUDE "build/writer-CONFIG.ld";
 _writer_elf_end = .;
 
 _reader_elf_start = ALIGN(0x4);
 . = _reader_elf_start;
-INCLUDE "build/reader.ld";
+INCLUDE "build/reader-CONFIG.ld";
 _reader_elf_end = .;
 
 _rtuappv1_elf_start = ALIGN(0x4);
 . = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1.ld";
+INCLUDE "build/rtuappv1-CONFIG.ld";
 _rtuappv1_elf_end = .;
 
 _rtuappv2_elf_start = ALIGN(0x4);
 . = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2.ld";
+INCLUDE "build/rtuappv2-CONFIG.ld";
 _rtuappv2_elf_end = .;

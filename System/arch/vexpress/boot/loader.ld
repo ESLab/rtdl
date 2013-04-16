@@ -44,34 +44,37 @@ SECTIONS
     .plt : { *(.plt) }
     .text :
     {
-        _text = .;
-        __isr_vector_start = .;
-        *(.isr_vector)
-        __isr_vector_end = .;
-        *(.text*)
-        *(.rodata*)
-        _etext = .;
+	_text = .;
+	__isr_vector_start = .;
+	*(.isr_vector)
+	__isr_vector_end = .;
+	*(.text*)
+	*(.rodata*)
+	_etext = .;
     } > ram
 
     .data : AT(ADDR(.text) + SIZEOF(.text))
     {
-        _data = .;
-        *(vtable)
-        *(.data*)
-        _edata = .;
+	_data = .;
+	*(vtable)
+	*(.data*)
+	_edata = .;
     } > ram
     .dynamic : { *(.dynamic) }
     .kernel : {
-    	    _kernel_elf_start = .;
-    	    INCLUDE "build/vexpress-kernel.ld"
+	    _kernel_elf_start = .;
+	    INCLUDE "build/vexpress-kernel.ld"
 	    _kernel_elf_end = .;
+    } > ram
+    .applications : {
+	    INCLUDE "build/applications-vm.ld"
     } > ram
     .bss :
     {
-        _bss = .;
-        *(.bss*)
-        *(COMMON)
-        _ebss = .;
+	_bss = .;
+	*(.bss*)
+	*(COMMON)
+	_ebss = .;
     } > ram
 }
 

@@ -114,6 +114,10 @@ n.rule(name = "cscope",
        command = "$cscope -b -f $out " + get_include_args(includedirs) + " $in",
        description = "CSCOPE $out")
 
+n.rule(name = "m4",
+       command = "m4 $m4flags $in > $out",
+       description = "M4 $out")
+
 freertos_files = ["Source/croutine.c",
                   "Source/list.c",
                   "Source/queue.c",
@@ -215,7 +219,7 @@ def gen_step_build(name, inputs, implicit, ldfiles):
 
 gen_step_build("system", map(lambda f: get_object_file(f, config="no_vm"),
                              system_files + ["Source/portable/MemMang/heap_3.c"]),
-               map(lambda f: builddir + f + ".ld", applications) + ["System/applications.ld"],
+               map(lambda f: builddir + f + "-no_vm.ld", applications) + [builddir + "applications-no_vm.ld"],
                ["System/system.0.ld", "System/system.1.ld", "System/system.2.ld"])
 
 n.build(outputs   = bindir + "vexpress-kernel.elf",
@@ -223,7 +227,8 @@ n.build(outputs   = bindir + "vexpress-kernel.elf",
         inputs    = map(lambda f: get_object_file(f, config="vm"), freertos_files + ["Source/portable/MemMang/heap_4.c"] +
                         vexpress_kernel_files + system_utility_files),
         variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
-        implicit  = ["System/arch/vexpress/kernel.ld"])
+        implicit  = map(lambda f: builddir + f + "-vm.ld", applications) +
+        ["System/arch/vexpress/kernel.ld", builddir + "applications-vm.ld"])
 n.build(outputs   = builddir + "vexpress-kernel.ld",
         rule      = "app_ld",
         inputs    = bindir + "vexpress-kernel.elf")
@@ -251,16 +256,25 @@ n.build(outputs = "cscope.out",
         rule = "cscope",
         inputs = list(set.union(app_fs,fs)))
 
-for a in applications:
-    elffile           = bindir + a + ".elf"
-    ldfile            = builddir + a + ".ld"
-    n.build(outputs   = elffile,
-            rule      = "link",
-            inputs    = map(lambda f: get_object_file(f, in_app = True, config="no_vm"), applications[a]),
-            variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
-            implicit  = "App/app.ld")
-    n.build(outputs   = ldfile,
-            rule      = "app_ld",
-            inputs    = elffile)
+for c in configs:
+    n.build(outputs   = builddir + "applications-" + c + ".ld",
+            rule      = "m4",
+            inputs    = "System/applications.ld.m4",
+            variables = {'m4flags': '-DCONFIG=' + c})
+    for a in applications:
+        elffile           = bindir + a + "-" + c + ".elf"
+        ldfile            = builddir + a + "-" + c + ".ld"
+        n.build(outputs   = elffile,
+                rule      = "link",
+                inputs    = map(lambda f: get_object_file(f, in_app = True, config=c), applications[a]),
+                variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
+                implicit  = "App/app.ld")
+        n.build(outputs   = ldfile,
+                rule      = "app_ld",
+                inputs    = elffile)
 
-n.default([bindir + "vexpress-boot.uimg", bindir + "system.uimg", "cloc_report.log", "cscope.out"])
+n.default([
+        bindir + "system.uimg",
+        "cloc_report.log",
+        "cscope.out",
+        ])
