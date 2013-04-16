@@ -34,6 +34,7 @@
 
 #include <App/rtu.h>
 #include <System/migrator.h>
+#include <System/task_manager.h>
 
 int _RTU_DATA_ state1 = 0;
 int _RTU_DATA_ *state2 = NULL;

@@ -61,7 +61,7 @@ SECTIONS
         _edata = .;
     } > ram
     .applications : {
-        INCLUDE "build/applications-no_vm.ld"
+        INCLUDE "build/applications-rtudemo.ld"
     } > ram
     .system_elf : {
         _system_elf_start = .;

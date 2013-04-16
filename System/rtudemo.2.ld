@@ -61,11 +61,11 @@ SECTIONS
         _edata = .;
     } > ram
     .applications : {
-         INCLUDE "build/applications-no_vm.ld"
+         INCLUDE "build/applications-rtudemo.ld"
     } > ram
     .system_elf : {
         _system_elf_start = .;
-	INCLUDE "build/system.0.ld";
+	INCLUDE "build/rtudemo.1.ld";
 	_system_elf_end = .;
     }
     .bss :

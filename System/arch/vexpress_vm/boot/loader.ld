@@ -63,7 +63,7 @@ SECTIONS
     .dynamic : { *(.dynamic) }
     .kernel : {
 	    _kernel_elf_start = .;
-	    INCLUDE "build/vexpress-kernel.ld"
+	    INCLUDE "build/kernel-taskmigr.ld"
 	    _kernel_elf_end = .;
     } > ram
     .applications : {

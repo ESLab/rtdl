@@ -33,6 +33,7 @@
 #include <stdio.h>
 
 #include <System/migrator.h>
+#include <System/task_manager.h>
 
 #include <App/rw_common.h>
 #include <App/rtu.h>
