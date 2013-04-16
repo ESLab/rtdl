@@ -514,39 +514,58 @@ c = configs[1]
 
 debug_in_kernel = False
 
-n.build(outputs   = bindir + "kernel-taskmigr.elf",
-        rule      = "link",
-        inputs    = list((config_source_files['taskmigr'].get_flattened() -
-                          vexpress_vm_boot_files).get_object_files(c)) +              \
-            ['./WittCore2Core.a'],
-        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld -mcpu=cortex-a9', 'libs': '-lm'}),
-        implicit  = map(lambda f: builddir + f + "-taskmigr.ld", c['include_apps']) + \
-            ["System/arch/vexpress_vm/kernel.ld", builddir + "applications-taskmigr.ld"])
-n.build(outputs   = builddir + "kernel-taskmigr.ld",
-        rule      = "app_ld",
-        inputs    = bindir + "kernel-taskmigr.elf")
-n.build(outputs   = bindir + "kernel-taskmigr_nodbg.elf",
-        rule      = "objcopy",
-        inputs    = bindir + "kernel-taskmigr.elf",
-        variables = c + NinjaConfig({'ocflags' : "-g"}))
-n.build(outputs   = builddir + "kernel-taskmigr_nodbg.ld",
-        rule      = "app_ld",
-        inputs    = bindir + "kernel-taskmigr_nodbg.elf")
-n.build(outputs   = bindir + "boot-taskmigr.elf",
-        rule      = "link",
-        inputs    = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
-        variables = c + NinjaConfig({'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9'}),
-        implicit  = ["System/arch/vexpress_vm/boot/loader.ld",
-                    builddir + "kernel-taskmigr.ld" if debug_in_kernel else builddir + "kernel-taskmigr_nodbg.ld"])
-n.build(outputs   = bindir + "boot-taskmigr.bin",
-        rule      = "objcopy",
-        inputs    = bindir + "boot-taskmigr.elf",
-        variables = c + NinjaConfig({'ocflags': '-O binary'}))
-n.build(outputs   = bindir + "boot-taskmigr.uimg",
-        rule      = "mkimage",
-        inputs    = bindir + "boot-taskmigr.bin",
-        variables = c)
+def gen_kernel_boot_build(name, c):
+    n.build(outputs   = bindir + "kernel-" + name + ".elf",
+            rule      = "link",
+            inputs    = [
+            ] +
+            list((config_source_files[name].get_flattened() -
+                  vexpress_vm_boot_files).get_object_files(c)) +
+            [],
+            variables = c + NinjaConfig({
+                'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld -mcpu=cortex-a9',
+                }),
+            implicit  = [
+            "System/arch/vexpress_vm/kernel.ld",
+            builddir + "applications-" + name + ".ld",
+            ] +
+            map(lambda f: builddir + f + "-" + name + ".ld", c['include_apps']) +
+            [],
+            )
+    n.build(outputs   = builddir + "kernel-" + name + ".ld",
+            rule      = "app_ld",
+            inputs    = bindir + "kernel-" + name + ".elf")
+    n.build(outputs   = bindir + "kernel-" + name + "_nodbg.elf",
+            rule      = "objcopy",
+            inputs    = bindir + "kernel-" + name + ".elf",
+            variables = c + NinjaConfig({
+                'ocflags' : "-g",
+                }))
+    n.build(outputs   = builddir + "kernel-" + name + "_nodbg.ld",
+            rule      = "app_ld",
+            inputs    = bindir + "kernel-" + name +  "_nodbg.elf")
+    n.build(outputs   = bindir + "boot-" + name + ".elf",
+            rule      = "link",
+            inputs    = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
+            variables = c + NinjaConfig({
+            'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9',
+            }),
+            implicit  = [
+            "System/arch/vexpress_vm/boot/loader.ld",
+            builddir + "kernel-" + name + ".ld" if debug_in_kernel else builddir + "kernel-" + name + "_nodbg.ld",
+            ])
+    n.build(outputs   = bindir + "boot-" + name + ".bin",
+            rule      = "objcopy",
+            inputs    = bindir + "boot-" + name + ".elf",
+            variables = c + NinjaConfig({
+            'ocflags': '-O binary',
+            }))
+    n.build(outputs   = bindir + "boot-" + name + ".uimg",
+            rule      = "mkimage",
+            inputs    = bindir + "boot-" + name + ".bin",
+            variables = c)
 
+gen_kernel_boot_build("taskmigr", configs[1])
 
 ################
 # Misc. builds #
