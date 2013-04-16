@@ -47,7 +47,7 @@ extern ma_t _kernel_elf_end;
 
 #define MULTICORE
 
-xMemoryInformationType *mit = MIS_ADDRESS;
+xMemoryInformationType *mit = MIS_START_ADDRESS;
 
 static int check_elf_magic(Elf32_Ehdr *hdr)
 {
@@ -173,11 +173,11 @@ int _init()
 
 	for (i = 0; i < NUMBER_OF_CORES; i++) {
 		INFO_MSG("Copying kernel for core #%i\n", i);
-		mit[i].phys_start	= KERNEL_START_ADDRESS(i);
-		mit[i].phys_end		= KERNEL_START_ADDRESS(i+1);
+		mit[i].phys_start	= KSN_START_ADDRESS(i);
+		mit[i].phys_end		= KSN_START_ADDRESS(i+1);
 		mit[i].phys_entry_point = mit[i].phys_start + entry_point_address_offset;
-		mit[i].phys_heap_begin	= GVS_HEAP_ADDRESS(i);
-		mit[i].phys_heap_size	= GVS_HEAP_SIZE;
+		mit[i].phys_heap_begin	= GVMSN_START_ADDRESS(i);
+		mit[i].phys_heap_size	= GVMS_SIZE;
 		allocate_elf_at_offset(KERNEL_ELFH, mit[i].phys_start, &mit[i]);
 	}
 

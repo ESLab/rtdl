@@ -31,6 +31,13 @@
 
 static unsigned long page_table[4096] __attribute__ ((aligned (16384)));
 
+/*
+ * Descriptors for cached memory pages and uncached memory pages, for
+ * more information see:
+ * - ARM11 MPCore Processor Technical Manual 5-41
+ * - ARM11 MPCore Processor Technical Manual 5-52
+ */
+
 #define CACHED_DESCRIPTOR(phys_addr)	(((phys_addr) & 0xfff00000) | 0x05de6)
 #define UNCACHED_DESCRIPTOR(phys_addr)	(((phys_addr) & 0xfff00000) | 0x00de2)
 
@@ -144,14 +151,8 @@ void setup_vm(void)
 	 * Virtual mapping for the kernel.
 	 */
 
-	for (; i < KERNEL_ALLOC_PAGES; i++) {
-		page_table[i] = CACHED_DESCRIPTOR((unsigned int)KERNEL_START_ADDRESS(portCORE_ID()) + MIS_PAGESIZE*i);
-	}
-	/*
-	 * The rest is mapped 1:1.
-	 */
-	for (; i < 64; i++) {
-		page_table[i] = CACHED_DESCRIPTOR(i*MIS_PAGESIZE);
+	for (; i < KS_PAGES; i++) {
+		page_table[i] = CACHED_DESCRIPTOR((unsigned int)KSN_START_ADDRESS(portCORE_ID()) + VM_PAGESIZE*i);
 	}
 
 	/*
@@ -159,11 +160,15 @@ void setup_vm(void)
 	 */
 
 	for (; i < 1536; i++) {
-		page_table[i] = UNCACHED_DESCRIPTOR(i*MIS_PAGESIZE);
+		page_table[i] = UNCACHED_DESCRIPTOR(i*VM_PAGESIZE);
+	}
+
+	for (; i < 1536 + 1 + ICCS_START_PAGENO; i++) {
+		page_table[i] = CACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}
 
 	for (; i < 4096; i++) {
-		page_table[i] = CACHED_DESCRIPTOR(i*MIS_PAGESIZE);
+		page_table[i] = UNCACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}
 
 	setup_vm_finish();

@@ -78,7 +78,7 @@ portTASK_FUNCTION(ohai_task, arg)
 
 int main()
 {
-	xMemoryInformationType *mit = MIS_ADDRESS;
+	xMemoryInformationType *mit = MIS_START_ADDRESS;
 
 	printf("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
 
