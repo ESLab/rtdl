@@ -64,6 +64,7 @@ request_hook_fn_t migrator_find_request_hook(task_register_cons *trc)
 	return ret;
 }
 
+#ifdef RUNTIME_UPDATING
 #ifdef RTU_POINTER_TRACING
 
 #include <dwarf.h>
@@ -513,9 +514,11 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
  error_L0:
 	return 0;
 }
+#endif /* RUNTIME_UPDATING */
 
 void migrator_task(void *arg)
 {
+#ifdef RUNTIME_UPDATING
 	task_register_cons *trc;
 
 	while (1) {
@@ -555,6 +558,11 @@ void migrator_task(void *arg)
 			xSemaphoreGive(migrator_semaphore);
 		}
 	}
+#else /* RUNTIME_UPDATING */
+	while(1) {
+		vTaskDelay(1000/portTICK_RATE_MS);
+	}
+#endif /* RUNTIME_UPDATING */
 }
 
 int migrator_start()

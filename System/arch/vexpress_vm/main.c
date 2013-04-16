@@ -97,9 +97,20 @@ portTASK_FUNCTION(ohai_task, arg)
 
 }
 
+static binary_register_entry *find_binary_register_entry(const char *name, binary_register_entry *bre)
+{
+	int i;
+	for (i = 0; bre[i].binary_name != NULL; i++) {
+		if (strcmp(name, bre[i].binary_name) == 0)
+			return &bre[i];
+	}
+	return NULL;
+}
+
 int main()
 {
-	xMemoryInformationType *mit = MIS_START_ADDRESS;
+	xMemoryInformationType	*mit = MIS_START_ADDRESS;
+	binary_register_entry	*bre = (binary_register_entry *)mit[portCORE_ID()].phys_binary_register_begin;
 
 	printf("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
 
@@ -110,16 +121,38 @@ int main()
 
 	umm_init(heap, heap_size);
 
-	void *a = pvPortMalloc(4000);
-	void *b = pvPortMalloc(4000);
+	binary_register_entry *simplebre = find_binary_register_entry("simple", bre);
+	if (simplebre == NULL) {
+		ERROR_MSG("Could not find simple application\n");
+		goto error;
+	}
 
-	printf("a = 0x%x, b = 0x%x\n", (npi_t)a, (npi_t)b);
+	task_register_cons *simplec = task_register("simple", simplebre->elfh);
 
-	umm_info(a,1000);
+	if (!task_alloc(simplec)) {
+		ERROR_MSG("Could not alloc memory for task \"simple\"\n");
+		goto error;
+	}
 
-	xTaskCreate(ohai_task, (const signed char *)"ohai", configMINIMAL_STACK_SIZE, NULL,
-		    2, NULL);
+	if (!task_link(simplec)) {
+		ERROR_MSG("Could not link \"simple\" task\n");
+		goto error;
+	}
+
+	if (!task_start(simplec)) {
+		ERROR_MSG("Could not start \"simple\" task\n");
+		goto error;
+	}
+
+	if (xTaskCreate(ohai_task, (const signed char *)"ohai", configMINIMAL_STACK_SIZE, NULL,
+			3, NULL) != pdPASS) {
+		ERROR_MSG("Could not start \"ohai\" task.\n");
+		goto error;
+	}
+	DEBUG_MSG("Starting scheduler\n");
 	vTaskStartScheduler();
+
+	error:
 
 	ERROR_MSG("no scheduler\n");
 	while (1)

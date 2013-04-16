@@ -28,6 +28,12 @@
 #ifndef _APPLICATIONS_H_
 #define _APPLICATIONS_H_
 
+#include <FreeRTOS.h>
+
+#include <System/system.h>
+#include <System/elf.h>
+#include <System/types.h>
+
 #define APPLICATION_TASK_PRIORITY 2
 
 extern u_int8_t _simple_elf_start;
@@ -39,5 +45,20 @@ extern u_int8_t _rtuappv1_elf_start;
 extern u_int8_t _rtuappv2_elf_start;
 
 extern u_int8_t _system_elf_start;
+
+#define APPLICATION_ELF(app) ((Elf32_Ehdr *)&_ ## app ## _elf_start)
+
+#ifdef HAS_SYSTEM_ELF_SYMBOL
+#define SYSTEM_ELF ((Elf32_Ehdr *)&_system_elf_start)
+#else /* HAS_SYSTEM_ELF_SYMBOL */
+#ifdef HAS_BINARY_REGISTER
+#include <System/arch/vexpress_vm/memory_layout.h>
+#define MIS_STRUCT ((xMemoryInformationType *)MIS_START_ADDRESS)
+#define BINARY_REGISTER ((binary_register_entry *)MIS_STRUCT->phys_binary_register_begin)
+#define SYSTEM_ELF (BINARY_REGISTER[0].elfh)
+#else /* HAS_BINARY_REGISTER */
+#define SYSTEM_ELF ((Elf32_Ehdr *)NULL)
+#endif /* HAS_BINARY_REGISTER */
+#endif /* HAS_SYSTEM_ELF_SYMBOL */
 
 #endif /* _APPLICATIONS_H_ */

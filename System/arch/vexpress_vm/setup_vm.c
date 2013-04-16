@@ -25,7 +25,7 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#define SYSTEM_MODULE_NAME "XV_VM_SETUP"
+#define SYSTEM_MODULE_NAME "VX_VM_SETUP"
 
 #include <FreeRTOS.h>
 
@@ -160,22 +160,24 @@ void setup_vm(void)
 	 */
 
 	for (; i < KS_PAGES; i++) {
-		page_table[i] = CACHED_DESCRIPTOR((unsigned int)KSN_START_ADDRESS(portCORE_ID()) + VM_PAGESIZE*i);
+		page_table[i] = CACHED_DESCRIPTOR((npi_t)KSN_START_ADDRESS(portCORE_ID()) + VM_PAGESIZE*i);
 	}
 
 	/*
 	 * Hardware stuff and reserved regions are uncached. (up to 0x60000000)
 	 */
 
+	DEBUG_MSG("Uncached memory starts @ physical 0x%x.\n", (npi_t)i*VM_PAGESIZE);
 	for (; i < 1536; i++) {
 		page_table[i] = UNCACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}
+	DEBUG_MSG("Uncached memory ends @ physical 0x%x.\n", (npi_t)i*VM_PAGESIZE);
 
 	for (; i < (npi_t)ADDRESS_TO_PAGENO(configMIS_SECTION_ADDRESS) + ICCS_START_PAGENO; i++) {
 		page_table[i] = CACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}
 
-	DEBUG_MSG("ICCS starts @ 0x%x\n", (npi_t)(i*VM_PAGESIZE));
+	DEBUG_MSG("Uncached ICCS starts @ physical 0x%x\n", (npi_t)(i*VM_PAGESIZE));
 	for (; i < 4096; i++) {
 		page_table[i] = UNCACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}

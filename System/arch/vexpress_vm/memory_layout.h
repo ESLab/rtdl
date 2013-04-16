@@ -31,11 +31,17 @@
 #include <FreeRTOS.h>
 
 #include <System/types.h>
+#include <System/elf.h>
 
 typedef struct iccs_layout_t {
-	u_int8_t  rcu_section[4][65536];
-	u_int32_t notifications[4];
+	u_int8_t	rcu_section[4][65536];
+	u_int32_t	notifications[4];
 } iccs_layout;
+
+typedef struct binary_register_entry_t {
+	char		*binary_name;
+	Elf32_Ehdr	*elfh;
+} binary_register_entry;
 
 /*
  * Physical memory layout:

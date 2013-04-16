@@ -132,7 +132,17 @@ int task_link(task_register_cons *trc)
 		return 0;
 	}
 
-	Elf32_Ehdr *sys_elfh  = (Elf32_Ehdr *)&_system_elf_start;
+	Elf32_Ehdr *sys_elfh  = SYSTEM_ELF;
+
+	/*
+	 * The system elf could esstially come from anywhere so we
+	 * will check the magic each time.
+	 */
+	DEBUG_MSG("System elf @ 0x%x\n", (npi_t)sys_elfh);
+	if (!check_elf_magic(sys_elfh)) {
+		ERROR_MSG("System elf magic does not check out.\n");
+		return 0;
+	}
 
 	if (link_relocations(trc, sys_elfh, &task_register_tree_var)) {
 		INFO_MSG("Relocation successful\n");
@@ -320,6 +330,8 @@ int task_start(task_register_cons *trc)
 	RB_INSERT(task_register_tree_t, root, trc);
 
 	TASK_RELEASE_TR_LOCK();
+
+	DEBUG_MSG("Returning from task_start()\n");
 
 	return 1;
 }

@@ -67,7 +67,7 @@ SECTIONS
 	    _kernel_elf_end = .;
     } > ram
     .applications : {
-	    INCLUDE "build/applications-vm.ld"
+	    INCLUDE "build/applications-taskmigr.ld"
     } > ram
     .bss :
     {

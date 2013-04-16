@@ -46,12 +46,12 @@
 
 int main()
 {
-	Elf32_Ehdr *simple_elfh = (Elf32_Ehdr *)&_simple_elf_start;
-	Elf32_Ehdr *writer_elfh = (Elf32_Ehdr *)&_writer_elf_start;
-	Elf32_Ehdr *reader_elfh = (Elf32_Ehdr *)&_reader_elf_start;
-	Elf32_Ehdr *rtuapp_elfh = (Elf32_Ehdr *)&_rtuappv1_elf_start;
+	Elf32_Ehdr *simple_elfh = APPLICATION_ELF(simple);
+	Elf32_Ehdr *writer_elfh = APPLICATION_ELF(writer);
+	Elf32_Ehdr *reader_elfh = APPLICATION_ELF(reader);
+	Elf32_Ehdr *rtuapp_elfh = APPLICATION_ELF(rtuappv1);
 
-	Elf32_Ehdr *sys_elfh = (Elf32_Ehdr *)&_system_elf_start;
+	Elf32_Ehdr *sys_elfh = SYSTEM_ELF;
 
 	if (check_elf_magic(sys_elfh))
 		INFO_MSG("System ELF magic checks out @ 0x%x\n", (u_int32_t)sys_elfh);

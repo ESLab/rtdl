@@ -219,9 +219,8 @@ config_source_files = \
          'System/arch/vexpress_vm/setup_vm.c',
          'Source/portable/MemMang/heap_4.c']) + \
           freertos_files + \
-          libdwarf_files + \
           vexpress_vm_boot_files + \
-          system_files + \
+          (system_files - NinjaSet(["System/dwarfif.c", "System/pointer_tracer.c"])) + \
           system_utility_files
       }
 
@@ -375,14 +374,14 @@ n.build(outputs   = builddir + "kernel-taskmigr.ld",
         inputs    = bindir + "kernel-taskmigr.elf")
 n.build(outputs = bindir + "boot-taskmigr.elf",
         rule = "link",
-        inputs = list((vexpress_vm_boot_files + system_utility_files).get_flattened()),
+        inputs = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
         variables = inherit_dictionary(c, {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'}),
         implicit = ["System/arch/vexpress_vm/boot/loader.ld", builddir + "kernel-taskmigr.ld"])
 n.build(outputs   = bindir + "boot-taskmigr.bin",
         rule      = "objcopy",
         inputs    = bindir + "boot-taskmigr.elf",
         variables = inherit_dictionary(c, {'ocflags': '-O binary'}))
-n.build(outputs   = bindir + "boot-taskmigr-boot.uimg",
+n.build(outputs   = bindir + "boot-taskmigr.uimg",
         rule      = "mkimage",
         inputs    = bindir + "boot-taskmigr.bin",
         variables = c)
@@ -400,7 +399,7 @@ n.build(outputs = "cscope.out",
         inputs = all_files.get_flat_list())
 
 n.default([
-        bindir + "system.uimg",
+        bindir + "rtudemo.uimg",
         "cloc_report.log",
         "cscope.out",
         ])

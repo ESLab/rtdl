@@ -87,6 +87,8 @@ typedef struct xMIT {
 	portLONG	 phys_heap_size;
 	void		*phys_iccs_begin;
 	portLONG	 phys_iccs_size;
+	void		*phys_binary_register_begin;
+	portLONG	 phys_binary_register_size;
 } xMemoryInformationType;
 
 #if( configUSE_16_BIT_TICKS == 1 )

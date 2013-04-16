@@ -33,6 +33,10 @@
 
 #include <stdio.h>
 
+#ifdef RUNTIME_UPDATING
+#define SYSTEM_DWARFIF
+#endif /* RUNTIME_UPDATING */
+
 #ifdef DEBUG
 #ifdef SYSTEM_MODULE_NAME
 #define DEBUG_MSG(...)	printf(SYSTEM_MODULE_NAME ": DEBUG>>> "  __VA_ARGS__)

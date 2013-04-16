@@ -31,6 +31,8 @@
 #define DEBUG
 #define INFO
 
+#define RUNTIME_UPDATING
 #define RTU_POINTER_TRACING
+#define HAS_SYSTEM_ELF_SYMBOL
 
 #endif /* SYSTEM_CONFIG_H */ 

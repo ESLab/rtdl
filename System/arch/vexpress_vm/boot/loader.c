@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <System/applications.h>
 #include <System/elf.h>
 #include <System/types.h>
 #include <System/system.h>
@@ -41,6 +42,18 @@
 
 extern ma_t _kernel_elf_start;
 extern ma_t _kernel_elf_end;
+
+extern ma_t _simple_elf_start;
+extern ma_t _writer_elf_start;
+extern ma_t _reader_elf_start;
+extern ma_t _rtuappv1_elf_start;
+extern ma_t _rtuappv2_elf_start;
+
+binary_register_entry binary_register[] = {
+  { "kernel", APPLICATION_ELF(kernel) },
+  { "simple", APPLICATION_ELF(simple) },
+  { NULL, NULL }
+};
 
 #define KERNEL_ELFH	((Elf32_Ehdr *)&_kernel_elf_start)
 #define KERNEL_ELF_SIZE ((ms_t)((npi_t)&_kernel_elf_end - (npi_t)&_kernel_elf_start))
@@ -173,13 +186,15 @@ int _init()
 
 	for (i = 0; i < NUMBER_OF_CORES; i++) {
 		INFO_MSG("Copying kernel for core #%i\n", i);
-		mit[i].phys_start	= KSN_START_ADDRESS(i);
-		mit[i].phys_end		= KSN_START_ADDRESS(i+1);
-		mit[i].phys_entry_point = mit[i].phys_start + entry_point_address_offset;
-		mit[i].phys_heap_begin	= GVMSN_START_ADDRESS(i);
-		mit[i].phys_heap_size	= GVMS_SIZE;
-		mit[i].phys_iccs_begin	= ICCS_START_ADDRESS;
-		mit[i].phys_iccs_size	= ICCS_SIZE;
+		mit[i].phys_start		  = KSN_START_ADDRESS(i);
+		mit[i].phys_end			  = KSN_START_ADDRESS(i+1);
+		mit[i].phys_entry_point		  = mit[i].phys_start + entry_point_address_offset;
+		mit[i].phys_heap_begin		  = GVMSN_START_ADDRESS(i);
+		mit[i].phys_heap_size		  = GVMS_SIZE;
+		mit[i].phys_iccs_begin		  = ICCS_START_ADDRESS;
+		mit[i].phys_iccs_size		  = ICCS_SIZE;
+		mit[i].phys_binary_register_begin = binary_register;
+		mit[i].phys_binary_register_size  = sizeof(binary_register);
 		allocate_elf_at_offset(KERNEL_ELFH, mit[i].phys_start, &mit[i]);
 	}
 

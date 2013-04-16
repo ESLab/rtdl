@@ -32,5 +32,6 @@
 #define INFO
 
 #define RTU_POINTER_TRACING
+#define HAS_BINARY_REGISTER
 
 #endif /* SYSTEM_CONFIG_H */

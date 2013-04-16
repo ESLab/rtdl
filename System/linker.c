@@ -105,6 +105,8 @@ Elf32_Sym *find_symbol(char *name, Elf32_Ehdr *elf_h)
 	Elf32_Shdr *symtab_sect = find_section(".symtab", elf_h);
 	Elf32_Shdr *strtab_sect = find_section(".strtab", elf_h);
 
+	DEBUG_MSG("Searching for symbol %s in elf @ 0x%x\n", name, (npi_t)elf_h);
+
 	if (symtab_sect == NULL) {
 		ERROR_MSG("Found no .symtab section\n");
 		return NULL;
@@ -127,8 +129,9 @@ Elf32_Sym *find_symbol(char *name, Elf32_Ehdr *elf_h)
 
 	for (i = 0; i < n; i++) {
 		tname = get_shstr(elf_h, strtab_sect, syms[i].st_name);
-		if (strcmp(tname, name) == 0)
+		if (strcmp(tname, name) == 0) {
 			return &syms[i];
+		}
 	}
 	return NULL;
 }
@@ -191,6 +194,7 @@ int find_symbol_in_elfhs(Elf32_Sym *in_symbol, Elf32_Sym **out_symbol, task_regi
 
 	*out_symbol = final_symbol;
 	*out_symbol_trc = final_symbol_trc;
+
 	return 1;
 }
 
@@ -257,9 +261,6 @@ int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_reg
 			 * 2. Find the absolute address of the symbol.
 			 */
 
-			Elf32_Shdr *section_sect =
-				(Elf32_Shdr *)((u_int32_t)symbol_trc->elfh +
-					       symbol_trc->elfh->e_shoff);
 			u_int32_t address;
 
 			if (final_symbol->st_shndx == SHN_ABS) {
@@ -270,20 +271,27 @@ int link_relocations(task_register_cons *app_trc, Elf32_Ehdr *sys_elfh, task_reg
 				 * symbol resides in the system
 				 * binary.
 				 */
+
 				address = final_symbol->st_value;
-			} else if (section_sect[final_symbol->st_shndx].sh_flags & SHF_ALLOC) {
-				/*
-				 * If the SHF_ALLOC flag is set, the
-				 * section should already be allocated
-				 * somewhere.
-				 */
-				address = (u_int32_t)symbol_trc->cont_mem + final_symbol->st_value;
 			} else {
-				/*
-				 * Else we fall back on addressing the symbol in the elf.
-				 */
-				address = (u_int32_t)symbol_trc->elfh +
-					(u_int32_t)final_symbol->st_value;
+				Elf32_Shdr *section_sect =
+					(Elf32_Shdr *)((u_int32_t)symbol_trc->elfh +
+						       symbol_trc->elfh->e_shoff);
+
+				if (section_sect[final_symbol->st_shndx].sh_flags & SHF_ALLOC) {
+					/*
+					 * If the SHF_ALLOC flag is set, the
+					 * section should already be allocated
+					 * somewhere.
+					 */
+					address = (u_int32_t)symbol_trc->cont_mem + final_symbol->st_value;
+				} else {
+					/*
+					 * Else we fall back on addressing the symbol in the elf.
+					 */
+					address = (u_int32_t)symbol_trc->elfh +
+						(u_int32_t)final_symbol->st_value;
+				}
 			}
 
 			/*
