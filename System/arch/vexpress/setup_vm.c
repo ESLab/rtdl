@@ -25,9 +25,14 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
+#define SYSTEM_MODULE_NAME "XV_VM_SETUP"
+
 #include <FreeRTOS.h>
 
 #include <System/arch/vexpress/memory_layout.h>
+
+#include <System/types.h>
+#include <System/system.h>
 
 static unsigned long page_table[4096] __attribute__ ((aligned (16384)));
 
@@ -40,6 +45,9 @@ static unsigned long page_table[4096] __attribute__ ((aligned (16384)));
 
 #define CACHED_DESCRIPTOR(phys_addr)	(((phys_addr) & 0xfff00000) | 0x05de6)
 #define UNCACHED_DESCRIPTOR(phys_addr)	(((phys_addr) & 0xfff00000) | 0x00de2)
+
+#define PAGENO_TO_ADDRESS(pageno)	((pageno) << 20)
+#define ADDRESS_TO_PAGENO(address)	(((npi_t)address) >> 20)
 
 /*
  * Copied from port.c
@@ -163,10 +171,11 @@ void setup_vm(void)
 		page_table[i] = UNCACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}
 
-	for (; i < 1536 + 1 + ICCS_START_PAGENO; i++) {
+	for (; i < (npi_t)ADDRESS_TO_PAGENO(configMIS_SECTION_ADDRESS) + ICCS_START_PAGENO; i++) {
 		page_table[i] = CACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}
 
+	DEBUG_MSG("ICCS starts @ 0x%x\n", (npi_t)(i*VM_PAGESIZE));
 	for (; i < 4096; i++) {
 		page_table[i] = UNCACHED_DESCRIPTOR(i*VM_PAGESIZE);
 	}

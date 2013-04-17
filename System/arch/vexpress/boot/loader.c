@@ -178,6 +178,8 @@ int _init()
 		mit[i].phys_entry_point = mit[i].phys_start + entry_point_address_offset;
 		mit[i].phys_heap_begin	= GVMSN_START_ADDRESS(i);
 		mit[i].phys_heap_size	= GVMS_SIZE;
+		mit[i].phys_iccs_begin	= ICCS_START_ADDRESS;
+		mit[i].phys_iccs_size	= ICCS_SIZE;
 		allocate_elf_at_offset(KERNEL_ELFH, mit[i].phys_start, &mit[i]);
 	}
 

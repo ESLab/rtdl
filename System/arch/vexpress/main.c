@@ -25,6 +25,8 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
+#define SYSTEM_MODULE_NAME "VX_MAIN"
+
 #include <FreeRTOS.h>
 
 #include <task.h>
@@ -32,6 +34,7 @@
 #include <stdio.h>
 
 #include <System/types.h>
+#include <System/system.h>
 #include <System/arch/vexpress/memory_layout.h>
 #include <System/umm/umm_malloc.h>
 
@@ -64,15 +67,24 @@ static int GetCortexPower()
 	return val/10000;
 }
 
-
 portTASK_FUNCTION(ohai_task, arg)
 {
+	unsigned int		 cid  = portCORE_ID();
+	xMemoryInformationType	*mit  = MIS_START_ADDRESS;
+	iccs_layout		*iccs = (iccs_layout *)mit[cid].phys_iccs_begin;
+
+	DEBUG_MSG("Rcu section @ 0x%x\n", (npi_t)iccs->rcu_section[cid]);
+
 	vTaskDelay(10*portCORE_ID());
 	printf("O hai! (%u)\n", (unsigned int)portCORE_ID());
 	while (1) {
 		printf("O hai! (%u), power = %i\n", (unsigned int)portCORE_ID(), GetCortexPower());
-		vTaskDelay(100);
+		vTaskDelay(10000);
 	}
+
+	ERROR_MSG("error somewhere...\n");
+	while (1)
+		;
 
 }
 
@@ -99,7 +111,10 @@ int main()
 	xTaskCreate(ohai_task, (const signed char *)"ohai", configMINIMAL_STACK_SIZE, NULL,
 		    2, NULL);
 	vTaskStartScheduler();
-	printf("ERROR: main() exit\n");
+
+	ERROR_MSG("no scheduler\n");
+	while (1)
+		;
 	return 0;
 }
 
