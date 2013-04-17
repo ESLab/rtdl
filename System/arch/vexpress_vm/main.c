@@ -162,9 +162,20 @@ int main()
 	if (!alloc_link_start_from_binary_register("simple"))
 		goto error;
 
-	if (portCORE_ID() == 0) {
+	switch (portCORE_ID()) {
+	case 0:
+	case 3:
 		if (!alloc_link_start_from_binary_register("tunnel"))
 			goto error;
+		break;
+	}
+
+	switch (portCORE_ID()) {
+	case 1:
+	case 2:
+		if (!alloc_link_start_from_binary_register("field"))
+			goto error;
+		break;
 	}
 
 	DEBUG_MSG("Starting scheduler\n");
@@ -182,6 +193,13 @@ void vApplicationMallocFailedHook( void )
 {
 	printf("Malloc failed\n");
 	__asm volatile (" smc #0 ");
+}
+
+void vApplicationStackOverflowHook( void )
+{
+	printf("Task stack overflow.\n");
+	while (1)
+		;
 }
 
 void vApplicationIdleHook( void )
