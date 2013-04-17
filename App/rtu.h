@@ -37,10 +37,16 @@
 
 #define _RTU_DATA_ __attribute__ ((section (RTU_DATA_SECTION_NAME)))
 
-#define TASK_IN_SAFE_STATE() \
-  do { \
-  xSemaphoreGive(migrator_semaphore); \
-  vTaskSuspend(NULL); \
-  } while (0);
+#define TASK_IN_SAFE_STATE()						\
+	do {								\
+		printf("Task in safe state!\n");			\
+		task_register_cons *trc = task_get_current_trc();	\
+		if (trc != NULL) {					\
+			trc->migrator_lock = migrator_control;		\
+		} else {						\
+			printf("Got no trc, suspending anyway.\n");	\
+		}							\
+		vTaskSuspend(NULL);					\
+	} while (0);
 
 #endif /* RTU_H */

@@ -51,7 +51,6 @@
 #include <string.h>
 
 xTaskHandle      migrator_task_handle;
-xSemaphoreHandle migrator_semaphore;
 
 request_hook_fn_t migrator_find_request_hook(task_register_cons *trc)
 {
@@ -532,12 +531,11 @@ void migrator_task(void *arg)
 		vTaskDelay(1000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtuapp"))) {
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			INFO_MSG("Calling request hook.\n");
-			(trc->request_hook)(cp_req_rtu);
-			INFO_MSG("Returned from request hook.\n");
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			DEBUG_MSG("BOO! (-> v2)\n");
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				goto error;
+			}
 
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv2_elf_start;
 
@@ -547,18 +545,16 @@ void migrator_task(void *arg)
 				goto error;
 			}
 			INFO_MSG("Runtime update complete. (-> v2)\n");
-			xSemaphoreGive(migrator_semaphore);
 		}
 
 		vTaskDelay(1000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtuapp"))) {
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			INFO_MSG("Calling request hook.\n");
-			(*trc->request_hook)(cp_req_rtu);
-			INFO_MSG("Returned from request hook.\n");
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			DEBUG_MSG("BOO! (-> v1)\n");
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				goto error;
+			}
 
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv1_elf_start;
 
@@ -568,7 +564,6 @@ void migrator_task(void *arg)
 				goto error;
 			}
 			INFO_MSG("Runtime update complete. (-> v1)\n");
-			xSemaphoreGive(migrator_semaphore);
 		}
 	}
 #endif /* RTUDEMO_UPDATING */
@@ -580,12 +575,11 @@ void migrator_task(void *arg)
 		vTaskDelay(20000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtucont"))) {
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			INFO_MSG("Calling request hook.\n");
-			(trc->request_hook)(cp_req_rtu);
-			INFO_MSG("Returned from request hook.\n");
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			DEBUG_MSG("BOO! (-> v2)\n");
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				goto error;
+			}
 
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv2_elf_start;
 
@@ -595,7 +589,6 @@ void migrator_task(void *arg)
 				goto error;
 			}
 			INFO_MSG("Runtime update complete. (-> v2)\n");
-			xSemaphoreGive(migrator_semaphore);
 		} else {
 			goto error;
 		}
@@ -603,12 +596,11 @@ void migrator_task(void *arg)
 		vTaskDelay(20000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtucont"))) {
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			INFO_MSG("Calling request hook.\n");
-			(trc->request_hook)(cp_req_rtu);
-			INFO_MSG("Returned from request hook.\n");
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			DEBUG_MSG("BOO! (-> v2)\n");
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				goto error;
+			}
 
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv3_elf_start;
 
@@ -618,7 +610,6 @@ void migrator_task(void *arg)
 				goto error;
 			}
 			INFO_MSG("Runtime update complete. (-> v3)\n");
-			xSemaphoreGive(migrator_semaphore);
 		} else {
 			goto error;
 		}
@@ -626,12 +617,11 @@ void migrator_task(void *arg)
 		vTaskDelay(20000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtucont"))) {
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			INFO_MSG("Calling request hook.\n");
-			(trc->request_hook)(cp_req_rtu);
-			INFO_MSG("Returned from request hook.\n");
-			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
-			DEBUG_MSG("BOO! (-> v2)\n");
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				goto error;
+			}
 
 			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv1_elf_start;
 
@@ -641,7 +631,6 @@ void migrator_task(void *arg)
 				goto error;
 			}
 			INFO_MSG("Runtime update complete. (-> v1)\n");
-			xSemaphoreGive(migrator_semaphore);
 		} else {
 			goto error;
 		}
@@ -663,13 +652,10 @@ error:
 int migrator_start()
 {
 	if (xTaskCreate(migrator_task, (const signed char *)"migrator",
-			configMINIMAL_STACK_SIZE, NULL, 4, &migrator_task_handle) != pdPASS) {
+			configMINIMAL_STACK_SIZE, NULL, 3, &migrator_task_handle) != pdPASS) {
 		ERROR_MSG("could not create migrator task\n");
 		return 0;
 	}
-
-	vSemaphoreCreateBinary(migrator_semaphore);
-	DEBUG_MSG("migrator_semaphore @ 0x%x\n", (u_int32_t)&migrator_semaphore);
 
 	DEBUG_MSG("migrator_task_handle @ 0x%x\n", (u_int32_t)&migrator_task_handle);
 

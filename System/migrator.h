@@ -36,6 +36,11 @@
 
 #include <App/rtu.h>
 
+typedef struct migration_struct_t {
+	u_int8_t		 target_core_id;
+	task_register_cons	*trc;
+} migration_struct;
+
 extern xTaskHandle      migrator_task_handle;
 extern xSemaphoreHandle migrator_semaphore;
 

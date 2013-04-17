@@ -39,6 +39,7 @@
 #include <System/types.h>
 #include <System/system.h>
 #include <System/task_manager.h>
+#include <System/migrator.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
 #include <System/umm/umm_malloc.h>
 

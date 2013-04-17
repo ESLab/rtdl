@@ -110,6 +110,9 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelay					1
 #define INCLUDE_xTaskGetCurrentTaskHandle 		        1
 
+#define INCLUDE_xTaskAttach					1
+#define INCLUDE_xTaskDetach					1
+
 /* Interrupt Priority Levels. */
 #define configLOWEST_INTERRUPT_PRIORITY 		( 0xFF )
 #define configKERNEL_INTERRUPT_PRIORITY 		( 0xC0 )
