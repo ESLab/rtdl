@@ -44,7 +44,6 @@
 #include <System/pointer_tracer.h>
 #include <System/system_util.h>
 #endif /* RTU_POINTER_TRACING */
-
 #include <App/rtu.h>
 
 #include <stdio.h>

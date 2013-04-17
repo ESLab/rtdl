@@ -199,6 +199,13 @@ static int print(char **out, const char *format, va_list args )
 	return pc;
 }
 
+int puts(const char *s)
+{
+	while (*s != '\0')
+		putchar(*s++);
+	return 0;
+}
+
 int printf(const char *format, ...)
 {
         va_list args;

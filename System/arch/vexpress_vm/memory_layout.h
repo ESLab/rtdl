@@ -33,8 +33,10 @@
 #include <System/types.h>
 #include <System/elf.h>
 
+#define ICCS_RCU_SECTION_SIZE 65536
+
 typedef struct iccs_layout_t {
-	u_int8_t	rcu_section[4][65536];
+	u_int8_t	rcu_section[4][ICCS_RCU_SECTION_SIZE];
 	u_int32_t	notifications[4];
 } iccs_layout;
 
