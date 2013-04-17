@@ -30,11 +30,14 @@
 #include <FreeRTOS.h>
 
 #include <task.h>
+#include <queue.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include <System/types.h>
 #include <System/system.h>
+#include <System/task_manager.h>
 #include <System/arch/vexpress/memory_layout.h>
 #include <System/umm/umm_malloc.h>
 
@@ -67,6 +70,11 @@ static int GetCortexPower()
 	return val/10000;
 }
 
+portTASK_FUNCTION(check_msg, arg)
+{
+
+}
+
 portTASK_FUNCTION(ohai_task, arg)
 {
 	unsigned int		 cid  = portCORE_ID();
@@ -75,11 +83,12 @@ portTASK_FUNCTION(ohai_task, arg)
 
 	DEBUG_MSG("Rcu section @ 0x%x\n", (npi_t)iccs->rcu_section[cid]);
 
+	xTaskCreate(check_msg, (const signed char *)"check_msg", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+
 	vTaskDelay(10*portCORE_ID());
 	printf("O hai! (%u)\n", (unsigned int)portCORE_ID());
 	while (1) {
-		printf("O hai! (%u), power = %i\n", (unsigned int)portCORE_ID(), GetCortexPower());
-		vTaskDelay(10000);
+		vTaskDelay(1000);
 	}
 
 	ERROR_MSG("error somewhere...\n");
