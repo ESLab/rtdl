@@ -42,6 +42,7 @@
 #include <System/migrator.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
 #include <System/arch/vexpress_vm/binary_register.h>
+#include <System/arch/vexpress_vm/cortex_power.h>
 #include <System/umm/umm_malloc.h>
 
 #include <App/effects/config_effect.h>
@@ -54,6 +55,20 @@ static const char *effect_name[] = { "effect00", "effect01",
 #define EFFECT_W 256
 #define EFFECT_H 192
 
+portTASK_FUNCTION(power_print_task, arg)
+{
+	portTickType    last_time = xTaskGetTickCount();
+	portTickType	time;
+
+	while (1) {
+		u_int32_t power = cortex_power_get();
+		INFO_MSG("Current power usage: %d mW\n", power * 10);
+
+		vTaskDelay(2000);
+		taskYIELD();
+	}
+}
+
 int migrator_loop()
 {
 	task_register_cons	*trc;
@@ -62,6 +77,10 @@ int migrator_loop()
 	int			 mc    = 0;
 	int			 cc    = 0;
 	int			 last_idle_count;
+#ifdef TAKE_MEASUREMENT
+	portTickType		 measurement_start_tick;
+	portTickType		 measurement_end_tick;
+#endif /* TAKE_MEASUREMENT */
 
 	vTaskDelay(1000 * portCORE_ID());
 
@@ -71,7 +90,7 @@ int migrator_loop()
 
 	while (1) {
 		last_idle_count = idle_counter;
-		vTaskDelay(1000);
+		vTaskDelay(10000);
 
 		if (last_idle_count == idle_counter) {
 			/*
@@ -97,6 +116,10 @@ int migrator_loop()
 				continue;
 			}
 
+#ifdef TAKE_MEASUREMENT
+			measurement_start_tick = xTaskGetTickCount();
+#endif /* TAKE_MEASUREMENT */
+
 			if (!task_detach(trc)) {
 				ERROR_MSG("%s: Could not detach task.\n", __func__);
 				continue;
@@ -111,6 +134,11 @@ int migrator_loop()
 
 		} else {
 			INFO_MSG("%s: Did not find tunnel task, waiting...\n", __func__);
+#ifdef TAKE_MEASUREMENT
+			measurement_end_tick = xTaskGetTickCount();
+
+			INFO_MSG("%s: Migration of task \"%s\" took %u ticks on core %lu.\n", __func__, trc->name, (unsigned int )(measurement_end_tick - measurement_start_tick), portCORE_ID());
+#endif /* TAKE_MEASUREMENT */
 		}
 	}
 }
@@ -145,7 +173,7 @@ int main()
 	INFO_MSG("Heap @ 0x%x, heap size = %u\n", (npi_t)heap, heap_size);
 
 	umm_init(heap, heap_size);
-
+#if 1
 	switch (portCORE_ID()) {
 	case 0:
 		for (i = 0; i < 2; i++) {
@@ -161,11 +189,26 @@ int main()
 		}
 		break;
 	}
+#endif
 
 	if (!migrator_start()) {
 		ERROR_MSG("Could not start migrator.\n");
 		goto error;
 	}
+
+#if 0
+	if (portCORE_ID() == 0) {
+		if (xTaskCreate(power_print_task, (const signed char *)"power_print_task",
+				configMINIMAL_STACK_SIZE, NULL, 10, NULL) != pdPASS) {
+			ERROR_MSG("Could not start power_print_task.\n");
+		}
+        }
+#endif
+
+	signed char buffer[1000];
+
+	vTaskList(buffer);
+	printf("%s\n", buffer);
 
 	DEBUG_MSG("Starting scheduler\n");
 	vTaskStartScheduler();

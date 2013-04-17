@@ -42,6 +42,7 @@
 #include <System/migrator.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
 #include <System/arch/vexpress_vm/binary_register.h>
+#include <System/arch/vexpress_vm/cortex_power.h>
 #include <System/umm/umm_malloc.h>
 
 #include <App/effects/config_effect.h>
@@ -52,40 +53,73 @@ const char *effect_name[] = { "effect00", "effect01",
 #define EFFECT_W 128
 #define EFFECT_H 96
 
+portTASK_FUNCTION(power_print_task, arg)
+{
+	while (1) {
+		u_int32_t power = cortex_power_get();
+		INFO_MSG("Current power usage: %d mW\n", power * 10);
+		vTaskDelay(2000);
+	}
+}
+
 int migrator_loop()
 {
 	task_register_cons	*trc;
 	migration_struct	*ms = (migration_struct *)data;
 	int			 i;
+#ifdef TAKE_MEASUREMENT
+	portTickType		 measurement_start_tick;
+	portTickType		 measurement_end_tick;
+#endif /* TAKE_MEASUREMENT */
 
 	vTaskDelay(1000 * portCORE_ID());
 
-	while (1) {
-		vTaskDelay(10000);
-		if ((trc = task_find("field"))) {
-#ifndef TAKE_MEASUREMENT
-			INFO_MSG("%s: Found tunnel task, migrating...\n", __func__);
-#endif /* TAKE_MEASUREMENT */
-
-			if (!task_wait_for_checkpoint(trc, cp_req_tm)) {
-				ERROR_MSG("%s: Failed to reach migration checkpoint for task \"%s\"\n",
-					  __func__, trc->name);
-				continue;
-			}
-
-			if (!task_detach(trc)) {
-				ERROR_MSG("%s: Could not detach task.\n", __func__);
-				continue;
-			}
-
-			ms->target_core_id = (portCORE_ID() + 1) % 4;
-			ms->trc		   = trc;
-
-		} else {
-#ifndef TAKE_MEASUREMENT
-			INFO_MSG("%s: Did not find tunnel task, waiting...\n", __func__);
-#endif /* TAKE_MEASUREMENT */
+	if (portCORE_ID() == 0) {
+		while (1) {
+			vTaskSuspend(NULL);
 		}
+	}
+
+	while (1) {
+		/*
+		 * Idea: migrate all effect tasks to core 0 after a
+		 * certain period of time.
+		 */
+
+		vTaskDelay(10000 + 4000*portCORE_ID());
+
+		for (i = 0; i < 4; i++) {
+			trc = task_find(effect_name[i]);
+			if (trc != NULL)
+				break;
+		}
+
+		if (trc == NULL)
+			continue;
+
+		if (!task_wait_for_checkpoint(trc, cp_req_tm)) {
+			ERROR_MSG("%s: Failed to reach migration checkpoint for task \"%s\"\n",
+				  __func__, trc->name);
+			continue;
+		}
+#ifdef TAKE_MEASUREMENT
+		measurement_start_tick = xTaskGetTickCount();
+#endif /* TAKE_MEASUREMENT */
+		if (!task_detach(trc)) {
+			ERROR_MSG("%s: Could not detach task.\n", __func__);
+			continue;
+		}
+
+		ms->target_core_id = 0;
+		ms->trc		   = trc;
+
+#ifdef TAKE_MEASUREMENT
+		measurement_end_tick = xTaskGetTickCount();
+
+		INFO_MSG("%s: Migration of task \"%s\" took %u ticks on core %lu.\n", __func__, trc->name, (unsigned int )(measurement_end_tick - measurement_start_tick), portCORE_ID());
+#endif /* TAKE_MEASUREMENT */
+		while (1)
+			asm("wfi\n\t");
 	}
 
 }
@@ -140,6 +174,13 @@ int main()
 	if (!migrator_start()) {
 		ERROR_MSG("Could not start migrator.\n");
 		goto error;
+	}
+
+	if (portCORE_ID() == 0) {
+		if (xTaskCreate(power_print_task, (const signed char *)"power_print_task",
+				configMINIMAL_STACK_SIZE, NULL, 4, NULL) != pdPASS) {
+			ERROR_MSG("Could not start power_print_task.\n");
+		}
 	}
 
 	DEBUG_MSG("Starting scheduler\n");
