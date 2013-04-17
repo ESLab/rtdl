@@ -44,18 +44,45 @@
 #include <System/arch/vexpress_vm/binary_register.h>
 #include <System/umm/umm_malloc.h>
 
+#include <App/effects/config_effect.h>
+
+u_int32_t idle_counter = 0;
+
+static const char *effect_name[] = { "effect00", "effect01",
+				     "effect10", "effect11" };
+
 int migrator_loop()
 {
 	task_register_cons	*trc;
 	migration_struct	*ms    = (migration_struct *)data;
 	int			 i;
+	int			 mc    = 0;
+	int			 cc    = 0;
+	int			 last_idle_count;
 
 	vTaskDelay(1000 * portCORE_ID());
 
 	while (1) {
-		vTaskDelay(10000);
-		if ((trc = task_find("field"))) {
-			INFO_MSG("%s: Found tunnel task, migrating...\n", __func__);
+		last_idle_count = idle_counter;
+		vTaskDelay(1000);
+
+		if (last_idle_count == idle_counter) {
+			/*
+			 * C0r3 is overloaded.
+			 */
+			for (i = 0; i < 4; i++) {
+				trc = task_find(effect_name[mc]);
+				if (trc == NULL) {
+					mc = (mc + 1) % 4;
+				} else {
+					break;
+				}
+			}
+
+			if (trc == NULL) {
+				INFO_MSG("No task to migrate on overloaded core, continuing...\n");
+				continue;
+			}
 
 			if (!task_wait_for_checkpoint(trc, cp_req_tm)) {
 				ERROR_MSG("%s: Failed to reach migration checkpoint for task \"%s\"\n",
@@ -68,14 +95,17 @@ int migrator_loop()
 				continue;
 			}
 
-			ms->target_core_id = (portCORE_ID() + 1) % 4;
+			do {
+				cc = (cc + 1) % 4;
+			} while (cc == portCORE_ID());
+
+			ms->target_core_id = cc;
 			ms->trc		   = trc;
 
 		} else {
 			INFO_MSG("%s: Did not find tunnel task, waiting...\n", __func__);
 		}
 	}
-
 }
 
 void unknown_interrupt_handler(void *arg)
@@ -114,8 +144,6 @@ int main()
 		for (i = 0; i < 2; i++) {
 			for (j = 0; j < 2; j++) {
 				const char *effects[]	  = { "tunnel", "field" };
-				const char *effect_name[] = { "effect00", "effect01",
-							      "effect10", "effect11" };
 				if (!effect_start_and_config(effect_name[2*i+j], effects[j == i],
 							     320, 240,
 							     i*320, j*240)) {
@@ -158,6 +186,6 @@ void vApplicationStackOverflowHook( void )
 
 void vApplicationIdleHook( void )
 {
-
+	idle_counter++;
 }
 
