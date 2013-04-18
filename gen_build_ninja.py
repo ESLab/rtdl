@@ -123,7 +123,8 @@ system_files = \
     ['App/startup.S', 'System/main.c', 'System/task_manager.c',
      'System/pointer_tracer.c', 'System/linker.c', 'System/migrator.c',
      'System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c',
-     'System/umm/umm_malloc.c', 'System/qsort.c', 'System/dwarfif.c']
+     'System/umm/umm_malloc.c', 'System/qsort.c', 'System/dwarfif.c',
+     'System/system_util.c']
 
 contributed_files = \
     ['System/applications.h', 'System/dwarfif.c', 'System/dwarfif.h',
