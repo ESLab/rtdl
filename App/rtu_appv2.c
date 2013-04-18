@@ -35,11 +35,11 @@
 #include <System/migrator.h>
 #include <System/task_manager.h>
 
+#include <App/rtu_app.h>
 #include <App/rw_common.h>
 #include <App/rtu.h>
 
-int _RTU_DATA_ state1 = 0;
-int _RTU_DATA_ *state2 = NULL;
+rtu_app_state _RTU_DATA_ *state = NULL;
 
 int rtu_requested;
 
@@ -51,11 +51,12 @@ void cpRequestHook(cp_req_t req_type)
 
 int main()
 {
-	if (state2 == NULL) {
-		state2 = apptask_malloc(sizeof(int));
-		*state2 = 0;
+	if (state == NULL) {
+		state = apptask_malloc(sizeof(rtu_app_state));
+		state->state2 = apptask_malloc(sizeof(int));
+		*state->state2 = 0;
 	}
-	printf("rtuapp_v2: got memory area @ 0x%x (pointer @ 0x%x)\n", (u_int32_t)state2, (u_int32_t)&state2);
+	printf("rtuapp_v2: got memory area @ 0x%x (pointer @ 0x%x)\n", (npi_t)state, (npi_t)&state);
 	rtu_requested = 0;
 	while (1) {
 		if (rtu_requested) {
@@ -64,9 +65,9 @@ int main()
 			TASK_IN_SAFE_STATE();
 		}
 		vTaskDelay(100);
-		state1 += 2;
-		*state2 += 4;
-		printf("rtu_app v2: (%i,%i)\n", state1, *state2);
+		state->state1 += 2;
+		*state->state2 += 4;
+		printf("rtu_app v2: (%i,%i)\n", state->state1, *state->state2);
 	}
 }
 

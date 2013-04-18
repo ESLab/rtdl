@@ -37,8 +37,11 @@
 #include <dwarf.h>
 #include <libdwarf.h>
 
+static int pt_internal_struct_iterator_cb(pt_pstate *pstate, Dwarf_Die die, void *arg);
 static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v);
+static int pt_internal_trace_var(pt_pstate *state, pt_visited_variable *v);
 static int pt_internal_trace_type(pt_pstate *state, pt_visited_variable *v);
+static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_cb_fun_t *fun, void *arg);
 
 RB_GENERATE(pt_dyn_memsect_tree_t, pt_dyn_memsect_t, tree_e, pt_dyn_memsect_tree_cmp)
 RB_GENERATE(pt_visited_variable_tree_t, pt_visited_variable_t, tree_e, pt_visited_variable_tree_cmp)
@@ -77,6 +80,7 @@ int pt_trace_pointer(pt_pstate *state, Dwarf_Die type_die, void *p)
 	pt_visited_variable *v;
 
 	if (!dwarfif_die_has_typetag(type_die)) {
+		ERROR_MSG("%s: Die has not type tag.\n", __func__);
 		return 0;
 	}
 
@@ -85,37 +89,145 @@ int pt_trace_pointer(pt_pstate *state, Dwarf_Die type_die, void *p)
 		return 0;
 	}
 
-	v->type_die = type_die;
-	v->mem_p    = p;
+	v->type_die  = type_die;
+	v->mem_p     = p;
+	v->section_p = NULL;
 
-	return pt_internal_trace_pointer(state, v);
+	return pt_internal_trace_type(state, v);
+}
+
+
+static int pt_internal_struct_iterator_cb(pt_pstate *pstate, Dwarf_Die die, void *arg)
+{
+	pt_visited_variable	*v = (pt_visited_variable *)arg;
+	Dwarf_Error		 err;
+	Dwarf_Half		 tag;
+	Dwarf_Attribute	 loc_attr;
+	Dwarf_Unsigned		 loc;
+
+	if (dwarf_tag(die, &tag, &err) != DW_DLV_OK) {
+		ERROR_MSG("%s: Could not get tag from die.\n", __func__);
+		return 0;
+	}
+
+	if (tag != DW_TAG_member) {
+		if (tag == DW_TAG_structure_type) {
+			return 1;
+		} else {
+			const char *s;
+			if (dwarf_get_TAG_name(tag, &s) != DW_DLV_OK) {
+				ERROR_MSG("%s: Could not get tag name.\n", __func__);
+				return 0;
+			}
+			ERROR_MSG("%s: %s is non-member tag in structure.\n", __func__, s);
+			return 0;
+		}
+	}
+
+	if (dwarf_attr(die, DW_AT_data_member_location, &loc_attr, &err) != DW_DLV_OK) {
+		return 0;
+	}
+
+	if (dwarf_formudata(loc_attr, &loc, &err) != DW_DLV_OK) {
+		return 0;
+	}
+
+	pt_visited_variable *new_v;
+
+	if ((new_v = SYSTEM_MALLOC_CALL(sizeof(pt_visited_variable))) == NULL) {
+		ERROR_MSG("%s: Could not allocate memory.\n", __func__);
+		return 0;
+	}
+
+	new_v->type_die  = die;
+	new_v->mem_p	 = (void *)((npi_t)v->mem_p + (npi_t)loc);
+	new_v->section_p = v->section_p;
+	DEBUG_MSG("%s: following variable @ 0x%x\n", __func__, (npi_t)new_v->mem_p);
+
+	if (!pt_internal_trace_type(pstate, new_v)) {
+		SYSTEM_FREE_CALL(new_v);
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 static int pt_internal_trace_type(pt_pstate *state, pt_visited_variable *v)
 {
-	while ((v->type_die = dwarfif_follow_attr(state->dbg, v->type_die, DW_AT_type)) != NULL) {
-
+	do {
 		Dwarf_Error	err;
 		Dwarf_Half	tag;
 
 		if (dwarf_tag(v->type_die, &tag, &err) != DW_DLV_OK) {
+			ERROR_MSG("%s: Could not get tag from die.\n", __func__);
 			return 0;
+		}
+
+		{
+			const char *s;
+			if (dwarf_get_TAG_name(tag, &s) != DW_DLV_OK) {
+				ERROR_MSG("%s: Could not get tag name.\n", __func__);
+				return 0;
+			}
+
+			DEBUG_MSG("%s: found tag %s\n", __func__, s);
 		}
 
 		switch (tag) {
 		case DW_TAG_pointer_type:
+			DEBUG_MSG("%s: Adding pointer @ 0x%x\n", __func__, (npi_t)v->mem_p);
 			return pt_internal_trace_pointer(state, v);
 		case DW_TAG_structure_type:
-			DEBUG_MSG("Not yet implemented!\n");
-			return 0;
+			DEBUG_MSG("%s: Iterating through structure.\n", __func__);
+
+			Dwarf_Die child_die;
+
+			if (dwarf_child(v->type_die, &child_die, &err) != DW_DLV_OK) {
+				ERROR_MSG("%s: Could not find children to structure_type tag.\n", __func__);
+				return 0;
+			}
+
+			return pt_iterate_die_and_siblings(state, child_die,
+							   pt_internal_struct_iterator_cb, v);
+		case DW_TAG_base_type:
+			DEBUG_MSG("%s: Adding base var @ 0x%x\n", __func__, (npi_t)v->mem_p);
+			return pt_internal_trace_var(state, v);
 		}
-	}
+	} while ((v->type_die = dwarfif_follow_attr(state->dbg, v->type_die, DW_AT_type)) != NULL);
+	return 1;
+}
+
+static int pt_internal_trace_var(pt_pstate *state, pt_visited_variable *v)
+{
+	RB_INSERT(pt_visited_variable_tree_t, &state->visited_variables, v);
+
 	return 1;
 }
 
 static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 {
-	RB_INSERT(pt_visited_variable_tree_t, &state->visited_variables, v);
+	if (!pt_internal_trace_var(state, v)) {
+		ERROR_MSG("%s: failed to add pointer as var first.\n", __func__);
+		return 0;
+	}
+
+	{
+		/*
+		 * Sanity check.
+		 */
+		Dwarf_Error	err;
+		Dwarf_Half	tag;
+
+		if (dwarf_tag(v->type_die, &tag, &err) != DW_DLV_OK) {
+			ERROR_MSG("pt_internal_trace_pointer(): Could not get tag for type.\n");
+			return 0;
+		}
+
+		if (tag != DW_TAG_pointer_type) {
+			ERROR_MSG("Trying to trace a non-pointer variable.\n");
+			return 0;
+		}
+	}
 
 	/*
 	 * Investigate if we have already visited this variable.
@@ -217,10 +329,10 @@ static int pt_internal_trace_pointer(pt_pstate *state, pt_visited_variable *v)
 		return 0;
 	}
 
-	new_v->type_die	 = next_type_die;
+	new_v->type_die  = next_type_die;
 	new_v->mem_p	 = (void *)new_p;
 	new_v->section_p = new_section_p;
-	DEBUG_MSG("Following variable @ 0x%x\n", (u_int32_t)new_p);
+	DEBUG_MSG("%s: Following variable @ 0x%x\n", __func__, (npi_t)new_p);
 
 	if (!pt_internal_trace_type(state, new_v)) {
 		SYSTEM_FREE_CALL(new_v);
@@ -243,12 +355,14 @@ static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_
 	int		res;
 
 	if (!pt_iterate_die_1(pstate, cur_die, fun, arg)) {
+		ERROR_MSG("%s: Failed iterate over die itself.\n", __func__);
 		return 0;
 	}
 
 	while (1) {
 		Dwarf_Die sib_die;
 		if ((res = dwarf_child(cur_die, &child, &err)) == DW_DLV_ERROR) {
+			ERROR_MSG("%s: Could not get child.\n", __func__);
 			return 0;
 		}
 		if (res == DW_DLV_OK) {
@@ -263,6 +377,7 @@ static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_
 		 * Continue with the siblings.
 		 */
 		if ((res = dwarf_siblingof(pstate->dbg, cur_die, &sib_die, &err)) == DW_DLV_ERROR) {
+			ERROR_MSG("%s: Could not get sibling.\n", __func__);
 			return 0;
 		}
 		if (res == DW_DLV_NO_ENTRY) {
@@ -273,6 +388,7 @@ static int pt_iterate_die_and_siblings(pt_pstate *pstate, Dwarf_Die die, pt_die_
 		}
 		cur_die = sib_die;
 		if (!pt_iterate_die_1(pstate, cur_die, fun, arg)) {
+			ERROR_MSG("%s: pt_iterate_die_1() failed.\n", __func__);
 			return 0;
 		}
 	}
@@ -303,7 +419,7 @@ int pt_iterate_dies(pt_pstate *pstate, pt_die_cb_fun_t *fun, void *arg)
 					      &version_stamp, &abbrev_offset, &address_size,
 					      &length_size, &extension_size, &next_cu_header,
 					      &err)) == DW_DLV_ERROR) {
-		    ERROR_MSG("Error in dwarg_next_cu_header (%s)\n", dwarf_errmsg(err));
+		    ERROR_MSG("%s: Error in dwarg_next_cu_header (%s)\n", __func__, dwarf_errmsg(err));
 		    return 0;
 	    }
 	    if (res == DW_DLV_NO_ENTRY) {
@@ -311,10 +427,11 @@ int pt_iterate_dies(pt_pstate *pstate, pt_die_cb_fun_t *fun, void *arg)
 	    }
 
 	    if (dwarf_siblingof(pstate->dbg, no_die, &cu_die, &err) != DW_DLV_OK) {
-		    ERROR_MSG("Error in dwarf_siblingof (%s)\n", dwarf_errmsg(err));
+		    ERROR_MSG("%s: Error in dwarf_siblingof (%s)\n", __func__, dwarf_errmsg(err));
 	    }
 
 	    if (!pt_iterate_die_and_siblings(pstate, cu_die, fun, arg)) {
+		    ERROR_MSG("%s: Error iterating dies.\n", __func__);
 		    return 0;
 	    }
 

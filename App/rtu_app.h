@@ -25,48 +25,12 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#include <FreeRTOS.h>
+#ifndef APP_RTU_APP_H
+#define APP_RTU_APP_H
 
-#include <task.h>
-#include <semphr.h>
+typedef struct rtu_app_state_t {
+	int	 state1;
+	int	*state2;
+} rtu_app_state;
 
-#include <stdio.h>
-
-#include <App/rtu_app.h>
-#include <App/rtu.h>
-#include <System/migrator.h>
-#include <System/task_manager.h>
-
-rtu_app_state _RTU_DATA_ *state = NULL;
-
-int rtu_requested = 0;
-
-void cpRequestHook(cp_req_t req_type)
-{
-	printf("rtuappv1 checkpoint request\n");
-	rtu_requested = 1;
-}
-
-int main()
-{
-	if (state == NULL) {
-		state = apptask_malloc(sizeof(rtu_app_state));
-		state->state2 = apptask_malloc(sizeof(int));
-		*state->state2 = 0;
-	}
-	printf("rtuapp_v1: got memory area @ 0x%x (pointer @ 0x%x)\n", (npi_t)state, (npi_t)&state);
-	while (1) {
-		if (rtu_requested) {
-			/*
-			 * Go into safe state and suspend
-			 */
-			rtu_requested = 0;
-			printf("rtuappv1 now in safe state\n");
-			TASK_IN_SAFE_STATE();
-		}
-		vTaskDelay(100);
-		state->state1 += 1;
-		*state->state2 += 2;
-		printf("rtu_app v1: (%i,%i)\n", state->state1, *state->state2);
-	}
-}
+#endif /* APP_RTU_APP_H */
