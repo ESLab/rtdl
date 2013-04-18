@@ -43,7 +43,9 @@ class NinjaFile(str):
         for s in self.split('/')[0:-1]:
             dirprefix += s.lower() + "_"
         return builddir + dirprefix + self.get_basename() + \
-            ("-" + config['name'] if config.has_key('name') else '') + ("_app" if config.has_key('app') else '')  + ".o"
+            ("-" + config['name'] if config.has_key('name') else '') + \
+            ("-" + config['arch'] if config.has_key('arch') else '') + \
+            ("_app" if config.has_key('app') else '')  + ".o"
     def get_object_files(self, config):
         return NinjaSet([self.get_object_file(config)])
     def write_builds(self, n, config):
@@ -133,18 +135,18 @@ bindir   = "./bin/"
 
 sourcedir = "."
 
-devkitdir = "/export/home/aton4/wlund/bin/devkitARM/bin/"
+devkitdir = "/home/wictory/bin/devkitARM/bin/"
 
 #n = ninja_syntax.Writer(sys.stdout)
 fout = open("build.ninja", "w")
 n = ninja_syntax.Writer(fout)
 
-common_includedirs = \
-    [sourcedir,
-     sourcedir + "/System/umm",
-     sourcedir + "/libdwarf",
-     sourcedir + "/Source/include",
-     sourcedir + "/Source/portable/GCC/ARM_Cortex-A9"]
+common_includedirs = [
+    sourcedir,
+    sourcedir + "/System/umm",
+    sourcedir + "/libdwarf",
+    sourcedir + "/Source/include",
+    ]
 
 n.variable(key="cc", value=devkitdir + "arm-eabi-gcc")
 n.variable(key="ld", value=devkitdir + "arm-eabi-ld")
@@ -154,9 +156,14 @@ n.variable(key="cloc", value="cloc")
 n.variable(key="cscope", value="cscope")
 n.variable(key="image_address", value="0x10000")
 
-default_cflags = ["-Wall", "-fmessage-length=0", "-mcpu=cortex-a9",
-                  "-g3", "-Werror", "-fno-builtin-printf",
-                  "-fPIC"]
+default_cflags = [
+    "-Wall",
+    "-fmessage-length=0",
+    "-g3",
+    "-Werror",
+    "-fno-builtin-printf",
+    "-fPIC",
+    ]
 
 ######################
 # Source set section #
@@ -164,9 +171,29 @@ default_cflags = ["-Wall", "-fmessage-length=0", "-mcpu=cortex-a9",
 
 freertos_files = \
     get_ninja_set_of_files(
-    map(lambda f: "Source/" + f,
-        ["croutine.c", "list.c", "queue.c",
-         "tasks.c", "timers.c", "portable/GCC/ARM_Cortex-A9/port.c"]))
+    map(lambda f: "Source/" + f, [
+                "croutine.c",
+                "list.c",
+                "queue.c",
+                "tasks.c",
+                "timers.c",
+                ]))
+freertos_vexpress_files = \
+    get_ninja_set_of_files(
+    map(lambda f: "Source/" + f, [
+            "portable/GCC/ARM_Cortex-A9/port.c",
+            ]))
+freertos_arm9_files = \
+    get_ninja_set_of_files(
+    map(lambda f: "Source/" + f, [
+                "portable/GCC/ARM9_AT91/port.c",
+                "portable/GCC/ARM9_AT91/aic.c",
+                "portable/GCC/ARM9_AT91/pit.c",
+                "portable/GCC/ARM9_AT91/portasm.S",
+                "portable/GCC/ARM9_AT91/board_lowlevel.c",
+                "portable/GCC/ARM9_AT91/board_memories.c",
+                "portable/GCC/ARM9_AT91/pio.c",
+                ]))
 
 freertos_memmang_files = \
     get_ninja_set_of_files(
@@ -257,13 +284,17 @@ configs = [
             'includedirs': [
                 "./libdwarf",
                 "./System/config/rtudemo/include",
+                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
                 ] +
             common_includedirs +
             [],
+            'arch_flags': '-mcpu=cortex-a9',
+            'arch': 'cortex-a9',
             'cflags': [
                 "-O1",
                 "-g3",
                 "-gdwarf-3",
+                "-mcpu=cortex-a9",
                 ] +
             default_cflags +
             [],
@@ -281,11 +312,15 @@ configs = [
             'name': "taskmigr",
             'includedirs': [
                 "./System/config/taskmigr/include",
+                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
                 ] +
             common_includedirs +
             [],
+            'arch_flags' : '-mcpu=cortex-a9',
+            'arch': 'cortex-a9',
             'cflags': [
                 "-O3",
+                "-mcpu=cortex-a9",
                 ] +
             default_cflags +
             [],
@@ -301,13 +336,17 @@ configs = [
             'includedirs': [
                 "./libdwarf",
                 "./System/config/rtupid/include",
+                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
                 ] +
             common_includedirs +
             [],
+            'arch_flags' : '-mcpu=cortex-a9',
+            'arch': 'cortex-a9',
             'cflags': [
                 "-O3",
                 "-g3",
                 "-gdwarf-3",
+                "-mcpu=cortex-a9",
                 ] +
             default_cflags +
             [],
@@ -323,11 +362,15 @@ configs = [
             'name': "adtachtest",
             'includedirs': [
                 "./System/config/adtachtest/include",
+                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
                 ] +
             common_includedirs +
             [],
+            'arch_flags' : '-mcpu=cortex-a9',
+            'arch': 'cortex-a9',
             'cflags': [
                 "-O3",
+                "-mcpu=cortex-a9",
                 ] +
             default_cflags +
             [],
@@ -341,11 +384,15 @@ configs = [
             'name': "taskmigr_exp1",
             'includedirs': [
                 "./System/config/taskmigr_exp1/include",
+                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
                 ] +
             common_includedirs +
             [],
+            'arch_flags' : '-mcpu=cortex-a9',
+            'arch': 'cortex-a9',
             'cflags': [
                 "-O3",
+                "-mcpu=cortex-a9",
                 ] +
             default_cflags +
             [],
@@ -360,11 +407,15 @@ configs = [
             'name': "taskmigr_exp2",
             'includedirs': [
                 "./System/config/taskmigr_exp2/include",
+                sourcedir + "/Source/portable/GCC/ARM_Cortex-A9",
                 ] +
             common_includedirs +
             [],
+            'arch_flags' : '-mcpu=cortex-a9',
+            'arch': 'cortex-a9',
             'cflags': [
                 "-O3",
+                "-mcpu=cortex-a9",
                 ] +
             default_cflags +
             [],
@@ -374,6 +425,33 @@ configs = [
                 "field",
                 ],
             }),
+
+    NinjaConfig({
+            'name' : "arm9_rtudemo",
+            'includedirs': [
+                "./System/config/arm9_rtudemo/include",
+                sourcedir + "/Source/portable/GCC/ARM9_AT91",
+                ] +
+            common_includedirs +
+            [sourcedir + "/Source/portable/GCC/ARM9_AT91"] +
+            [],
+            'arch_flags': '-mcpu=arm926ej-s -march=armv5te',
+            'arch': 'arm9',
+            'cflags': [
+                "-O1",
+                "-g3",
+                "-gdwarf-3",
+                "-mcpu=arm926ej-s",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x10000',
+            'include_apps': [
+                "rtuappv1",
+                "rtuappv2",
+                ],
+            }),
+
      ]
 
 map(lambda config: config.preprocess(), configs)
@@ -388,6 +466,7 @@ config_source_files = \
     system_files +
     system_utility_files +
     freertos_files +
+    freertos_vexpress_files +
     libdwarf_files +
     vexpress_novm_boot_files +
     NinjaSet(),
@@ -397,6 +476,7 @@ config_source_files = \
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
     freertos_files +
+    freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
     (system_files - NinjaSet(
@@ -416,6 +496,7 @@ config_source_files = \
     system_files +
     system_utility_files +
     freertos_files +
+    freertos_vexpress_files +
     libdwarf_files +
     vexpress_novm_boot_files +
     NinjaSet(),
@@ -431,6 +512,7 @@ config_source_files = \
                  ])) +
     system_utility_files +
     freertos_files +
+    freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
     NinjaSet(),
@@ -442,6 +524,7 @@ config_source_files = \
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
     freertos_files +
+    freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
     (system_files - NinjaSet(
@@ -458,6 +541,7 @@ config_source_files = \
                 'Source/portable/MemMang/heap_4.c',
                 ]) +
     freertos_files +
+    freertos_vexpress_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
     (system_files - NinjaSet(
@@ -467,6 +551,17 @@ config_source_files = \
     system_utility_files +
     NinjaSet(),
 
+    'arm9_rtudemo': get_ninja_set_of_files([
+                'System/arch/arm9_novm/boot/startup.S',
+                'System/arch/arm9_novm/arm9_rtudemo/main.c',
+                'Source/portable/MemMang/heap_3.c',
+                ]) +
+    freertos_files +
+    freertos_arm9_files +
+    libdwarf_files +
+    system_files +
+    system_utility_files +
+    NinjaSet(),
     }
 
 ################
@@ -548,11 +643,11 @@ for c in configs:
         #s = s.union(applications[a])
         app_s = applications[a]
         elffile = bindir + a + "-" + c['name'] + ".elf"
-        ldfile  = builddir + a + "-" + c['name'] + ".ld"
+        ldfile  = builddir + a + "-" + c['name'] + '-' + c['arch'] + ".ld"
         n.build(outputs   = elffile,
                 rule      = "link",
                 inputs    = list(app_s.get_object_files(app_c)),
-                variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -fPIC -shared' },
+                variables = {'ldflags': '-nostartfiles -TApp/app.ld ' + c['arch_flags'] + ' -fPIC -shared' },
                 implicit  = "App/app.ld")
         n.build(outputs   = ldfile,
                 rule      = "app_ld",
@@ -561,7 +656,7 @@ for c in configs:
     n.build(outputs   = builddir + "applications-" + c['name'] + ".ld",
             rule      = "m4",
             inputs    = "System/applications.ld.m4",
-            variables = {'m4flags': '-DCONFIG=' + c['name'] + reduce(lambda s, a: s + ' -D' + a + "_app", c['include_apps'], "")})
+            variables = {'m4flags': '-DCONFIG=' + c['name'] + ' -DARCH=' + c['arch'] + reduce(lambda s, a: s + ' -D' + a + "_app", c['include_apps'], "")})
 
 #######################
 # Link configurations #
@@ -580,7 +675,9 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
         n.build(outputs   = elffile,
                 rule      = "link",
                 inputs    = list(inputs.get_object_files(config)),
-                variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldf + ' -mcpu=cortex-a9'}),
+                variables = config + NinjaConfig({
+                    'ldflags': '-nostartfiles -Wl,-T,' + ldf + ' ' + config['arch_flags'],
+                    }),
                 implicit  = [builddir + name + "." + str(i - 1) + ".ld", ldf] if i > 0 else [ldf] + implicit)
         n.build(outputs   = symelffile,
                 rule      = "objcopy",
@@ -594,7 +691,9 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
     n.build(outputs   = bindir + name + ".elf",
             rule      = "link",
             inputs    = list(inputs.get_object_files(config)),
-            variables = config + NinjaConfig({'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' -mcpu=cortex-a9'}),
+            variables = config + NinjaConfig({
+                'ldflags': '-nostartfiles -Wl,-T,' + ldfiles[i] + ' ' + config['arch_flags'],
+                }),
             implicit  = [lastnldfile] + implicit)
     n.build(outputs   = bindir + name + ".bin",
             rule      = "objcopy",
@@ -608,14 +707,21 @@ def gen_step_build(name, inputs, implicit, ldfiles, config):
 c = configs[0]
 
 gen_step_build("rtudemo", config_source_files['rtudemo'],
-               map(lambda f: builddir + f + "-rtudemo.ld", c['include_apps']) + [builddir + "applications-rtudemo.ld"],
-               ["System/rtudemo.0.ld", "System/rtudemo.1.ld", "System/rtudemo.2.ld"], c)
+               map(lambda f: builddir + f + "-rtudemo-cortex-a9.ld",
+               c['include_apps']) + \
+               [
+                       builddir + "applications-rtudemo.ld",
+               ], [
+        "System/rtudemo.0.ld",
+        "System/rtudemo.1.ld",
+        "System/rtudemo.2.ld",
+        ], c)
 
 c = configs[2]
 
 gen_step_build("rtupid", config_source_files['rtupid'],
-               map(lambda f: builddir + f + "-rtupid.ld",
-               c['include_apps']) + \
+               map(lambda f: builddir + f + "-rtupid-cortex-a9.ld",
+                   c['include_apps']) +
                [
                        builddir + "applications-rtupid.ld",
                ], [
@@ -623,6 +729,20 @@ gen_step_build("rtupid", config_source_files['rtupid'],
         "System/rtupid.1.ld",
         "System/rtupid.2.ld",
         ], c)
+
+c = configs[6]
+
+gen_step_build("arm9_rtudemo", config_source_files['arm9_rtudemo'],
+               map(lambda f: builddir + f + "-arm9_rtudemo-arm9.ld",
+               c['include_apps']) + \
+               [
+                       builddir + "applications-arm9_rtudemo.ld",
+               ], [
+        "System/arm9_rtudemo.0.ld",
+        "System/arm9_rtudemo.1.ld",
+        "System/arm9_rtudemo.2.ld",
+        ], c)
+
 
  #######################
  # Task migration demo #
@@ -641,13 +761,13 @@ def gen_kernel_boot_build(name, c):
                   vexpress_vm_boot_files).get_object_files(c)) +
             [],
             variables = c + NinjaConfig({
-                'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld -mcpu=cortex-a9',
+                'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress_vm/kernel.ld ' + c['arch_flags'],
                 }),
             implicit  = [
             "System/arch/vexpress_vm/kernel.ld",
             builddir + "applications-" + name + ".ld",
             ] +
-            map(lambda f: builddir + f + "-" + name + ".ld", c['include_apps']) +
+            map(lambda f: builddir + f + "-" + name + "-" + c['arch'] + ".ld", c['include_apps']) +
             [],
             )
     n.build(outputs   = builddir + "kernel-" + name + ".ld",
@@ -672,7 +792,7 @@ def gen_kernel_boot_build(name, c):
             rule      = "link",
             inputs    = list((vexpress_vm_boot_files + system_utility_files).get_object_files(c)),
             variables = c + NinjaConfig({
-            'ldflags': '-nostartfiles -fPIC -Wl,-T,' + builddir + "system_arch_vexpress_vm_boot_loader-" + name + ".ld " + ' -mcpu=cortex-a9',
+            'ldflags': '-nostartfiles -fPIC -Wl,-T,' + builddir + "system_arch_vexpress_vm_boot_loader-" + name + ".ld " + c['arch_flags']
             }),
             implicit  = [
             builddir + "system_arch_vexpress_vm_boot_loader-" + name + ".ld",
@@ -708,6 +828,7 @@ n.build(outputs = "cscope.out",
 
 n.default([
         bindir + "rtudemo.uimg",
+        bindir + "arm9_rtudemo.uimg",
         bindir + "rtupid.uimg",
         "cloc_report.log",
         "cscope.out",

@@ -1,0 +1,53 @@
+/*###ICF### Section handled by ICF editor, don't touch! ****/
+/*-Editor annotation file-*/
+/* IcfEditorFile="$TOOLKIT_DIR$\config\ide\IcfEditor\a_v1_0.xml" */
+/*-Memory Regions-*/
+define symbol __ICFEDIT_region_NOR_start__ = 0x10000000;
+define symbol __ICFEDIT_region_NOR_end__   = 0x1FFFFFFF;
+define symbol __ICFEDIT_region_RAM_start__ = 0x300000;
+define symbol __ICFEDIT_region_RAM_end__   = 0x30FFFF;
+
+/*-Sizes-*/
+define symbol __ICFEDIT_size_startup__  = 0x100;
+define symbol __ICFEDIT_size_lowlevel__ = 0x800;
+define symbol __ICFEDIT_size_vectors__  = 0x100;
+define symbol __ICFEDIT_size_cstack__   = 0x800;
+define symbol __ICFEDIT_size_sysstack__ = 0x60;
+define symbol __ICFEDIT_size_irqstack__ = 0x60;
+define symbol __ICFEDIT_size_heap__     = 0x0;
+/*-Exports-*/
+export symbol __ICFEDIT_region_NOR_start__;
+export symbol __ICFEDIT_region_NOR_end__;
+export symbol __ICFEDIT_region_RAM_start__;
+export symbol __ICFEDIT_region_RAM_end__;
+export symbol __ICFEDIT_size_startup__;
+export symbol __ICFEDIT_size_vectors__;
+export symbol __ICFEDIT_size_cstack__;
+export symbol __ICFEDIT_size_sysstack__;
+export symbol __ICFEDIT_size_irqstack__;
+export symbol __ICFEDIT_size_heap__;
+/**** End of ICF editor section. ###ICF###*/
+
+define memory mem with size = 4G;
+define region STA_region = mem:[from __ICFEDIT_region_NOR_start__ size __ICFEDIT_size_startup__];
+define region NOR_region = mem:[from __ICFEDIT_region_NOR_start__+__ICFEDIT_size_startup__ to __ICFEDIT_region_NOR_end__];
+define region VEC_region =   mem:[from __ICFEDIT_region_RAM_start__ size __ICFEDIT_size_vectors__];
+define region OBJ_region = mem:[from __ICFEDIT_region_RAM_start__+__ICFEDIT_size_vectors__ size __ICFEDIT_size_lowlevel__];
+define region RAM_region =   mem:[from __ICFEDIT_region_RAM_start__+__ICFEDIT_size_vectors__+__ICFEDIT_size_lowlevel__ to __ICFEDIT_region_RAM_end__];
+
+define block CSTACK    with alignment = 8, size = __ICFEDIT_size_cstack__   { };
+define block SYS_STACK with alignment = 8, size = __ICFEDIT_size_sysstack__ { };
+define block IRQ_STACK with alignment = 8, size = __ICFEDIT_size_irqstack__ { };
+define block HEAP      with alignment = 8, size = __ICFEDIT_size_heap__     { };
+
+initialize by copy { section .vectors };
+initialize by copy { object board_lowlevel.o,object board_memories.o };
+initialize by copy { readwrite };
+do not initialize { section .noinit };
+
+place in STA_region { section .cstartup };
+place in NOR_region { readonly };
+place in VEC_region { section .vectors };
+place in OBJ_region { object board_lowlevel.o,object board_memories.o };
+place in RAM_region { readwrite, block IRQ_STACK, block SYS_STACK, block CSTACK, block HEAP };
+

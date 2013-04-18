@@ -34,10 +34,14 @@ fi
 
 QEMU=qemu-system-arm
 
+#CPU=vexpress-a9
+CPU=versatilepb
+
 DEBUG=$2
 
 if [ X$DEBUG == XDEBUG ]; then
-    $QEMU -M vexpress-a9 -smp 4 -serial stdio -s -S -kernel $1
+    $QEMU -M $CPU -serial stdio -s -S -kernel $1
 else
-    $QEMU -M vexpress-a9 -smp 4 -serial stdio -kernel $1
+    $QEMU -M $CPU -serial stdio -kernel $1
 fi
+

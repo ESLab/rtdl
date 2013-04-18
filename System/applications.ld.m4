@@ -28,59 +28,59 @@
 ifdef(`simple_app',
 _simple_elf_start = ALIGN(0x4);
 . = _simple_elf_start;
-INCLUDE "build/simple-CONFIG.ld";
+INCLUDE "build/simple-CONFIG-ARCH.ld";
 _simple_elf_end = .;)
 
 ifdef(`writer_app',
 _writer_elf_start = ALIGN(0x4);
 . = _writer_elf_start;
-INCLUDE "build/writer-CONFIG.ld";
+INCLUDE "build/writer-CONFIG-ARCH.ld";
 _writer_elf_end = .;)
 
 ifdef(`reader_app',
 _reader_elf_start = ALIGN(0x4);
 . = _reader_elf_start;
-INCLUDE "build/reader-CONFIG.ld";
+INCLUDE "build/reader-CONFIG-ARCH.ld";
 _reader_elf_end = .;)
 
 ifdef(`rtuappv1_app',
 _rtuappv1_elf_start = ALIGN(0x4);
 . = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1-CONFIG.ld";
+INCLUDE "build/rtuappv1-CONFIG-ARCH.ld";
 _rtuappv1_elf_end = .;)
 
 ifdef(`rtuappv2_app',
 _rtuappv2_elf_start = ALIGN(0x4);
 . = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2-CONFIG.ld";
+INCLUDE "build/rtuappv2-CONFIG-ARCH.ld";
 _rtuappv2_elf_end = .;)
 
 ifdef(`tunnel_app',
 _tunnel_elf_start = ALIGN(0x4);
 . = _tunnel_elf_start;
-INCLUDE "build/tunnel-CONFIG.ld";
+INCLUDE "build/tunnel-CONFIG-ARCH.ld";
 _tunnel_elf_end = .;)
 
 ifdef(`field_app',
 _field_elf_start = ALIGN(0x4);
 . = _field_elf_start;
-INCLUDE "build/field-CONFIG.ld";
+INCLUDE "build/field-CONFIG-ARCH.ld";
 _field_elf_end = .;)
 
 ifdef(`rtucontv1_app',
 _rtucontv1_elf_start = ALIGN(0x4);
 . = _rtucontv1_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
+INCLUDE "build/rtucontv1-CONFIG-ARCH.ld";
 _rtucontv1_elf_end = .;)
 
 ifdef(`rtucontv2_app',
 _rtucontv2_elf_start = ALIGN(0x4);
 . = _rtucontv2_elf_start;
-INCLUDE "build/rtucontv2-CONFIG.ld";
+INCLUDE "build/rtucontv2-CONFIG-ARCH.ld";
 _rtucontv2_elf_end = .;)
 
 ifdef(`rtucontv3_app',
 _rtucontv3_elf_start = ALIGN(0x4);
 . = _rtucontv3_elf_start;
-INCLUDE "build/rtucontv3-CONFIG.ld";
+INCLUDE "build/rtucontv3-CONFIG-ARCH.ld";
 _rtucontv3_elf_end = .;)
