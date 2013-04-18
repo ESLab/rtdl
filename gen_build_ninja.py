@@ -221,8 +221,16 @@ applications = {
     }
 
 vexpress_vm_boot_files = get_ninja_set_of_files(
-    map(lambda f: "System/arch/vexpress_vm/" + f,
-        ["boot/loader.c", "boot/loader-startup.S"]))
+    map(lambda f: "System/arch/vexpress_vm/" + f, [
+            "boot/loader.c",
+            "boot/loader-startup.S",
+            ]))
+vexpress_vm_kernel_files = get_ninja_set_of_files(
+    map(lambda f: "System/arch/vexpress_vm/" + f, [
+            'kernel-startup.S',
+            'setup_vm.c',
+            'binary_register.c',
+            ]))
 vexpress_novm_boot_files = get_ninja_set_of_files(
     map(lambda f: "System/arch/vexpress_novm/" + f,
         ["boot/startup.S"]))
@@ -338,6 +346,7 @@ config_source_files = \
                 ]) +
     freertos_files +
     vexpress_vm_boot_files +
+    vexpress_vm_kernel_files +
     (system_files - NinjaSet(
                 ["System/dwarfif.c",
                  "System/pointer_tracer.c",
@@ -365,9 +374,16 @@ config_source_files = \
 ################
 
 contributed_files = \
-    get_sets_in_dict(applications) + vexpress_vm_boot_files + vexpress_novm_boot_files + \
-    system_utility_files + system_files + get_ninja_set_of_files(["gen_build_ninja.py"])
-
+    get_sets_in_dict(applications) + \
+    vexpress_vm_boot_files + \
+    vexpress_vm_kernel_files + \
+    vexpress_novm_boot_files +  \
+    system_utility_files + \
+    system_files + \
+    get_ninja_set_of_files([
+        "gen_build_ninja.py",
+        ]) + \
+    NinjaSet()
 
 all_files = \
     freertos_files + freertos_memmang_files + get_sets_in_dict(applications) + \

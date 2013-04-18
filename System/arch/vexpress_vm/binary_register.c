@@ -25,73 +25,19 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#define VX_MAIN VX_MAIN
-#define SYSTEM_MODULE VX_MAIN
+#define VX_BINARY_REGISTER VX_BINARY_REGISTER
+#define SYSTEM_MODULE VX_BINARY_REGISTER
 
 #include <FreeRTOS.h>
 
-#include <task.h>
-#include <queue.h>
-
-#include <stdio.h>
 #include <string.h>
 
 #include <System/types.h>
 #include <System/system.h>
 #include <System/task_manager.h>
 #include <System/arch/vexpress_vm/memory_layout.h>
-#include <System/umm/umm_malloc.h>
 
-portTASK_FUNCTION_PROTO(ohai_task, arg);
-
-#define SYS_CFGDATA (*(volatile uint32_t *)0x100000a0)
-#define SYS_CFGCTRL (*(volatile uint32_t *)0x100000a4)
-#define SYS_CFGSTAT (*(volatile uint32_t *)0x100000a8)
-
-typedef unsigned int uint32_t;
-
-static uint32_t ReadValue(int function,int site,int position,int device)
-{
-	int wait=10000;
-
-	SYS_CFGSTAT=0;
-	SYS_CFGCTRL=0x80000000|(function<<20)|(site<<16)|(position<<12)|device;
-	// Set up a transfer.
-
-	while((SYS_CFGSTAT&0x01)==0 && wait--!=0)//; // Wait for completed flag.
-
-	if(SYS_CFGSTAT&0x02) return 0xffffffff;
-
-	return SYS_CFGDATA;
-}
-
-static int GetCortexPower()
-{
-	uint32_t val=ReadValue(12,1,0,1);
-	return val/10000;
-}
-
-portTASK_FUNCTION(ohai_task, arg)
-{
-	unsigned int		 cid  = portCORE_ID();
-	xMemoryInformationType	*mit  = MIS_START_ADDRESS;
-	iccs_layout		*iccs = (iccs_layout *)mit[cid].phys_iccs_begin;
-
-	DEBUG_MSG("Rcu section @ 0x%x\n", (npi_t)iccs->rcu_section[cid]);
-
-	vTaskDelay(10*portCORE_ID());
-	printf("O hai! (%u)\n", (unsigned int)portCORE_ID());
-	while (1) {
-		vTaskDelay(1000);
-	}
-
-	ERROR_MSG("error somewhere...\n");
-	while (1)
-		;
-
-}
-
-static binary_register_entry *find_binary_register_entry(const char *name, binary_register_entry *bre)
+binary_register_entry *find_binary_register_entry(const char *name, binary_register_entry *bre)
 {
 	int i;
 	for (i = 0; bre[i].binary_name != NULL; i++) {
@@ -138,65 +84,3 @@ int alloc_link_start_from_binary_register(const char *name)
 error0:
 	return 0;
 }
-
-int main()
-{
-	xMemoryInformationType	*mit = MIS_START_ADDRESS;
-
-	INFO_MSG("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
-
-	void	*heap	   = mit[portCORE_ID()].phys_heap_begin;
-	size_t	 heap_size = mit[portCORE_ID()].phys_heap_size - 0x10000;
-
-	INFO_MSG("Heap @ 0x%x, heap size = %u\n", (npi_t)heap, heap_size);
-
-	umm_init(heap, heap_size);
-
-	if (!alloc_link_start_from_binary_register("simple"))
-		goto error;
-
-	switch (portCORE_ID()) {
-	case 0:
-	case 3:
-		if (!alloc_link_start_from_binary_register("tunnel"))
-			goto error;
-		break;
-	}
-
-	switch (portCORE_ID()) {
-	case 1:
-	case 2:
-		if (!alloc_link_start_from_binary_register("field"))
-			goto error;
-		break;
-	}
-
-	DEBUG_MSG("Starting scheduler\n");
-	vTaskStartScheduler();
-
-	error:
-
-	ERROR_MSG("no scheduler\n");
-	while (1)
-		;
-	return 0;
-}
-
-void vApplicationMallocFailedHook( void )
-{
-	printf("Malloc failed\n");
-	__asm volatile (" smc #0 ");
-}
-
-void vApplicationStackOverflowHook( void )
-{
-	printf("Task stack overflow.\n");
-	while (1)
-		;
-}
-
-void vApplicationIdleHook( void )
-{
-
-}
-
