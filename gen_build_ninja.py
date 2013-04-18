@@ -205,23 +205,74 @@ system_files = get_ninja_set_of_files(
 # Config section #
 ##################
 
-configs = \
-    [NinjaConfig(
-        {'name': "rtudemo",
-         'includedirs': common_includedirs + ["./libdwarf", "./System/config/rtudemo/include"],
-         'cflags': ["-O1", "-g3", "-gdwarf-3"] + default_cflags,
-         'image_address': '0x10000',
-         'include_apps': ["simple", "writer", "reader", "rtuappv1", "rtuappv2"]
-         }),
+configs = [
+    NinjaConfig({
+            'name': "rtudemo",
+            'includedirs': [
+                "./libdwarf",
+                "./System/config/rtudemo/include",
+                ] +
+            common_includedirs +
+            [],
+            'cflags': [
+                "-O1",
+                "-g3",
+                "-gdwarf-3",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x10000',
+            'include_apps': [
+                "simple",
+                "writer",
+                "reader",
+                "rtuappv1",
+                "rtuappv2",
+                ],
+            }),
 
-     NinjaConfig(
-            {'name': "taskmigr",
-             'includedirs': common_includedirs + \
-                 ["./System/config/taskmigr/include"],
-             'cflags': ["-O3"] + default_cflags,
-             'image_address': '0x60100000',
-             'include_apps': ["simple", "tunnel", "field"]
-             })
+    NinjaConfig({
+            'name': "taskmigr",
+            'includedirs': [
+                "./System/config/taskmigr/include",
+                ] +
+            common_includedirs +
+            [],
+            'cflags': [
+                "-O3",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x60100000',
+            'include_apps': [
+                "simple",
+                "tunnel",
+                "field",
+                ],
+            }),
+
+    NinjaConfig({
+            'name': "rtupid",
+            'includedirs': [
+                "./libdwarf",
+                "./System/config/rtupid/include",
+                ] +
+            common_includedirs +
+            [],
+            'cflags': [
+                "-O1",
+                "-g3",
+                "-gdwarf-3",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x10000',
+            'include_apps': [
+                "rtuappv1",
+                "rtuappv2",
+                ],
+            }),
+
      ]
 
 map(lambda config: config.preprocess(), configs)
@@ -253,6 +304,17 @@ config_source_files = \
                  "System/pointer_tracer.c",
                  ])) +
     system_utility_files +
+    NinjaSet(),
+
+    'rtupid': get_ninja_set_of_files([
+                'System/arch/vexpress_novm/rtupid/main.c',
+                'Source/portable/MemMang/heap_3.c',
+                ]) +
+    system_files +
+    system_utility_files +
+    freertos_files +
+    libdwarf_files +
+    vexpress_novm_boot_files +
     NinjaSet(),
 
     }
@@ -390,6 +452,19 @@ gen_step_build("rtudemo", config_source_files['rtudemo'],
                map(lambda f: builddir + f + "-rtudemo.ld", c['include_apps']) + [builddir + "applications-rtudemo.ld"],
                ["System/rtudemo.0.ld", "System/rtudemo.1.ld", "System/rtudemo.2.ld"], c)
 
+c = configs[2]
+
+gen_step_build("rtupid", config_source_files['rtupid'],
+               map(lambda f: builddir + f + "-rtupid.ld",
+               c['include_apps']) + \
+               [
+                       builddir + "applications-rtupid.ld",
+               ], [
+        "System/rtupid.0.ld",
+        "System/rtupid.1.ld",
+        "System/rtupid.2.ld",
+        ], c)
+
  #######################
  # Task migration demo #
  #######################
@@ -445,6 +520,7 @@ n.build(outputs = "cscope.out",
 
 n.default([
         bindir + "rtudemo.uimg",
+        bindir + "rtupid.uimg",
         "cloc_report.log",
         "cscope.out",
         ])
