@@ -27,6 +27,8 @@
 
 #include <FreeRTOS.h>
 
+#define SYSTEM_MODULE_NAME "MAIN"
+
 #include <task.h>
 #include <queue.h>
 
@@ -35,6 +37,7 @@
 #include <applications.h>
 #include <migrator.h>
 #include <system.h>
+#include <task_manager.h>
 #include <pl011.h>
 
 #include <elf.h>
@@ -42,61 +45,12 @@
 #include <stdio.h>
 #include <string.h>
 
-int link_and_start(Elf32_Ehdr *elfh, Elf32_Ehdr *sys_elfh, Elf32_Ehdr **other_elfhs, const char *name)
-{
-
-	if (check_elf_magic(elfh))
-		INFO_MSG("ELF magic checks out for task \"%s\".\n", name);
-	else {
-		ERROR_MSG("Wrong ELF magic for task \"%s\".\n", name);
-		return 0;
-	}
-
-	Elf32_Sym *entry_sym = find_symbol("_start", elfh);
-
-	if (entry_sym != NULL) 
-		INFO_MSG("Found entry sym for task \"%s\"\n", name);
-	else {
-		ERROR_MSG("Did not find entry sym for task \"%s\"\n", name);
-		return 0;
-	}
-
-	if (link_relocations(elfh, sys_elfh, other_elfhs)) {
-		INFO_MSG("Relocation successful\n");
-	} else {
-		ERROR_MSG("Relocation failed\n");
-		return 0;
-	}
-
-	entry_ptr_t entry_point = get_entry_point(elfh, entry_sym);
-	xTaskHandle th;
-
-	xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)name,
-		    configMINIMAL_STACK_SIZE, NULL,
-		    APPLICATION_TASK_PRIORITY, &th);
-
-	if (!migrator_register(name, elfh, th)) {
-		ERROR_MSG("Failed to register task \"%s\" to the migrator\n", name);
-		return 0;
-	}
-
-
-	return 1;
-}
-
 int main()
 {
 	Elf32_Ehdr *simple_elfh = (Elf32_Ehdr *)&_simple_elf_start;
 	Elf32_Ehdr *writer_elfh = (Elf32_Ehdr *)&_writer_elf_start;
 	Elf32_Ehdr *reader_elfh = (Elf32_Ehdr *)&_reader_elf_start;
 	Elf32_Ehdr *rtuapp_elfh = (Elf32_Ehdr *)&_rtuappv1_elf_start;
-
-	Elf32_Ehdr *elfhs[4];
-
-	elfhs[0] = simple_elfh;
-	elfhs[1] = writer_elfh;
-	elfhs[2] = reader_elfh;
-	elfhs[3] = NULL;
 
 	Elf32_Ehdr *sys_elfh = (Elf32_Ehdr *)&_system_elf_start;
 
@@ -108,13 +62,58 @@ int main()
 	}
 
 	/*
-	 * Link and start application tasks.
+	 * Registering tasks
 	 */
 
-	link_and_start(simple_elfh, sys_elfh, elfhs, "simple");
-	//link_and_start(reader_elfh, sys_elfh, elfhs, "reader");
-	//link_and_start(writer_elfh, sys_elfh, elfhs, "writer");
-	link_and_start(rtuapp_elfh, sys_elfh, elfhs, "rtuapp");
+	task_register_cons *simplec = task_register("simple", simple_elfh);
+	task_register_cons *readerc = task_register("reader", reader_elfh);
+	task_register_cons *writerc = task_register("writer", writer_elfh);
+	task_register_cons *rtuappc = task_register("rtuapp", rtuapp_elfh);
+
+	/*
+	 * Linking tasks
+	 */
+
+	if (!task_link(simplec)) {
+		ERROR_MSG("Could not link \"simple\" task\n");
+		goto exit;
+	}
+	if (!task_link(readerc)) {
+		ERROR_MSG("Could not link \"reader\" task\n");
+		goto exit;
+	}
+	if (!task_link(writerc)) {
+		ERROR_MSG("Could not link \"writer\" task\n");
+		goto exit;
+	}
+	if (!task_link(rtuappc)) {
+		ERROR_MSG("Could not link \"rtuapp\" task\n");
+		goto exit;
+	}
+
+	/*
+	 * Starting tasks
+	 */
+	
+	if (!task_start(simplec)) {
+		ERROR_MSG("Could not start \"simple\" task\n");
+		goto exit;
+	}
+
+	if (!task_start(readerc)) {
+		ERROR_MSG("Could not start \"reader\" task\n");
+		goto exit;
+	}
+
+	if (!task_start(writerc)) {
+		ERROR_MSG("Could not start \"writer\" task\n");
+		goto exit;
+	}
+
+	if (!task_start(rtuappc)) {
+		ERROR_MSG("Could not start \"rtuapp\" task\n");
+		goto exit;
+	}
 
 	/*
 	 * Create migration task.
@@ -122,6 +121,7 @@ int main()
 
 	if (!migrator_start()) {
 		ERROR_MSG("Could not start migrator.\n");
+		goto exit;
 	}
 	
 	INFO_MSG("Starting scheduler\n");

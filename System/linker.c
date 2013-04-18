@@ -27,6 +27,8 @@
 
 #include <FreeRTOS.h>
 
+#define SYSTEM_MODULE_NAME "LINKER"
+
 #include <string.h>
 #include <stdio.h>
 

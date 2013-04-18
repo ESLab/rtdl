@@ -27,6 +27,8 @@
 
 #include <FreeRTOS.h>
 
+#define SYSTEM_MODULE_NAME "MIGRATOR"
+
 #include <task.h>
 #include <semphr.h>
 
@@ -36,42 +38,22 @@
 #include <applications.h>
 #include <rtu.h>
 #include <system.h>
+#include <task_manager.h>
 
 #include <elf.h>
 
 #include <stdio.h>
 #include <string.h>
 
-typedef struct task_register_cons_t {
-	const char *name;
-	Elf32_Ehdr *elfh;
-	xTaskHandle task_handle;
-	request_hook_fn_t request_hook;
-	struct task_register_cons_t *next;
-} task_register_cons;
-
-task_register_cons *task_register_list = NULL;
-
 xTaskHandle      migrator_task_handle;
 xSemaphoreHandle migrator_semaphore;
 
-task_register_cons *find_register_cons(const char *name)
-{
-	task_register_cons *p = task_register_list;
-	while (p) {
-		if (strcmp(name, p->name) == 0)
-			break;
-		p = p->next;
-	}
-	return p;
-}
-
-void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
+void runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 {
 	/*
 	 * Make sure that task is suspended.
 	 */
-	vTaskSuspend(rc->task_handle);
+	vTaskSuspend(trc->task_handle);
 
 	/*
 	 * Check elf magic on the new software
@@ -86,7 +68,7 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	Elf32_Ehdr *sys_elfh = (Elf32_Ehdr *)&_system_elf_start;
 
 	if (new_entry_sym == NULL) {
-		ERROR_MSG("MIGRATOR: could not find entry symbol for new software for task \"%s\"\n", rc->name);
+		ERROR_MSG("MIGRATOR: could not find entry symbol for new software for task \"%s\"\n", trc->name);
 		return;
 	}
 
@@ -95,7 +77,7 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	 */
 
 	if (!link_relocations(new_sw, sys_elfh, NULL)) {
-		ERROR_MSG("MIGRATOR: could not run-time link new software for task \"%s\"\n", rc->name);
+		ERROR_MSG("MIGRATOR: could not run-time link new software for task \"%s\"\n", trc->name);
 		return;
 	}
 
@@ -103,7 +85,7 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	 * Find the .rtu_data sections.
 	 */
 
-	Elf32_Shdr *old_rtu = find_section(RTU_DATA_SECTION_NAME, rc->elfh);
+	Elf32_Shdr *old_rtu = find_section(RTU_DATA_SECTION_NAME, trc->elfh);
 	Elf32_Shdr *new_rtu = find_section(RTU_DATA_SECTION_NAME, new_sw);
 
 	/*
@@ -132,23 +114,23 @@ void runtime_update(task_register_cons *rc, Elf32_Ehdr *new_sw)
 	 * Free the old software.
 	 */
 
-	free_relocations(rc->elfh);
+	free_relocations(trc->elfh);
 
 	/*
 	 * Delete old task, create new task and update register_cons.
 	 */
 
-	vTaskDelete(rc->task_handle);
+	vTaskDelete(trc->task_handle);
 
 	entry_ptr_t entry_point = get_entry_point(new_sw, new_entry_sym);
 
-	rc->elfh = new_sw;
+	trc->elfh = new_sw;
 	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", new_sw);
-	rc->request_hook = (request_hook_fn_t)((u_int32_t)new_sw + (u_int32_t)request_hook_symbol->st_value);
+	trc->request_hook = (request_hook_fn_t)((u_int32_t)new_sw + (u_int32_t)request_hook_symbol->st_value);
 	
-	xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)rc->name,
+	xTaskCreate((pdTASK_CODE)entry_point, (const signed char *)trc->name,
 		    configMINIMAL_STACK_SIZE, NULL,
-		    APPLICATION_TASK_PRIORITY, &rc->task_handle);
+		    APPLICATION_TASK_PRIORITY, &trc->task_handle);
 	
 
 }
@@ -161,7 +143,7 @@ void migrator_task(void *arg)
 
 		vTaskDelay(1000/portTICK_RATE_MS);
 	
-		if ((rc = find_register_cons("rtuapp"))) {
+		if ((rc = task_find("rtuapp"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
 			INFO_MSG("Calling request hook.\n");
 			(rc->request_hook)(cp_req_rtu);
@@ -179,7 +161,7 @@ void migrator_task(void *arg)
 
 		vTaskDelay(1000/portTICK_RATE_MS);
 	
-		if ((rc = find_register_cons("rtuapp"))) {
+		if ((rc = task_find("rtuapp"))) {
 			xSemaphoreTake(migrator_semaphore, portMAX_DELAY);
 			INFO_MSG("Calling request hook.\n");
 			(rc->request_hook)(cp_req_rtu);
@@ -195,27 +177,6 @@ void migrator_task(void *arg)
 			xSemaphoreGive(migrator_semaphore);
 		}
 	}
-}
-
-int migrator_register(const char *name, Elf32_Ehdr *elfh, xTaskHandle task_handle)
-{
-	task_register_cons *trc = 
-		(task_register_cons *)
-		pvPortMalloc(sizeof(task_register_cons));
-	if (trc == NULL) {
-		return 0;
-	}
-	
-	trc->name = name;
-	trc->elfh = elfh;
-	trc->task_handle = task_handle;
-	trc->next = task_register_list;
-	task_register_list = trc;
-	
-	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", elfh);
-	trc->request_hook = (request_hook_fn_t)((u_int32_t)elfh + (u_int32_t)request_hook_symbol->st_value);
-
-	return 1;
 }
 
 int migrator_start()

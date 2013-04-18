@@ -99,9 +99,9 @@ applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
                  'rtuappv1': ['App/app_startup.S', 'App/rtu_appv1.c'],
                  'rtuappv2': ['App/app_startup.S', 'App/rtu_appv2.c'] }
 
-system_files = freertos_files + ['App/startup.S', 'System/main.c', 'System/linker.c',
-                                 'System/migrator.c', 'System/printf-stdarg.c', 'System/serial.c', 
-                                 'System/pl011.c']
+system_files = freertos_files + ['App/startup.S', 'System/main.c', 'System/task_manager.c', 
+                                 'System/linker.c', 'System/migrator.c', 'System/printf-stdarg.c', 
+                                 'System/serial.c', 'System/pl011.c']
 
 fs = set()
 for a in applications:
