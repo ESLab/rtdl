@@ -176,6 +176,8 @@ int _init()
 		mit[i].phys_start	= KERNEL_START_ADDRESS(i);
 		mit[i].phys_end		= KERNEL_START_ADDRESS(i+1);
 		mit[i].phys_entry_point = mit[i].phys_start + entry_point_address_offset;
+		mit[i].phys_heap_begin	= GVS_HEAP_ADDRESS(i);
+		mit[i].phys_heap_size	= GVS_HEAP_SIZE;
 		allocate_elf_at_offset(KERNEL_ELFH, mit[i].phys_start, &mit[i]);
 	}
 

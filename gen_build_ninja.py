@@ -34,12 +34,15 @@ import ninja_syntax
 def get_basename(filename):
     return filename.split("/")[-1].split(".")[0]
 
-def get_object_file(filename, object_postfix = '', in_app = False):
+def get_object_file(filename, config = '', object_postfix = '', in_app = False):
     dirprefix = ""
+    if config != '':
+        if not config in configs:
+            raise Exception("No such configuraton \"" + config + "\".")
     for s in filename.split('/')[0:-1]:
         dirprefix += s.lower() + "_"
     return builddir + dirprefix + ("app_" if in_app else "") + \
-        get_basename(filename) + object_postfix + ".o"
+        get_basename(filename) + ("-" + config if config != '' else '') + object_postfix + ".o"
 
 def get_include_args(dirs):
     ret = ""
@@ -57,6 +60,8 @@ devkitdir = "/export/home/aton4/wlund/bin/devkitARM/bin/"
 #devkitdir = "/tmp/devkitARM/bin/"
 sourcedir = "."
 
+configs = ["vm", "no_vm"]
+
 includedirs = [sourcedir,
                sourcedir + "/System/umm",
                sourcedir + "/Source/include",
@@ -73,13 +78,14 @@ n.variable(key="image_address", value="0x10000")
 
 # -Werror
 
+n.variable(key="include_dirs",
+           value=get_include_args(includedirs))
 n.variable(key="cflags",
-           value=get_include_args(includedirs) +
-           "-O0 -Wall -fmessage-length=0 " +
-           "-mcpu=cortex-a9 -g3 -Werror -fno-builtin-printf -fPIC")
+           value="-O0 -Wall -fmessage-length=0 " +
+                 "-mcpu=cortex-a9 -g3 -Werror -fno-builtin-printf -fPIC")
 
 n.rule(name = "cc",
-       command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $cflags $app_cflags $in -o $out",
+       command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $include_dirs $cflags $app_cflags $in -o $out",
        description = "CC $out",
        depfile = "$out.d")
 
@@ -113,7 +119,7 @@ freertos_files = ["Source/croutine.c",
                   "Source/tasks.c",
                   "Source/timers.c",
                   "Source/portable/GCC/ARM_Cortex-A9/port.c",
-                  "Source/portable/MemMang/heap_2.c"]
+                  "Source/portable/MemMang/heap_4.c"]
 
 applications = { 'simple': ['App/app_startup.S', 'App/simple.c'],
                  'writer': ['App/app_startup.S', 'App/writer.c'],
@@ -129,15 +135,15 @@ vexpress_kernel_files = map(lambda f: "System/arch/vexpress/" + f,
 libdwarf_files = glob.glob('libdwarf/*.c')
 
 system_utility_files = \
-    ['System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c']
+    ['System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c',
+     'System/umm/umm_malloc.c', 'System/qsort.c']
 
 system_files = \
     libdwarf_files + \
     freertos_files + \
     ['App/startup.S', 'System/main.c', 'System/task_manager.c',
      'System/pointer_tracer.c', 'System/linker.c', 'System/migrator.c',
-     'System/umm/umm_malloc.c', 'System/qsort.c', 'System/dwarfif.c',
-     'System/system_util.c'] + \
+     'System/dwarfif.c', 'System/system_util.c'] + \
      system_utility_files
 
 contributed_files = \
@@ -157,16 +163,18 @@ fs = set()
 for f in system_files + vexpress_boot_files + vexpress_kernel_files:
     fs.add(f)
 
-for f in list(app_fs):
-    n.build(outputs = get_object_file(f, in_app = True),
-            rule = "cc",
-            variables = {'app_cflags': "-DIN_APPTASK"},
-            inputs = f)
-
-for f in list(fs):
-    n.build(outputs = get_object_file(f),
-            rule = "cc",
-            inputs = f)
+for c in configs:
+    for f in list(app_fs):
+        n.build(outputs = get_object_file(f, in_app = True, config=c),
+                rule = "cc",
+                variables = {'app_cflags': "-DIN_APPTASK",
+                             'include_dirs': get_include_args(includedirs + ["System/config/" + c])},
+                inputs = f)
+    for f in list(fs):
+        n.build(outputs = get_object_file(f, config=c),
+                rule = "cc",
+                variables = {'include_dirs': get_include_args(includedirs + ["System/config/" + c])},
+                inputs = f)
 
 def gen_step_build(name, inputs, implicit, ldfiles):
     i = 0
@@ -202,15 +210,13 @@ def gen_step_build(name, inputs, implicit, ldfiles):
             inputs    = name + ".bin")
 
 
-gen_step_build("system", map(lambda f: get_object_file(f), system_files),
+gen_step_build("system", map(lambda f: get_object_file(f, config="no_vm"), system_files),
                map(lambda f: f + ".ld", applications) + ["System/applications.ld"],
                ["System/system.0.ld", "System/system.1.ld", "System/system.2.ld"])
 
-
-
 n.build(outputs   = builddir + "vexpress-kernel.elf",
         rule      = "link",
-        inputs    = map(lambda f: get_object_file(f), freertos_files + vexpress_kernel_files +
+        inputs    = map(lambda f: get_object_file(f, config="vm"), freertos_files + vexpress_kernel_files +
                         system_utility_files),
         variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/kernel.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
         implicit  = ["System/arch/vexpress/kernel.ld"])
@@ -220,7 +226,7 @@ n.build(outputs   = builddir + "vexpress-kernel.ld",
 
 n.build(outputs   = "vexpress-boot.elf",
         rule      = "link",
-        inputs    = map(lambda f: get_object_file(f), vexpress_boot_files + system_utility_files),
+        inputs    = map(lambda f: get_object_file(f, config="vm"), vexpress_boot_files + system_utility_files),
         variables = {'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/vexpress/boot/loader.ld -mcpu=cortex-a9 -g3 -gdwarf-3'},
         implicit  = ["System/arch/vexpress/boot/loader.ld", builddir + "vexpress-kernel.ld"])
 n.build(outputs   = "vexpress-boot.bin",
@@ -246,7 +252,7 @@ for a in applications:
     ldfile            = a + ".ld"
     n.build(outputs   = elffile,
             rule      = "link",
-            inputs    = map(lambda f: get_object_file(f, in_app = True), applications[a]),
+            inputs    = map(lambda f: get_object_file(f, in_app = True, config="no_vm"), applications[a]),
             variables = {'ldflags': '-nostartfiles -TApp/app.ld -mcpu=cortex-a9 -g3 -fPIC -gdwarf-3 -shared' },
             implicit  = "App/app.ld")
     n.build(outputs   = ldfile,

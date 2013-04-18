@@ -571,9 +571,19 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
 
 #if 1
 
-umm_block umm_heap[ (size_t) 8 * 1024 * 1024 / sizeof(umm_block) ];
+#if ( UMM_CONFIGURABLE_HEAP == 1 )
 
-const unsigned int umm_numblocks = sizeof(umm_heap)/sizeof(umm_block);
+umm_block *umm_heap = (umm_block *)NULL;
+
+unsigned int umm_numblocks = 0;
+
+#else
+
+umm_block umm_heap[ UMM_N_BLOCKS ];
+
+unsigned int umm_numblocks = UMM_N_BLOCKS;
+
+#endif
 
 #define UMM_NUMBLOCKS (umm_numblocks)
 
@@ -622,6 +632,24 @@ const unsigned int umm_numblocks = sizeof(umm_heap)/sizeof(umm_block);
 #define UMM_NFREE(b)  (UMM_BLOCK(b).body.free.next)
 #define UMM_PFREE(b)  (UMM_BLOCK(b).body.free.prev)
 #define UMM_DATA(b)   (UMM_BLOCK(b).body.data)
+
+// ----------------------------------------------------------------------------
+// Function to initialize the allocator.
+// ----------------------------------------------------------------------------
+
+#if ( UMM_CONFIGURABLE_HEAP == 1 )
+
+void umm_init( void *heap, unsigned int size ) {
+
+  umm_heap	= (umm_block *)heap;
+  //umm_numblocks = (size / sizeof(umm_block)) & 0x7fff;
+  umm_numblocks = (size / sizeof(umm_block));
+  umm_numblocks = umm_numblocks >= 0x7fff ? 0x7fff - 1 : umm_numblocks;
+  bzero(heap, size);
+
+}
+
+#endif
 
 // ----------------------------------------------------------------------------
 // One of the coolest things about this little library is that it's VERY

@@ -7,6 +7,8 @@
 #ifndef UMM_MALLOC_H
 #define UMM_MALLOC_H
 
+#include <umm_config.h>
+
 // ----------------------------------------------------------------------------
 // A couple of macros to make packing structures less compiler dependent
 
@@ -43,6 +45,8 @@ extern UMM_HEAP_INFO heapInfo;
 extern char   __umm_heap_start[];
 extern char   __umm_heap_end[];
 extern size_t __umm_heap_size;
+
+void umm_init( void *heap, unsigned int size );
 
 void *umm_malloc( size_t size );
 void umm_free( void *ptr );
