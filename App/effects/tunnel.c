@@ -1,4 +1,5 @@
 /***********************************************************************************/
+/* Copyright (c) 2012, Dag Ågren. All rights reserved.				   */
 /* Copyright (c) 2013, Wictor Lund. All rights reserved.			   */
 /* Copyright (c) 2013, Åbo Akademi University. All rights reserved.		   */
 /* 										   */
@@ -22,40 +23,62 @@
 /* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND	   */
 /* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT	   */
 /* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS   */
-/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
+/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.			   */
 /***********************************************************************************/
 
-_simple_elf_start = ALIGN(0x4);
-. = _simple_elf_start;
-INCLUDE "build/simple-CONFIG.ld";
-_simple_elf_end = .;
+#include <FreeRTOS.h>
 
-_writer_elf_start = ALIGN(0x4);
-. = _writer_elf_start;
-INCLUDE "build/writer-CONFIG.ld";
-_writer_elf_end = .;
+#include <task.h>
 
-_reader_elf_start = ALIGN(0x4);
-. = _reader_elf_start;
-INCLUDE "build/reader-CONFIG.ld";
-_reader_elf_end = .;
+#include <stdio.h>
 
-_rtuappv1_elf_start = ALIGN(0x4);
-. = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1-CONFIG.ld";
-_rtuappv1_elf_end = .;
+#include <System/types.h>
+#include <System/pl111.h>
 
-_rtuappv2_elf_start = ALIGN(0x4);
-. = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2-CONFIG.ld";
-_rtuappv2_elf_end = .;
+#include <App/effects/tunnel_effect.h>
+#include <App/effects/Utils.h>
 
-_tunnel_elf_start = ALIGN(0x4);
-. = _tunnel_elf_start;
-INCLUDE "build/tunnel-CONFIG.ld";
-_tunnel_elf_end = .;
+int main()
+{
+	effect_tunnel_state ets;
+	u_int16_t *framebuffer1=(u_int16_t *)0x4c000000;
+	u_int16_t *framebuffer2=(u_int16_t *)0x4c400000;
+	int t;
 
-_field_elf_start = ALIGN(0x4);
-. = _field_elf_start;
-INCLUDE "build/field-CONFIG.ld";
-_field_elf_end = .;
+	printf("Initializing tunnel effect...\n");
+
+	InitializeScreen640x480(RGB16BitMode,framebuffer1);
+
+	if (!InitializeTunnel(&ets, 640, 480)) {
+		printf("Could not initiate tunnel effect.\n");
+		while (1)
+			;
+	}
+
+	int lasttime=0;
+
+	printf("Starting rendering tunnel effect...\n");
+
+	for(t=0;;t+=2)
+	{
+		if((t&15)==0)
+		{
+			int time=xTaskGetTickCount();
+			int fps=10*16*1000/(time-lasttime);
+
+			printf("%d.%01d FPS\r\n",fps/10,fps%10);
+
+			lasttime=time;
+		}
+
+		taskYIELD();
+
+		SetScreenFrameBuffer(framebuffer1);
+		DrawTunnel(&ets, framebuffer2);
+
+		taskYIELD();
+
+		SetScreenFrameBuffer(framebuffer2);
+		DrawTunnel(&ets, framebuffer1);
+	}
+}

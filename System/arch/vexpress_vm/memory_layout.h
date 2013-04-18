@@ -69,7 +69,7 @@ typedef struct binary_register_entry_t {
 #define KS_START_PAGENO	(MIS_PAGENO + MIS_PAGES)
 #define KS_PAGES		(10)
 #define GVMS_START_PAGENO	(KS_START_PAGENO + KS_PAGES*NUMBER_OF_CORES)
-#define GVMS_PAGES		(1)
+#define GVMS_PAGES		(5)
 #define ICCS_START_PAGENO	(GVMS_START_PAGENO + GVMS_PAGES*NUMBER_OF_CORES)
 #define ICCS_PAGES		(1)
 

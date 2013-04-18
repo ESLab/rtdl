@@ -176,7 +176,11 @@ applications = { 'simple': get_ninja_set_of_files(['App/app_startup.S', 'App/sim
                  'writer': get_ninja_set_of_files(['App/app_startup.S', 'App/writer.c']),
                  'reader': get_ninja_set_of_files(['App/app_startup.S', 'App/reader.c']),
                  'rtuappv1': get_ninja_set_of_files(['App/app_startup.S', 'App/rtu_appv1.c']),
-                 'rtuappv2': get_ninja_set_of_files(['App/app_startup.S', 'App/rtu_appv2.c']) }
+                 'rtuappv2': get_ninja_set_of_files(['App/app_startup.S', 'App/rtu_appv2.c']),
+                 'tunnel': get_ninja_set_of_files(['App/app_startup.S', 'App/effects/tunnel.c',
+                                                   'App/effects/tunnel_effect.c', 'App/effects/Utils.c']),
+                 'field': get_ninja_set_of_files(['App/app_startup.S', 'App/effects/field.c',
+                                                  'App/effects/effects.c', 'App/effects/Utils.c'])}
 
 vexpress_vm_boot_files = get_ninja_set_of_files(
     map(lambda f: "System/arch/vexpress_vm/" + f,
@@ -191,7 +195,7 @@ libdwarf_files = get_ninja_set_of_files(
 
 system_utility_files = get_ninja_set_of_files(
     ['System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c',
-     'System/umm/umm_malloc.c', 'System/qsort.c'])
+     'System/pl111.c', 'System/umm/umm_malloc.c', 'System/qsort.c'])
 
 system_files = get_ninja_set_of_files(
     ['System/task_manager.c', 'System/pointer_tracer.c', 'System/linker.c',
@@ -213,7 +217,7 @@ configs = \
             {'name': "taskmigr",
              'includedirs': common_includedirs + \
                  ["./System/config/taskmigr/include"],
-             'cflags': ["-O1"] + default_cflags,
+             'cflags': ["-O3"] + default_cflags,
              'image_address': '0x60100000'
              })
      ]

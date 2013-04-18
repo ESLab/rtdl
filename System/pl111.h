@@ -1,4 +1,5 @@
 /***********************************************************************************/
+/* Copyright (c) 2013, Dag Ågren. All rights reserved.				   */
 /* Copyright (c) 2013, Wictor Lund. All rights reserved.			   */
 /* Copyright (c) 2013, Åbo Akademi University. All rights reserved.		   */
 /* 										   */
@@ -22,40 +23,29 @@
 /* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND	   */
 /* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT	   */
 /* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS   */
-/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
+/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.			   */
 /***********************************************************************************/
 
-_simple_elf_start = ALIGN(0x4);
-. = _simple_elf_start;
-INCLUDE "build/simple-CONFIG.ld";
-_simple_elf_end = .;
+#ifndef __PL111_H__
+#define __PL111_H__
 
-_writer_elf_start = ALIGN(0x4);
-. = _writer_elf_start;
-INCLUDE "build/writer-CONFIG.ld";
-_writer_elf_end = .;
+#include <stdint.h>
 
-_reader_elf_start = ALIGN(0x4);
-. = _reader_elf_start;
-INCLUDE "build/reader-CONFIG.ld";
-_reader_elf_end = .;
+#define Palette2ColourMode 0
+#define Palette4ColourMode 1
+#define Palette16ColourMode 2
+#define Palette256ColourMode 3
+#define RGB15BitMode 4
+#define RGB24BitMode 5
+#define RGB16BitMode 6
+#define RGB12BitMode 7
 
-_rtuappv1_elf_start = ALIGN(0x4);
-. = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1-CONFIG.ld";
-_rtuappv1_elf_end = .;
+// Framebuffers must be aligned to 8 bytes and reside in VRAM (0x4c000000)!
 
-_rtuappv2_elf_start = ALIGN(0x4);
-. = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2-CONFIG.ld";
-_rtuappv2_elf_end = .;
+void InitializeScreen640x480(int colourdepth,void *framebuffer);
 
-_tunnel_elf_start = ALIGN(0x4);
-. = _tunnel_elf_start;
-INCLUDE "build/tunnel-CONFIG.ld";
-_tunnel_elf_end = .;
+void SetScreenFrameBuffer(void *framebuffer);
+void SetScreenPalette(int index,int r,int g,int b);
 
-_field_elf_start = ALIGN(0x4);
-. = _field_elf_start;
-INCLUDE "build/field-CONFIG.ld";
-_field_elf_end = .;
+#endif
+

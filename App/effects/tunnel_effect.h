@@ -1,4 +1,5 @@
 /***********************************************************************************/
+/* Copyright (c) 2012, Dag Ågren. All rights reserved.				   */
 /* Copyright (c) 2013, Wictor Lund. All rights reserved.			   */
 /* Copyright (c) 2013, Åbo Akademi University. All rights reserved.		   */
 /* 										   */
@@ -22,40 +23,27 @@
 /* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND	   */
 /* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT	   */
 /* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS   */
-/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
+/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.			   */
 /***********************************************************************************/
 
-_simple_elf_start = ALIGN(0x4);
-. = _simple_elf_start;
-INCLUDE "build/simple-CONFIG.ld";
-_simple_elf_end = .;
+#ifndef TUNNEL_EFFECT_H
+#define TUNNEL_EFFECT_H
 
-_writer_elf_start = ALIGN(0x4);
-. = _writer_elf_start;
-INCLUDE "build/writer-CONFIG.ld";
-_writer_elf_end = .;
+#include <System/types.h>
 
-_reader_elf_start = ALIGN(0x4);
-. = _reader_elf_start;
-INCLUDE "build/reader-CONFIG.ld";
-_reader_elf_end = .;
+typedef struct effect_tunnel_state_t {
+	u_int16_t	 width;
+	u_int16_t	 height;
+	u_int32_t	 t;
+	u_int32_t	*lookup32;
+	u_int16_t	*texture;
+} effect_tunnel_state;
 
-_rtuappv1_elf_start = ALIGN(0x4);
-. = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1-CONFIG.ld";
-_rtuappv1_elf_end = .;
+int InitializeTunnel(effect_tunnel_state *state, u_int16_t width, u_int16_t height);
+//void DrawTunnel(u_int16_t *pixels,int t);
+void DrawTunnel(effect_tunnel_state *state, u_int16_t *pixels);
 
-_rtuappv2_elf_start = ALIGN(0x4);
-. = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2-CONFIG.ld";
-_rtuappv2_elf_end = .;
 
-_tunnel_elf_start = ALIGN(0x4);
-. = _tunnel_elf_start;
-INCLUDE "build/tunnel-CONFIG.ld";
-_tunnel_elf_end = .;
 
-_field_elf_start = ALIGN(0x4);
-. = _field_elf_start;
-INCLUDE "build/field-CONFIG.ld";
-_field_elf_end = .;
+#endif /* TUNNEL_EFFECT_H */
+

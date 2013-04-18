@@ -48,10 +48,14 @@ extern ma_t _writer_elf_start;
 extern ma_t _reader_elf_start;
 extern ma_t _rtuappv1_elf_start;
 extern ma_t _rtuappv2_elf_start;
+extern ma_t _tunnel_elf_start;
+extern ma_t _field_elf_start;
 
 binary_register_entry binary_register[] = {
   { "kernel", APPLICATION_ELF(kernel) },
   { "simple", APPLICATION_ELF(simple) },
+  { "tunnel", APPLICATION_ELF(tunnel) },
+  { "field", APPLICATION_ELF(field) },
   { NULL, NULL }
 };
 
@@ -182,7 +186,8 @@ int _init()
 		goto error;
 	}
 
-	npi_t entry_point_address_offset = KERNEL_ELFH->e_entry;
+	Elf32_Ehdr *kernel_elfh = KERNEL_ELFH;
+	npi_t entry_point_address_offset =kernel_elfh->e_entry;
 
 	for (i = 0; i < NUMBER_OF_CORES; i++) {
 		INFO_MSG("Copying kernel for core #%i\n", i);

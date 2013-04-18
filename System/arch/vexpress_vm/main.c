@@ -107,10 +107,47 @@ static binary_register_entry *find_binary_register_entry(const char *name, binar
 	return NULL;
 }
 
+int alloc_link_start_from_binary_register(const char *name)
+{
+	xMemoryInformationType	*mit = MIS_START_ADDRESS;
+	binary_register_entry *bin_register = (binary_register_entry *)mit[portCORE_ID()].phys_binary_register_begin;
+	binary_register_entry *bre = find_binary_register_entry(name, bin_register);
+
+	if (bre == NULL) {
+		ERROR_MSG("Could not find application \"%s\"\n", name);
+		goto error0;
+	}
+
+	task_register_cons *trc = task_register(name, bre->elfh);
+
+	if (trc == NULL) {
+		ERROR_MSG("Could not register task \"%s\"\n", name);
+		goto error0;
+	}
+
+	if (!task_alloc(trc)) {
+		ERROR_MSG("Could not alloc memory for task \"%s\"\n", name);
+		goto error0;
+	}
+
+	if (!task_link(trc)) {
+		ERROR_MSG("Could not link task \"%s\"\n", name);
+		goto error0;
+	}
+
+	if (!task_start(trc)) {
+		ERROR_MSG("Could not start task \"%s\" \n", name);
+		goto error0;
+	}
+
+	return 1;
+error0:
+	return 0;
+}
+
 int main()
 {
 	xMemoryInformationType	*mit = MIS_START_ADDRESS;
-	binary_register_entry	*bre = (binary_register_entry *)mit[portCORE_ID()].phys_binary_register_begin;
 
 	INFO_MSG("Kernel @ core #%u.\n", (unsigned int)portCORE_ID());
 
@@ -121,34 +158,14 @@ int main()
 
 	umm_init(heap, heap_size);
 
-	binary_register_entry *simplebre = find_binary_register_entry("simple", bre);
-	if (simplebre == NULL) {
-		ERROR_MSG("Could not find simple application\n");
+	if (!alloc_link_start_from_binary_register("simple"))
 		goto error;
+
+	if (portCORE_ID() == 0) {
+		if (!alloc_link_start_from_binary_register("tunnel"))
+			goto error;
 	}
 
-	task_register_cons *simplec = task_register("simple", simplebre->elfh);
-
-	if (!task_alloc(simplec)) {
-		ERROR_MSG("Could not alloc memory for task \"simple\"\n");
-		goto error;
-	}
-
-	if (!task_link(simplec)) {
-		ERROR_MSG("Could not link \"simple\" task\n");
-		goto error;
-	}
-
-	if (!task_start(simplec)) {
-		ERROR_MSG("Could not start \"simple\" task\n");
-		goto error;
-	}
-
-	if (xTaskCreate(ohai_task, (const signed char *)"ohai", configMINIMAL_STACK_SIZE, NULL,
-			3, NULL) != pdPASS) {
-		ERROR_MSG("Could not start \"ohai\" task.\n");
-		goto error;
-	}
 	DEBUG_MSG("Starting scheduler\n");
 	vTaskStartScheduler();
 

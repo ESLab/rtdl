@@ -1,4 +1,5 @@
 /***********************************************************************************/
+/* Copyright (c) 2012, Dag Ågren. All rights reserved.				   */
 /* Copyright (c) 2013, Wictor Lund. All rights reserved.			   */
 /* Copyright (c) 2013, Åbo Akademi University. All rights reserved.		   */
 /* 										   */
@@ -22,40 +23,76 @@
 /* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND	   */
 /* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT	   */
 /* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS   */
-/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
+/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.			   */
 /***********************************************************************************/
 
-_simple_elf_start = ALIGN(0x4);
-. = _simple_elf_start;
-INCLUDE "build/simple-CONFIG.ld";
-_simple_elf_end = .;
+#include <FreeRTOS.h>
 
-_writer_elf_start = ALIGN(0x4);
-. = _writer_elf_start;
-INCLUDE "build/writer-CONFIG.ld";
-_writer_elf_end = .;
+#include <task.h>
 
-_reader_elf_start = ALIGN(0x4);
-. = _reader_elf_start;
-INCLUDE "build/reader-CONFIG.ld";
-_reader_elf_end = .;
+#include <stdio.h>
 
-_rtuappv1_elf_start = ALIGN(0x4);
-. = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1-CONFIG.ld";
-_rtuappv1_elf_end = .;
+#include <System/types.h>
+#include <System/pl111.h>
 
-_rtuappv2_elf_start = ALIGN(0x4);
-. = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2-CONFIG.ld";
-_rtuappv2_elf_end = .;
+#include <App/effects/effects.h>
+#include <App/effects/Utils.h>
 
-_tunnel_elf_start = ALIGN(0x4);
-. = _tunnel_elf_start;
-INCLUDE "build/tunnel-CONFIG.ld";
-_tunnel_elf_end = .;
+u_int8_t mem_fb[640*480];
 
-_field_elf_start = ALIGN(0x4);
-. = _field_elf_start;
-INCLUDE "build/field-CONFIG.ld";
-_field_elf_end = .;
+static void write_fb_8bit_to_16bit(u_int8_t *fb8bit, u_int16_t *fb16bit)
+{
+	int i;
+	for (i = 0; i < 640*480 / 2; i++) {
+		u_int32_t	*fb32 = (u_int32_t *)fb16bit;
+		u_int8_t	 r1   = fb8bit[2*i  ] & 0x1f;
+		u_int8_t	 g1   = fb8bit[2*i  ] & 0x1f;
+		u_int8_t	 b1   = fb8bit[2*i  ] & 0x1f;
+		u_int8_t	 r2   = fb8bit[2*i+1] & 0x1f;
+		u_int8_t	 g2   = fb8bit[2*i+1] & 0x1f;
+		u_int8_t	 b2   = fb8bit[2*i+1] & 0x1f;
+		u_int16_t	 p1   = ((r1 << 11) | (g1 << 5) | (b1 << 0)) & 0xffff;
+		u_int16_t	 p2   = ((r2 << 11) | (g2 << 5) | (b2 << 0)) & 0xffff;
+		fb32[i]		      = (p1 << 16) | p2;
+	}
+}
+
+int main()
+{
+	int t;
+	u_int16_t *framebuffer1=(u_int16_t *)0x4c000000;
+	u_int16_t *framebuffer2=(u_int16_t *)0x4c400000;
+
+	InitializeScreen640x480(RGB16BitMode,framebuffer1);
+
+	InitializeField();
+
+	SetScreenFrameBuffer(framebuffer1);
+
+	int lasttime=0;
+
+	for(t=0;;t+=2)
+	{
+		if((t&15)==0)
+		{
+			int time=xTaskGetTickCount();
+			int fps=10*16*1000/(time-lasttime);
+
+			printf("%d.%01d FPS\r\n",fps/10,fps%10);
+
+			lasttime=time;
+		}
+
+		taskYIELD();
+
+		DrawField(mem_fb, t);
+		write_fb_8bit_to_16bit(mem_fb, framebuffer2);
+		SetScreenFrameBuffer(framebuffer2);
+
+		taskYIELD();
+
+		DrawField(mem_fb, t + 1);
+		write_fb_8bit_to_16bit(mem_fb, framebuffer1);
+		SetScreenFrameBuffer(framebuffer1);
+	}
+}

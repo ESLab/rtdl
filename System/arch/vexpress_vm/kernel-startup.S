@@ -4,6 +4,11 @@
 	.global Vector_Init
 	.global Kernel_Start
 
+// Symbols forces along in the binary:
+	.global sqrtf
+	.global atan2f
+	.global sinf
+
 	.balign 4
 	.code 32
 
