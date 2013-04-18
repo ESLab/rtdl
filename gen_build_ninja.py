@@ -110,9 +110,9 @@ system_files = \
     libdwarf_files + \
     freertos_files + \
     ['App/startup.S', 'System/main.c', 'System/task_manager.c',
-     'System/linker.c', 'System/migrator.c', 'System/printf-stdarg.c',
-     'System/serial.c', 'System/pl011.c', 'System/umm/umm_malloc.c',
-     'System/qsort.c', 'System/dwarfif.c']
+     'System/pointer_tracer.c', 'System/linker.c', 'System/migrator.c',
+     'System/printf-stdarg.c', 'System/serial.c', 'System/pl011.c',
+     'System/umm/umm_malloc.c', 'System/qsort.c', 'System/dwarfif.c']
 
 
 app_fs = set()
