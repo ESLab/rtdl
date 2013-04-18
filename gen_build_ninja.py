@@ -276,6 +276,20 @@ at91_novm_kernel_files = get_ninja_set_of_files(
             'boot/board_memories.c',
             "startup.S",
             ]))
+
+at91_novm_bl_boot_files = get_ninja_set_of_files(
+    map(lambda f: "System/arch/arm9_novm_bl/" + f, [
+            'boot/loader-startup.S',
+            'boot/loader.c',
+            ]))
+
+at91_novm_bl_kernel_files = get_ninja_set_of_files(
+    map(lambda f: "System/arch/arm9_novm_bl/" + f, [
+            'boot/board_lowlevel.c',
+            'boot/board_memories.c',
+            "startup.S",
+            ]))
+
 at91_utility_files = get_ninja_set_of_files([
         'System/arch/arm9/usart/freertos_if.c',
         'System/arch/arm9/usart/usart.c',
@@ -487,6 +501,34 @@ configs = [
                 ],
             }),
 
+    NinjaConfig({
+            'name' : "arm9_bl_rtudemo",
+            'includedirs': [
+                "./System/config/arm9_bl_rtudemo/include",
+                sourcedir + "/Source/portable/GCC/ARM9_AT91",
+                ] +
+            common_includedirs +
+            [sourcedir + "/Source/portable/GCC/ARM9_AT91"] +
+            [],
+            'arch_flags': '-mcpu=arm926ej-s -march=armv5te',
+            'arch': 'arm9',
+            'cflags': [
+                "-O0",
+                "-g3",
+                "-gdwarf-3",
+                "-mcpu=arm926ej-s",
+                "-DARCH_ARM9_NOVM_BL",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x300000',
+            'include_apps': [
+                "simple",
+                "rtuappv1",
+                "rtuappv2",
+                ],
+            }),
+
      ]
 
 map(lambda config: config.preprocess(), configs)
@@ -605,6 +647,20 @@ config_source_files = \
     system_files +
     system_utility_files +
     NinjaSet(),
+
+    'arm9_bl_rtudemo': get_ninja_set_of_files([
+                'System/arch/arm9_novm_bl/arm9_rtudemo/main.c',
+                'Source/portable/MemMang/heap_3.c',
+                ]) +
+    freertos_files +
+    freertos_arm9_files +
+    at91_novm_bl_boot_files +
+    at91_novm_bl_kernel_files +
+    at91_utility_files +
+    libdwarf_files +
+    system_files +
+    system_utility_files +
+    NinjaSet(),
     }
 
 ################
@@ -618,6 +674,8 @@ contributed_files = \
     vexpress_novm_boot_files +  \
     at91_novm_boot_files + \
     at91_novm_kernel_files + \
+    at91_novm_bl_boot_files + \
+    at91_novm_bl_kernel_files + \
     at91_utility_files + \
     system_utility_files + \
     system_files + \
@@ -780,8 +838,6 @@ gen_step_build("rtupid", config_source_files['rtupid'],
         "System/rtupid.2.ld",
         ], c)
 
-
-
  #######################
  # Task migration demo #
  #######################
@@ -857,19 +913,19 @@ gen_kernel_boot_build("taskmigr_exp2", configs[5])
 # AT91 Boot system #
 ####################
 
-def gen_AT91_boot_build(name, c):
+def gen_AT91_boot_build(name, arch_dir, boot_files, c):
     n.build(outputs   = bindir + "kernel-" + name + ".elf",
             rule      = "link",
             inputs    = [
             ] +
             list((config_source_files[name].get_flattened() -
-                  at91_novm_boot_files).get_object_files(c)) +
+                  boot_files).get_object_files(c)) +
             [],
             variables = c + NinjaConfig({
-                'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/arm9_novm/kernel.ld ' + c['arch_flags'],
+                'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/' + arch_dir + '/kernel.ld ' + c['arch_flags'],
                 }),
             implicit  = [
-            "System/arch/arm9_novm/kernel.ld",
+            "System/arch/" + arch_dir + "/kernel.ld",
             builddir + "applications-" + name + ".ld",
             ] +
             map(lambda f: builddir + f + "-" + name + "-" + c['arch'] + ".ld", c['include_apps']) +
@@ -887,20 +943,22 @@ def gen_AT91_boot_build(name, c):
     n.build(outputs   = builddir + "kernel-" + name + "_nodbg.ld",
             rule      = "app_ld",
             inputs    = bindir + "kernel-" + name + "_nodbg.elf")
-    n.build(outputs   = builddir + "system_arch_arm9_novm_boot_loader-" + name + ".ld",
+    ld_m4_file_path   = "System/arch/" + arch_dir + "/boot/loader.ld.m4"
+    ld_file_path      = builddir + ld_m4_file_path.split("/")[-1].split(".")[0] + "-" + name + ".ld"
+    n.build(outputs   = ld_file_path,
             rule      = "m4",
-            inputs    = "System/arch/arm9_novm/boot/loader.ld.m4",
+            inputs    = ld_m4_file_path,
             variables = c + NinjaConfig({
                 'm4flags': "-DCONFIG=" + name,
                 }))
     n.build(outputs   = bindir + "boot-" + name + ".elf",
             rule      = "link",
-            inputs    = list((at91_novm_boot_files + at91_utility_files + system_utility_files).get_object_files(c)),
+            inputs    = list((boot_files + at91_utility_files + system_utility_files).get_object_files(c)),
             variables = c + NinjaConfig({
-                'ldflags': '-nostartfiles -fPIC -Wl,-T,' + builddir + "system_arch_arm9_novm_boot_loader-" + name + ".ld " + c['arch_flags']
+                'ldflags': '-nostartfiles -fPIC -Wl,-T,' + ld_file_path + " " + c['arch_flags']
                 }),
             implicit  = [
-            builddir + "system_arch_arm9_novm_boot_loader-" + name + ".ld",
+            ld_file_path,
             builddir + "kernel-" + name + ".ld" if debug_in_kernel else builddir + "kernel-" + name + "_nodbg.ld",
             ])
     n.build(outputs   = bindir + "boot-" + name + ".bin",
@@ -914,7 +972,8 @@ def gen_AT91_boot_build(name, c):
             inputs    = bindir + "boot-" + name + ".bin",
             variables = c)
 
-gen_AT91_boot_build("arm9_rtudemo", configs[6])
+gen_AT91_boot_build("arm9_rtudemo", 'arm9_novm', at91_novm_boot_files, configs[6])
+gen_AT91_boot_build("arm9_bl_rtudemo", 'arm9_novm_bl', at91_novm_bl_boot_files, configs[7])
 
 n.build(outputs   = bindir + "padded-arm9_rtudemo.bin",
         rule      = "dd",
@@ -935,6 +994,7 @@ n.build(outputs = "cscope.out",
 n.default([
         bindir + "rtudemo.uimg",
         bindir + "boot-arm9_rtudemo.uimg",
+        bindir + "boot-arm9_bl_rtudemo.uimg",
         bindir + "padded-arm9_rtudemo.bin",
         bindir + "rtupid.uimg",
         "cloc_report.log",

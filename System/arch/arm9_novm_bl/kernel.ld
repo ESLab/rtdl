@@ -25,19 +25,48 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef MEMORY_LAYOUT_H
-#define MEMORY_LAYOUT_H
+ENTRY(Kernel_Start);
 
-#ifdef ARCH_VEXPRESS_VM
-#include <System/arch/vexpress_vm/memory_layout.h>
-#endif /* ARCH_VEXPRESS_VM */
+MEMORY
+{
+	sram (rwx) : ORIGIN = 0x00300000, LENGTH = 0x00014000
+	ram (rwx) : ORIGIN = 0x20000000, LENGTH = 0x10000000
+}
 
-#ifdef ARCH_ARM9_NOVM
-#include <System/arch/arm9_novm/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM */
+PROVIDE(__stack_offset = 0x00000);
 
-#ifdef ARCH_ARM9_NOVM_BL
-#include <System/arch/arm9_novm_bl/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM_BL */
+SECTIONS
+{
+    .isr_vector :
+    {
+	_isr_vector_start = .;
+	*(.isr_vector*)
+	__isr_vector_end = .;
+    } > sram
 
-#endif /* MEMORY_LAYOUT_H */
+    .text :
+    {
+        _text = .;
+        *(.text*)
+        *(.rodata*)
+        _etext = .;
+    } > ram
+
+    .data : /* AT(ADDR(.text) + SIZEOF(.text)) */
+    {
+        _data = .;
+        *(vtable)
+        *(.data*)
+        _edata = .;
+    } > ram
+    .dynamic : { *(.dynamic) }
+    .bss :
+    {
+        _bss = .;
+        *(.bss*)
+        *(COMMON)
+        _ebss = .;
+    } > ram
+}
+
+

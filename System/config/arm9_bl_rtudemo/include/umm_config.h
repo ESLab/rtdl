@@ -25,19 +25,13 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef MEMORY_LAYOUT_H
-#define MEMORY_LAYOUT_H
+#ifndef UMM_CONFIG_H
+#define UMM_CONFIG_H
 
-#ifdef ARCH_VEXPRESS_VM
-#include <System/arch/vexpress_vm/memory_layout.h>
-#endif /* ARCH_VEXPRESS_VM */
+#define UMM_CONFIGURABLE_HEAP 0
 
-#ifdef ARCH_ARM9_NOVM
-#include <System/arch/arm9_novm/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM */
+#define UMM_N_BLOCKS  (1024 * 64)
 
-#ifdef ARCH_ARM9_NOVM_BL
-#include <System/arch/arm9_novm_bl/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM_BL */
+#define UMM_BLOCK_SIZE (8)
 
-#endif /* MEMORY_LAYOUT_H */
+#endif /* UMM_CONFIG_H */

@@ -25,19 +25,22 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef MEMORY_LAYOUT_H
-#define MEMORY_LAYOUT_H
+#ifndef SYSTEM_CONFIG_H
+#define SYSTEM_CONFIG_H
 
-#ifdef ARCH_VEXPRESS_VM
-#include <System/arch/vexpress_vm/memory_layout.h>
-#endif /* ARCH_VEXPRESS_VM */
+#define DEBUG
+#define INFO
 
-#ifdef ARCH_ARM9_NOVM
-#include <System/arch/arm9_novm/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM */
+#define RTUDEMO_UPDATING
 
-#ifdef ARCH_ARM9_NOVM_BL
-#include <System/arch/arm9_novm_bl/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM_BL */
+#define RUNTIME_UPDATING
+#define RTU_POINTER_TRACING
 
-#endif /* MEMORY_LAYOUT_H */
+#define HAS_BINARY_REGISTER
+
+#if defined(LINKER) || defined(TASK_MANAGER)
+#undef DEBUG
+#undef INFO
+#endif
+
+#endif /* SYSTEM_CONFIG_H */ 

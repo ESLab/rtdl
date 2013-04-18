@@ -25,19 +25,26 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef MEMORY_LAYOUT_H
-#define MEMORY_LAYOUT_H
+        .section .isr_vector, "x"
+	.global  Vector_Init
 
-#ifdef ARCH_VEXPRESS_VM
-#include <System/arch/vexpress_vm/memory_layout.h>
-#endif /* ARCH_VEXPRESS_VM */
+Vector_Init:
+        LDR     PC, Reset_Addr
+        LDR     PC, Reset_Addr
+        LDR     PC, Reset_Addr
+        LDR     PC, Reset_Addr
+        LDR     PC, Reset_Addr
+        NOP
+        LDR     PC, Reset_Addr
+        LDR     PC, Reset_Addr
 
-#ifdef ARCH_ARM9_NOVM
-#include <System/arch/arm9_novm/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM */
+Reset_Addr:      .word     Reset_Handler
 
-#ifdef ARCH_ARM9_NOVM_BL
-#include <System/arch/arm9_novm_bl/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM_BL */
+Reset_Handler:
+_init:
+	LDR SP, Stack_Addr
+	SUB SP, SP, #4
+	LDR PC, Main_Addr
 
-#endif /* MEMORY_LAYOUT_H */
+Main_Addr:	.word	main
+Stack_Addr:	.word	__stack

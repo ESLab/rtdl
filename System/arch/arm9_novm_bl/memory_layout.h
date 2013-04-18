@@ -25,19 +25,28 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef MEMORY_LAYOUT_H
-#define MEMORY_LAYOUT_H
+#ifndef AT91_MEMORY_LAYOUT_H
+#define AT91_MEMORY_LAYOUT_H
 
-#ifdef ARCH_VEXPRESS_VM
-#include <System/arch/vexpress_vm/memory_layout.h>
-#endif /* ARCH_VEXPRESS_VM */
+#include <FreeRTOS.h>
 
-#ifdef ARCH_ARM9_NOVM
-#include <System/arch/arm9_novm/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM */
+#include <System/types.h>
+#include <System/elf.h>
+#include <System/binary_register.h>
 
-#ifdef ARCH_ARM9_NOVM_BL
-#include <System/arch/arm9_novm_bl/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM_BL */
+#define BOOTLOADER_START_ADDRESS ((npi_t)0x10000000)
 
-#endif /* MEMORY_LAYOUT_H */
+/*
+ * The memory information section is put at the beginning of the SRAM.
+ */
+#define MIS_START_ADDRESS ((npi_t)0x00500000)
+
+/*
+ * The binary register is put a bit after the exception vector of the
+ * bootloader. This is set in loader.ld.m4.
+ */
+
+#define BINARY_REGISTER_ADDRESS ((npi_t)(BOOTLOADER_START_ADDRESS + 0x100))
+#define BINARY_REGISTER ((binary_register_entry *)BINARY_REGISTER_ADDRESS)
+
+#endif /* AT91_MEMORY_LAYOUT_H */

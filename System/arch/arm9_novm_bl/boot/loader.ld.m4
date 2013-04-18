@@ -25,19 +25,58 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef MEMORY_LAYOUT_H
-#define MEMORY_LAYOUT_H
+ENTRY(Vector_Init);
 
-#ifdef ARCH_VEXPRESS_VM
-#include <System/arch/vexpress_vm/memory_layout.h>
-#endif /* ARCH_VEXPRESS_VM */
+MEMORY
+{
+	flash (rwx) : ORIGIN = 0x10000000, LENGTH = 0x10000000
+	ram (rwx) : ORIGIN = 0x00300000, LENGTH = 0x00100000
+}
 
-#ifdef ARCH_ARM9_NOVM
-#include <System/arch/arm9_novm/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM */
+PROVIDE(__stack = 0x00314000);
 
-#ifdef ARCH_ARM9_NOVM_BL
-#include <System/arch/arm9_novm_bl/memory_layout.h>
-#endif /* ARCH_ARM9_NOVM_BL */
+SECTIONS
+{
+    .bss :
+    {
+	_bss = .;
+	*(.bss*)
+	*(COMMON)
+	_ebss = .;
+    } > ram
 
-#endif /* MEMORY_LAYOUT_H */
+    .dynsym : { *(.dynsym) }
+    .rel.dyn : { *(.rel.dyn) }
+    .plt : { *(.plt) }
+
+    .text :
+    {
+	_text = .;
+	__isr_vector_start = .;
+	*(.isr_vector)
+	__isr_vector_end = .;
+	. = _text + 0x100;
+	*(.binary_register*)
+	*(.text*)
+	*(.rodata*)
+	_etext = .;
+    } > flash
+
+    .data : AT(ADDR(.text) + SIZEOF(.text))
+    {
+	_data = .;
+	*(.data*)
+	_edata = .;
+    } > flash
+
+    .kernel : {
+	    _kernel_elf_start = .;
+	    INCLUDE "build/kernel-CONFIG`_'nodbg.ld"
+	    _kernel_elf_end = .;
+    } > flash
+
+    .applications : {
+	    INCLUDE "build/applications-CONFIG.ld"
+    } > flash
+	
+}
