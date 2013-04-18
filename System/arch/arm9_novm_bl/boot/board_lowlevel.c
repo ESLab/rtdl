@@ -120,6 +120,27 @@ void DefaultIrqHandler(void)
 //------------------------------------------------------------------------------
 void LowLevelInit(void)
 {
+ 
+#if 1
+asm (	"ldr r0, =10\n\t"
+	/* a delay */
+			"ldr r1, =200 \n\t"
+			"1:	subs r1, r1, #1\n\t"
+			"bne 1b\n\t"
+			"ldr r1, =0xfffff200\n\t"  /* PIOA */
+			"mov r2, #3\n\t"           /* bit 0 and 1: both leds */
+			"str r2, [r1]\n\t" /* enable */
+			"str r2, [r1, #0x10]\n\t" /* output enable */
+			"cmp r0, #0\n\t"
+			"beq 2f\n\t"
+			"0:	str r2, [r1, #0x34]\n\t" /* output clear (led on) */
+			"str r2, [r1, #0x30]\n\t" /* output set (led off) */
+			"subs r0, r0, #1\n\t"
+			"bne 0b\n\t"
+			"2:	bx lr\n\t"
+);
+#endif
+#if 1
     unsigned char i;
 
     // Set flash wait states
@@ -184,7 +205,7 @@ void LowLevelInit(void)
 
     // Remap
     //------
-    BOARD_RemapRam();
+    //BOARD_RemapRam();
 
     // Disable RTT and PIT interrupts (potential problem when program A
     // configures RTT, then program B wants to use PIT only, interrupts
@@ -194,5 +215,6 @@ void LowLevelInit(void)
     AT91C_BASE_RTTC->RTTC_RTMR &= ~(AT91C_RTTC_ALMIEN | AT91C_RTTC_RTTINCIEN);
     AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITIEN;
 	*/
+#endif
 }
 

@@ -38,7 +38,7 @@
 
 #define HAS_BINARY_REGISTER
 
-#if defined(LINKER) || defined(TASK_MANAGER)
+#if defined(LINKER) || defined(TASK_MANAGER) || defined(POINTER_TRACER) || defined(MAIN)
 #undef DEBUG
 #undef INFO
 #endif

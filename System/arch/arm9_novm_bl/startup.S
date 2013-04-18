@@ -42,7 +42,7 @@ Vector_Init:
 
         .global  resetVector
         .global  irqHandler
-	.global  Kernel_Start
+		.global  Kernel_Start
 
         .extern  Undefined_Handler
         .extern  vPortYieldProcessor
@@ -64,6 +64,7 @@ resetVector:
 	ldr		pc,FIQEntryPointAddress
 
 ResetEntryPointAddress:		.word ResetEntryPoint
+/*ResetEntryPointAddress:		.word main*/
 UndefinedEntryPointAddress:	.word UndefinedEntryPoint
 SWIEntryPointAddress:		.word SWIHandler
 PrefetchEntryPointAddress:	.word PrefetchEntryPoint

@@ -108,8 +108,67 @@ void allocate_elf_at_offset(Elf32_Ehdr *elfh, void *start_address)
 	}
 }
 
-int main()
-{
+#define writel(value, address) \
+	(*(volatile unsigned int *)(address)) = (value)
+#define readl(address) \
+	(*(volatile unsigned int *)(address))
+/*
+ const struct pio_desc led_gpio[] = {
+	{"CPU_LED1",   AT91C_PIN_PA(0), 0, PIO_OPENDRAIN, PIO_OUTPUT},	//Switch on CPU_LED1 when booting start.
+	{"CPU_LED2",   AT91C_PIN_PA(1), 1, PIO_OPENDRAIN, PIO_OUTPUT}, 	//Setup CPU_LED2 such to use when the programs end loading.
+ };
+*/
+int main(){
+#if 0
+asm (	"ldr r0, =10\n\t"
+	/* a delay */
+			"ldr r1, =200 \n\t"
+			"1:	subs r1, r1, #1\n\t"
+			"bne 1b\n\t"
+			"ldr r1, =0xfffff200\n\t"  /* PIOA */
+			"mov r2, #3\n\t"           /* bit 0 and 1: both leds */
+			"str r2, [r1]\n\t" /* enable */
+			"str r2, [r1, #0x10]\n\t" /* output enable */
+			"cmp r0, #0\n\t"
+			"beq 2f\n\t"
+			"0:	str r2, [r1, #0x34]\n\t" /* output clear (led on) */
+			"str r2, [r1, #0x30]\n\t" /* output set (led off) */
+			"subs r0, r0, #1\n\t"
+			"bne 0b\n\t"
+			"2:	bx lr\n\t"
+);
+#endif
+
+#if 0
+asm (	"ldr r0, =10\n\t"
+	/* a delay */
+			"ldr r1, =200 \n\t"
+			"1:	subs r1, r1, #1\n\t"
+			"bne 1b\n\t"
+			"ldr r1, =0xfffff200\n\t"  /* PIOA */
+			"mov r2, #3\n\t"           /* bit 0 and 1: both leds */
+			"str r2, [r1]\n\t" /* enable */
+			"str r2, [r1, #0x10]\n\t" /* output enable */
+			"cmp r0, #0\n\t"
+			"beq 2f\n\t"
+			"0:	str r2, [r1, #0x34]\n\t" /* output clear (led on) */
+			"str r2, [r1, #0x30]\n\t" /* output set (led off) */
+			"subs r0, r0, #1\n\t"
+			"bne 0b\n\t"
+			"2:	bx lr\n\t"
+);
+#endif
+
+#if 0
+asm (	"ldr r1, =0xfffff200\n\t"
+			"mov r2, #3\n\t"           /* bit 0 and 1: both leds */
+			"str r2, [r1]\n\t" /* enable */
+			"str r2, [r1, #0x10]\n\t" /* output enable */	
+			"str r2, [r1, #0x34]\n\t" /* output clear (led on) */
+			"str r2, [r1, #0x30]\n\t" /* output set (led off) */
+);
+#endif
+
 	if (!check_elf_magic(KERNEL_ELFH)) {
 		ERROR_MSG("The kernel elf magic does not check out.\n");
 		goto error;

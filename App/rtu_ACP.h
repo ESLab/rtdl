@@ -1,5 +1,5 @@
 /***********************************************************************************/
-/* Copyright (c) 2013, Wictor Lund. All rights reserved.			   */
+/* Copyright (c) 2013, Simon Holmbacka. All rights reserved.			   */
 /* Copyright (c) 2013, Åbo Akademi University. All rights reserved.		   */
 /* 										   */
 /* Redistribution and use in source and binary forms, with or without		   */
@@ -25,59 +25,34 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-ENTRY(Entry_Point);
-/*linker script for loader*/
+#ifndef APP_RTU_APP_ACP_H
+#define APP_RTU_APP_ACP_H
 
-MEMORY
-{
-	boot_sdram (rwx) : ORIGIN = 0x71000000, LENGTH = 0x00200000 /*where the binary is placed*/
-	ram  (rwx) : ORIGIN = 0x71000000, LENGTH = 0x10000000
-}
+#define SIZE 100
 
-PROVIDE(__stack = 0x00314000);
+//awk 'BEGIN{ for (i=0;i<10000;i++) { printf "double v%d;\n", i; }}' > jarri
 
-SECTIONS
-{
-    .bss :
-    {
-	_bss = .;
-	*(.bss*)
-	*(COMMON)
-	_ebss = .;
-    } > ram
-
-    .dynsym : { *(.dynsym) }
-    .rel.dyn : { *(.rel.dyn) }
-    .plt : { *(.plt) }
-
-    .text :
-    {
-	_text = .;
-	__isr_vector_start = .;
-	*(.isr_vector)
-	__isr_vector_end = .;
-	. = _text + 0x100;
-	*(.binary_register*)
-	*(.text*)
-	*(.rodata*)
-	_etext = .;
-    } > boot_sdram
-
-    .data : AT(ADDR(.text) + SIZEOF(.text))
-    {
-	_data = .;
-	*(.data*)
-	_edata = .;
-    } > boot_sdram
-
-    .kernel : {
-	    _kernel_elf_start = .;
-	    INCLUDE "build/kernel-CONFIG`_'nodbg.ld"
-	    _kernel_elf_end = .;
-    } > boot_sdram
-
-    .applications : {
-	    INCLUDE "build/applications-CONFIG.ld"
-    } > boot_sdram
+typedef struct rtu_app_state_t {
+  
+	double	 avg_temp;
+	double	 avg_temp_old;
+	double	 max_temp;
 	
-}
+	long unsigned int	 freertos_time;
+	
+	/*
+	double overhead[SIZE];
+	double overhead2[SIZE];
+	double overhead3[SIZE];
+	double overhead4[SIZE];
+	double overhead5[SIZE];
+	double overhead6[SIZE];
+	double overhead7[SIZE];
+	double overhead8[SIZE];
+	double overhead9[SIZE];
+	double overhead10[SIZE];
+	*/
+} rtu_app_state;
+
+
+#endif /* APP_RTU_APP_ACP_H */

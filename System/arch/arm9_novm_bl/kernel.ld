@@ -26,18 +26,21 @@
 /***********************************************************************************/
 
 ENTRY(Kernel_Start);
+/*linker script for the kernel*/
 
 MEMORY
 {
-	sram (rwx) : ORIGIN = 0x00300000, LENGTH = 0x00014000
-	ram  (rwx) : ORIGIN = 0x20000000, LENGTH = 0x10000000
-	fram (rwx) : ORIGIN = 0x20200000, LENGTH = (0x10000000 - 0x200000)
+	sram  (rwx) : ORIGIN = 0x00300000, LENGTH = 0x10000000
+	ram  (rwx) : ORIGIN = 0x71200000, LENGTH = 0x10000000
+	fram (rwx) : ORIGIN = 0x71400000, LENGTH = (0x10000000 - 0x200000)
+	/*fram (rwx) : ORIGIN = 0x71200000, LENGTH = (0x10000000 - 0x200000)*/
 }
 
 PROVIDE(__stack_offset = 0x00000);
 
 SECTIONS
 {
+
     .isr_vector :
     {
 	_isr_vector_start = .;
@@ -48,6 +51,7 @@ SECTIONS
     .text :
     {
         _text = .;
+				*(.isr_vector*)
         *(.text*)
         *(.rodata*)
         _etext = .;

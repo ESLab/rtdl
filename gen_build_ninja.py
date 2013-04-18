@@ -154,7 +154,6 @@ n.variable(key="objcopy", value=devkitdir + "arm-eabi-objcopy")
 n.variable(key="mkimage", value="mkimage")
 n.variable(key="cloc", value="cloc")
 n.variable(key="cscope", value="cscope")
-n.variable(key="image_address", value="0x10000")
 
 default_cflags = [
     "-Wall",
@@ -212,11 +211,11 @@ applications = {
             ]),
     'rtuappv1': get_ninja_set_of_files([
             'App/app_startup.S',
-            'App/rtu_appv1.c',
+            'App/rtu_ACPv1.c',
             ]),
     'rtuappv2': get_ninja_set_of_files([
             'App/app_startup.S',
-            'App/rtu_appv2.c',
+            'App/rtu_ACPv2.c',
             ]),
     'tunnel': get_ninja_set_of_files([
             'App/app_startup.S',
@@ -283,7 +282,9 @@ at91_novm_bl_boot_files = get_ninja_set_of_files(
             'boot/loader.c',
             ]))
 
-at91_novm_bl_kernel_files = get_ninja_set_of_files(
+at91_novm_bl_kernel_files = get_ninja_set_of_files([
+ 'App/smc/smc_driverL.c',
+] +
     map(lambda f: "System/arch/arm9_novm_bl/" + f, [
             'boot/board_lowlevel.c',
             'boot/board_memories.c',
@@ -493,7 +494,7 @@ configs = [
                 ] +
             default_cflags +
             [],
-            'image_address': '0x300000',
+            'image_address': '0x71000000',
             'include_apps': [
                 "simple",
                 "rtuappv1",

@@ -32,6 +32,6 @@
 
 #define UMM_N_BLOCKS  (1024 * 64)
 
-#define UMM_BLOCK_SIZE (8)
+#define UMM_BLOCK_SIZE (512)
 
 #endif /* UMM_CONFIG_H */

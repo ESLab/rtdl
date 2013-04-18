@@ -47,6 +47,7 @@
 
 #include <board_memories.h>
 
+#define ACP_DEMO 1
 #include <stdio.h>
 #include <string.h>
 
@@ -56,8 +57,10 @@ int migrator_loop()
 	binary_register_entry	*bre;
 	task_register_cons	*trc;
 
+#if(ACP_DEMO == 0)
 	while (1) {
-		vTaskDelay(1000/portTICK_RATE_MS);
+#endif
+		vTaskDelay(5000);
 
 		if ((trc = task_find("rtuapp"))) {
 
@@ -82,8 +85,9 @@ int migrator_loop()
 		} else {
 			goto error;
 		}
+#if(ACP_DEMO == 0)
 
-		vTaskDelay(1000/portTICK_RATE_MS);
+		vTaskDelay(2000/portTICK_RATE_MS);
 
 		if ((trc = task_find("rtuapp"))) {
 
@@ -108,7 +112,15 @@ int migrator_loop()
 		} else {
 			goto error;
 		}
+#endif
+#if(ACP_DEMO == 0)
 	}
+#endif
+#if(ACP_DEMO == 1)
+while(1){
+  vTaskDelay(1000);
+}
+#endif
 error:
 	ERROR_MSG("Migration in error state, entering infinite loop.\n");
 	while (1)
@@ -119,9 +131,8 @@ int main()
 {
 	binary_register_entry *bre = BINARY_REGISTER;
 
-	vUARTInitialise(0, 38400, 0);
-
-	BOARD_RemapRam();
+	//vUARTInitialise(0, 115200, 0);
+	//BOARD_RemapRam();
 
 	Elf32_Ehdr *sys_elfh = SYSTEM_ELF;
 
@@ -131,12 +142,14 @@ int main()
 		ERROR_MSG("Wrong System ELF magic @ 0x%x\n", (u_int32_t)sys_elfh);
 		goto exit;
 	}
-
+#if 0
 	if (!alloc_link_start_from_binary_register("simple", "simple", bre)) {
 		ERROR_MSG("Failed to start task \"simple\" from binary register.\n");
 		goto exit;
 	}
+#endif
 
+#if 1
 	if (!alloc_link_start_from_binary_register("rtuapp", "rtuappv1", bre)) {
 		ERROR_MSG("Failed to start task \"rtuapp\" from binary \"rtuappv1\".\n");
 		goto exit;
@@ -145,12 +158,13 @@ int main()
 	/*
 	 * Create migration task.
 	 */
-
+#endif
+#if 1
 	if (!migrator_start()) {
 		ERROR_MSG("Could not start migrator.\n");
 		goto exit;
 	}
-
+#endif
 	INFO_MSG("Starting scheduler\n");
 	vTaskStartScheduler();
 	goto exit;
