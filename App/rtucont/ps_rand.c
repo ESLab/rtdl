@@ -25,62 +25,11 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-ifdef(`simple_app',
-_simple_elf_start = ALIGN(0x4);
-. = _simple_elf_start;
-INCLUDE "build/simple-CONFIG.ld";
-_simple_elf_end = .;)
+#include <App/rtucont/ps_rand.h>
 
-ifdef(`writer_app',
-_writer_elf_start = ALIGN(0x4);
-. = _writer_elf_start;
-INCLUDE "build/writer-CONFIG.ld";
-_writer_elf_end = .;)
-
-ifdef(`reader_app',
-_reader_elf_start = ALIGN(0x4);
-. = _reader_elf_start;
-INCLUDE "build/reader-CONFIG.ld";
-_reader_elf_end = .;)
-
-ifdef(`rtuappv1_app',
-_rtuappv1_elf_start = ALIGN(0x4);
-. = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1-CONFIG.ld";
-_rtuappv1_elf_end = .;)
-
-ifdef(`rtuappv2_app',
-_rtuappv2_elf_start = ALIGN(0x4);
-. = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2-CONFIG.ld";
-_rtuappv2_elf_end = .;)
-
-ifdef(`tunnel_app',
-_tunnel_elf_start = ALIGN(0x4);
-. = _tunnel_elf_start;
-INCLUDE "build/tunnel-CONFIG.ld";
-_tunnel_elf_end = .;)
-
-ifdef(`field_app',
-_field_elf_start = ALIGN(0x4);
-. = _field_elf_start;
-INCLUDE "build/field-CONFIG.ld";
-_field_elf_end = .;)
-
-ifdef(`rtucontv1_app',
-_rtucontv1_elf_start = ALIGN(0x4);
-. = _rtucontv1_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
-_rtucontv1_elf_end = .;)
-
-ifdef(`rtucontv2_app',
-_rtucontv2_elf_start = ALIGN(0x4);
-. = _rtucontv2_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
-_rtucontv2_elf_end = .;)
-
-ifdef(`rtucontv3_app',
-_rtucontv3_elf_start = ALIGN(0x4);
-. = _rtucontv3_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
-_rtucontv3_elf_end = .;)
+random_state_t next_random_state(random_state_t rs)
+{
+	random_state_t nr = rs << 1;
+	nr |= ((rs >> 23) & 1) ^ ((rs >> 7) & 1) ^ ((rs >> 47) & 1);
+	return nr;
+}

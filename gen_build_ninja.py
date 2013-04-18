@@ -207,7 +207,16 @@ applications = {
             ]),
     'rtucontv1': get_ninja_set_of_files([
             'App/app_startup.S',
-            'App/rtucont/mainv1.c',
+            'App/rtucont/main_basicpid.c',
+            ]),
+    'rtucontv2': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/rtucont/main_prbsexperiment.c',
+            'App/rtucont/ps_rand.c',
+            ]),
+    'rtucontv3': get_ninja_set_of_files([
+            'App/app_startup.S',
+            'App/rtucont/main_pidmv.c',
             ]),
     }
 
@@ -300,6 +309,8 @@ configs = [
                 "rtuappv1",
                 "rtuappv2",
                 "rtucontv1",
+                "rtucontv2",
+                "rtucontv3",
                 ],
             }),
 

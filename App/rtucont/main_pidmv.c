@@ -25,62 +25,93 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-ifdef(`simple_app',
-_simple_elf_start = ALIGN(0x4);
-. = _simple_elf_start;
-INCLUDE "build/simple-CONFIG.ld";
-_simple_elf_end = .;)
+#include <FreeRTOS.h>
 
-ifdef(`writer_app',
-_writer_elf_start = ALIGN(0x4);
-. = _writer_elf_start;
-INCLUDE "build/writer-CONFIG.ld";
-_writer_elf_end = .;)
+#define SYSTEM_MODULE_NAME CONTROLLER_V1
 
-ifdef(`reader_app',
-_reader_elf_start = ALIGN(0x4);
-. = _reader_elf_start;
-INCLUDE "build/reader-CONFIG.ld";
-_reader_elf_end = .;)
+#include <System/system.h>
+#include <System/pl011.h>
 
-ifdef(`rtuappv1_app',
-_rtuappv1_elf_start = ALIGN(0x4);
-. = _rtuappv1_elf_start;
-INCLUDE "build/rtuappv1-CONFIG.ld";
-_rtuappv1_elf_end = .;)
+#include <App/rtucont/rtu_controller.h>
+#include <App/rtu.h>
 
-ifdef(`rtuappv2_app',
-_rtuappv2_elf_start = ALIGN(0x4);
-. = _rtuappv2_elf_start;
-INCLUDE "build/rtuappv2-CONFIG.ld";
-_rtuappv2_elf_end = .;)
+#include <stdio.h>
 
-ifdef(`tunnel_app',
-_tunnel_elf_start = ALIGN(0x4);
-. = _tunnel_elf_start;
-INCLUDE "build/tunnel-CONFIG.ld";
-_tunnel_elf_end = .;)
+#define SET_VALUE (40.0)
 
-ifdef(`field_app',
-_field_elf_start = ALIGN(0x4);
-. = _field_elf_start;
-INCLUDE "build/field-CONFIG.ld";
-_field_elf_end = .;)
+#define P (-0.2)
+#define I (-0.5)
+#define D (0.0)
 
-ifdef(`rtucontv1_app',
-_rtucontv1_elf_start = ALIGN(0x4);
-. = _rtucontv1_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
-_rtucontv1_elf_end = .;)
+#define SIGNAL_MAX 500
 
-ifdef(`rtucontv2_app',
-_rtucontv2_elf_start = ALIGN(0x4);
-. = _rtucontv2_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
-_rtucontv2_elf_end = .;)
+#define PRBS_HIGH_VAL ( 1.0)
+#define PRBS_LOW_VAL  (-1.0)
 
-ifdef(`rtucontv3_app',
-_rtucontv3_elf_start = ALIGN(0x4);
-. = _rtucontv3_elf_start;
-INCLUDE "build/rtucontv1-CONFIG.ld";
-_rtucontv3_elf_end = .;)
+_RTU_DATA_ volatile float	integrator = 0.0;
+_RTU_DATA_ volatile float	last_mv_u  = 0.0;
+
+#define F1 (0.7905)
+#define G0 (0.0770)
+#define B0 (1.5553)
+
+volatile int rtu_requested = 0;
+
+void cpRequestHook(cp_req_t req_type)
+{
+	if (req_type == cp_req_rtu) {
+		INFO_MSG("Controller run-time update request recieved.\n");
+		rtu_requested = 1;
+	}
+	return;
+}
+
+static void print_data_row(int32_t input, int32_t output)
+{
+	int i;
+	char ostr[40];
+
+	sprintf(ostr, "%i, %i;\n", input, output);
+
+	for (i = 0; ostr[i] != '\0'; i++) {
+		xUARTSendCharacter(3, ostr[i], 0);
+	}
+}
+
+int main()
+{
+	measurement_t	input;
+	float		last_error = 0.0;
+
+	while (!rtu_requested) {
+		if (xQueueReceive(MeasurementQueue, (void *)&input, (portTickType)portMAX_DELAY) != pdPASS) {
+			ERROR_MSG("Failed to receive measurement from plant.\n");
+		} else {
+			float fps = (float)input * (float)FRAME_COUNTING_FREQUENCY;
+			float error = SET_VALUE - fps;
+
+			integrator	   += error;
+			float	difference  = error - last_error;
+			last_error	    = error;
+
+			float	fsignal	    = P*error + I*integrator + D*difference;
+			float	mv_y	    = error;
+			float	mv_u	    = -F1*last_mv_u + (G0/B0)*mv_y;
+
+			fsignal		   += mv_u;
+
+			int32_t		signal	= fsignal;
+			controlsignal_t output	= signal < 0 ? 0 : (signal > SIGNAL_MAX ? SIGNAL_MAX : signal);
+
+			print_data_row(error, mv_u);
+
+			if (xQueueSendToBack(ControlSignalQueue, (void *)&output, (portTickType)portMAX_DELAY) != pdPASS) {
+				ERROR_MSG("Failed to send control signal to plant.\n");
+			}
+		}
+	}
+
+	TASK_IN_SAFE_STATE();
+
+	return 0;
+}
