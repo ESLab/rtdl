@@ -320,6 +320,25 @@ configs = [
                 ],
             }),
 
+    NinjaConfig({
+            'name': "adtachtest",
+            'includedirs': [
+                "./System/config/adtachtest/include",
+                ] +
+            common_includedirs +
+            [],
+            'cflags': [
+                "-O3",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x60100000',
+            'include_apps': [
+                "simple",
+                "tunnel",
+                "field",
+                ],
+            }),
      ]
 
 map(lambda config: config.preprocess(), configs)
@@ -365,6 +384,20 @@ config_source_files = \
     freertos_files +
     libdwarf_files +
     vexpress_novm_boot_files +
+    NinjaSet(),
+
+    'adtachtest': get_ninja_set_of_files([
+                'System/arch/vexpress_vm/adtachtest/main.c',
+                'Source/portable/MemMang/heap_3.c',
+                ]) +
+    (system_files - NinjaSet(
+                ["System/dwarfif.c",
+                 "System/pointer_tracer.c",
+                 ])) +
+    system_utility_files +
+    freertos_files +
+    vexpress_vm_boot_files +
+    vexpress_vm_kernel_files +
     NinjaSet(),
 
     }
@@ -588,6 +621,7 @@ def gen_kernel_boot_build(name, c):
             variables = c)
 
 gen_kernel_boot_build("taskmigr", configs[1])
+gen_kernel_boot_build("adtachtest", configs[3])
 
 ################
 # Misc. builds #
