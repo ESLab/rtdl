@@ -1,5 +1,4 @@
 /***********************************************************************************/
-/* Copyright (c) 2012, Dag Ågren. All rights reserved.				   */
 /* Copyright (c) 2013, Wictor Lund. All rights reserved.			   */
 /* Copyright (c) 2013, Åbo Akademi University. All rights reserved.		   */
 /* 										   */
@@ -23,37 +22,70 @@
 /* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND	   */
 /* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT	   */
 /* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS   */
-/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.			   */
+/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef FIELD_EFFECT_H
-#define FIELD_EFFECT_H
+#include <App/effects/config_effect.h>
 
-#include <System/types.h>
+int effect_config
+(task_register_cons *trc,
+ u_int16_t init_width,
+ u_int16_t init_height,
+ u_int16_t init_w_offset,
+ u_int16_t init_h_offset)
+{
+	/*
+	 * Set init width.
+	 */
 
-typedef struct effect_field_state_t {
-	u_int16_t	 width;
-	u_int16_t	 height;
-	u_int16_t	 phys_width;
-	u_int16_t	 phys_height;
-	u_int16_t	 w_offset;
-	u_int16_t	 h_offset;
-	int16_t		*rayarray;
-	u_int16_t	*last_buffer;
-	u_int32_t	 t;
-} effect_field_state;
+	u_int16_t *task_init_width =
+		task_get_symbol_address(trc, "init_width");
 
-int InitializeField
-(effect_field_state	*state,
- u_int16_t		 width,
- u_int16_t		 height,
- u_int16_t		 phys_width,
- u_int16_t		 phys_height,
- u_int16_t		 w_offset,
- u_int16_t		 h_offset);
+	if (task_init_width == NULL) {
+		return 0;
+	}
 
-void DrawField
-(effect_field_state	*state,
- u_int16_t		*pixels);
+	*task_init_width = init_width;
 
-#endif /* FIELD_EFFECT_H */
+	/*
+	 * Set init height.
+	 */
+
+	u_int16_t *task_init_height =
+		task_get_symbol_address(trc, "init_height");
+
+	if (task_init_height == NULL) {
+		return 0;
+	}
+
+	*task_init_height = init_height;
+
+	/*
+	 * Set init width offset.
+	 */
+
+	u_int16_t *task_init_w_offset =
+		task_get_symbol_address(trc, "init_w_offset");
+
+	if (task_init_w_offset == NULL) {
+		return 0;
+	}
+
+	*task_init_w_offset = init_w_offset;
+
+	/*
+	 * Set init height offset.
+	 */
+
+	u_int16_t *task_init_h_offset =
+		task_get_symbol_address(trc, "init_h_offset");
+
+	if (task_init_h_offset == NULL) {
+		return 0;
+	}
+
+	*task_init_h_offset = init_h_offset;
+
+	return 1;
+}
+

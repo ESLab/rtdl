@@ -1,5 +1,4 @@
 /***********************************************************************************/
-/* Copyright (c) 2012, Dag Ågren. All rights reserved.				   */
 /* Copyright (c) 2013, Wictor Lund. All rights reserved.			   */
 /* Copyright (c) 2013, Åbo Akademi University. All rights reserved.		   */
 /* 										   */
@@ -23,37 +22,20 @@
 /* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND	   */
 /* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT	   */
 /* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS   */
-/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.			   */
+/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef FIELD_EFFECT_H
-#define FIELD_EFFECT_H
+#ifndef APP_CONFIG_EFFECT_H
+#define APP_CONFIG_EFFECT_H
 
 #include <System/types.h>
+#include <System/task_manager.h>
 
-typedef struct effect_field_state_t {
-	u_int16_t	 width;
-	u_int16_t	 height;
-	u_int16_t	 phys_width;
-	u_int16_t	 phys_height;
-	u_int16_t	 w_offset;
-	u_int16_t	 h_offset;
-	int16_t		*rayarray;
-	u_int16_t	*last_buffer;
-	u_int32_t	 t;
-} effect_field_state;
+int effect_config
+(task_register_cons *trc,
+ u_int16_t init_width,
+ u_int16_t init_height,
+ u_int16_t init_w_offset,
+ u_int16_t init_h_offset);
 
-int InitializeField
-(effect_field_state	*state,
- u_int16_t		 width,
- u_int16_t		 height,
- u_int16_t		 phys_width,
- u_int16_t		 phys_height,
- u_int16_t		 w_offset,
- u_int16_t		 h_offset);
-
-void DrawField
-(effect_field_state	*state,
- u_int16_t		*pixels);
-
-#endif /* FIELD_EFFECT_H */
+#endif /* APP_CONFIG_EFFECT_H */

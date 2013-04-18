@@ -48,6 +48,11 @@ void cpRequestHook(cp_req_t req_type)
 	}
 }
 
+u_int16_t	init_width    = 0xffff;
+u_int16_t	init_height   = 0xffff;
+u_int16_t	init_w_offset = 0xffff;
+u_int16_t	init_h_offset = 0xffff;
+
 int main()
 {
 	effect_tunnel_state ets;
@@ -61,10 +66,20 @@ int main()
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
-	if (!InitializeTunnel(&ets, 320, 240, 640, 480, 0,0)) {
-		printf("Could not initiate tunnel effect.\n");
-		while (1)
-			;
+	if (init_width    == 0xffff ||
+	    init_height   == 0xffff ||
+	    init_w_offset == 0xffff ||
+	    init_h_offset == 0xffff) {
+		printf("tunnel: Config parameters not setup.\n");
+		goto error;
+	}
+
+	if (!InitializeTunnel(&ets,
+			      init_width, init_height,
+			      640, 480,
+			      init_w_offset, init_h_offset)) {
+		printf("tunnel: Could not initiate tunnel effect.\n");
+		goto error;
 	}
 
 	int lasttime=0;
@@ -106,5 +121,11 @@ int main()
 
 		DrawTunnel(&ets, framebuffer1);
 #endif /* TUNNEL_DBL_BUFFER */
+	}
+
+error:
+	while (1) {
+		printf("Tunnel effect in error state.\n");
+		vTaskSuspend(NULL);
 	}
 }

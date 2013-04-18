@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <math.h>
 
-void InitializeField
+int InitializeField
 (effect_field_state	*state,
  u_int16_t		 width,
  u_int16_t		 height,
@@ -57,9 +57,9 @@ void InitializeField
 	state->h_offset		    = h_offset;
 	state->rayarray		    =
 #ifdef IN_APPTASK
-		apptask_malloc(half_width * half_height * 3 * sizeof(*state->rayarray));
+	  apptask_malloc(half_width * half_height * 3 * sizeof(*state->rayarray));
 #else
-		pvPortMalloc(half_width * half_height * 3 * sizeof(*state->rayarray));
+	pvPortMalloc(half_width * half_height * 3 * sizeof(*state->rayarray));
 #endif /* IN_APPTASK */
 	state->t		    = 0;
 	state->last_buffer	    = NULL;
@@ -77,6 +77,8 @@ void InitializeField
 			state->rayarray[3*(x+y*half_width)+2] = idiv(fz,r)<<3;
 		}
 	}
+
+	return 1;
 }
 
 static inline int32_t approxabs(int32_t x)

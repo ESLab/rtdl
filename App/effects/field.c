@@ -67,6 +67,11 @@ void cpRequestHook(cp_req_t req_type)
 	}
 }
 
+u_int16_t	init_width    = 0xffff;
+u_int16_t	init_height   = 0xffff;
+u_int16_t	init_w_offset = 0xffff;
+u_int16_t	init_h_offset = 0xffff;
+
 int main()
 {
 	int t;
@@ -78,7 +83,21 @@ int main()
 
 	InitializeScreen640x480(RGB16BitMode,framebuffer1);
 
-	InitializeField(&effect_state, 320, 240, 640, 480, 320,0);
+	if (init_width    == 0xffff ||
+	    init_height   == 0xffff ||
+	    init_w_offset == 0xffff ||
+	    init_h_offset == 0xffff) {
+		printf("field: Config parameters not setup.\n");
+		goto error;
+	}
+
+	if (InitializeField(&effect_state,
+			init_width, init_height,
+			640, 480,
+			    init_w_offset, init_h_offset)) {
+		printf("Could not initiate field effect.\n");
+		goto error;
+	}
 
 	SetScreenFrameBuffer(framebuffer1);
 
@@ -120,4 +139,11 @@ int main()
 		DrawField(&effect_state, framebuffer1);
 #endif /* FIELD_DBL_BUFFER */
 	}
+
+error:
+	while (1) {
+		printf("Field effect in error state.\n");
+		vTaskSuspend(NULL);
+	}
+
 }
