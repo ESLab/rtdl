@@ -335,6 +335,42 @@ configs = [
             'image_address': '0x60100000',
             'include_apps': [
                 "simple",
+                ],
+            }),
+
+    NinjaConfig({
+            'name': "taskmigr_exp1",
+            'includedirs': [
+                "./System/config/taskmigr_exp1/include",
+                ] +
+            common_includedirs +
+            [],
+            'cflags': [
+                "-O3",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x60100000',
+            'include_apps': [
+                "tunnel",
+                "field",
+                ],
+            }),
+
+    NinjaConfig({
+            'name': "taskmigr_exp2",
+            'includedirs': [
+                "./System/config/taskmigr_exp2/include",
+                ] +
+            common_includedirs +
+            [],
+            'cflags': [
+                "-O3",
+                ] +
+            default_cflags +
+            [],
+            'image_address': '0x60100000',
+            'include_apps': [
                 "tunnel",
                 "field",
                 ],
@@ -398,6 +434,34 @@ config_source_files = \
     freertos_files +
     vexpress_vm_boot_files +
     vexpress_vm_kernel_files +
+    NinjaSet(),
+
+    'taskmigr_exp1': get_ninja_set_of_files([
+                'System/arch/vexpress_vm/taskmigr_exp1/main.c',
+                'Source/portable/MemMang/heap_4.c',
+                ]) +
+    freertos_files +
+    vexpress_vm_boot_files +
+    vexpress_vm_kernel_files +
+    (system_files - NinjaSet(
+                ["System/dwarfif.c",
+                 "System/pointer_tracer.c",
+                 ])) +
+    system_utility_files +
+    NinjaSet(),
+
+    'taskmigr_exp2': get_ninja_set_of_files([
+                'System/arch/vexpress_vm/taskmigr_exp2/main.c',
+                'Source/portable/MemMang/heap_4.c',
+                ]) +
+    freertos_files +
+    vexpress_vm_boot_files +
+    vexpress_vm_kernel_files +
+    (system_files - NinjaSet(
+                ["System/dwarfif.c",
+                 "System/pointer_tracer.c",
+                 ])) +
+    system_utility_files +
     NinjaSet(),
 
     }
@@ -624,6 +688,8 @@ def gen_kernel_boot_build(name, c):
 
 gen_kernel_boot_build("taskmigr", configs[1])
 gen_kernel_boot_build("adtachtest", configs[3])
+gen_kernel_boot_build("taskmigr_exp1", configs[4])
+gen_kernel_boot_build("taskmigr_exp2", configs[5])
 
 ################
 # Misc. builds #
