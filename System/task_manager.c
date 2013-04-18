@@ -118,6 +118,17 @@ void *task_get_section_address(task_register_cons *trc, Elf32_Half index)
 	return NULL;
 }
 
+request_hook_fn_t task_find_request_hook(task_register_cons *trc)
+{
+	request_hook_fn_t ret = NULL;
+	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", trc->elfh);
+	if (request_hook_symbol) {
+		ret = (request_hook_fn_t)((u_int32_t)trc->cont_mem + (u_int32_t)request_hook_symbol->st_value);
+		INFO_MSG("Found request hook symbol in task \"%s\" @ 0x%x\n", trc->name, (u_int32_t)ret);
+	}
+
+	return ret;
+}
 
 int task_link(task_register_cons *trc)
 {
@@ -243,7 +254,7 @@ int task_alloc(task_register_cons *trc)
 
 	SPLAY_INIT(&trc->dynmemsects);
 
-	trc->request_hook = migrator_find_request_hook(trc);
+	trc->request_hook = task_find_request_hook(trc);
 
 #ifdef DATA_CACHE_ENABLED
 	vPortCleanDataCache();

@@ -51,18 +51,6 @@
 
 xTaskHandle      migrator_task_handle;
 
-request_hook_fn_t migrator_find_request_hook(task_register_cons *trc)
-{
-	request_hook_fn_t ret = NULL;
-	Elf32_Sym *request_hook_symbol = find_symbol("cpRequestHook", trc->elfh);
-	if (request_hook_symbol) {
-		ret = (request_hook_fn_t)((u_int32_t)trc->cont_mem + (u_int32_t)request_hook_symbol->st_value);
-		INFO_MSG("Found request hook symbol in task \"%s\" @ 0x%x\n", trc->name, (u_int32_t)ret);
-	}
-
-	return ret;
-}
-
 #ifdef RUNTIME_UPDATING
 #ifdef RTU_POINTER_TRACING
 
@@ -225,7 +213,7 @@ static void *migrator_get_new_relocation_address(pt_pstate *pstate, task_registe
 
 #endif /* RTU_POINTER_TRACING */
 
-int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
+int migrator_runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 {
 	/*
 	 * Make sure that task is suspended.
@@ -288,7 +276,7 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 	 * Find the checkpoint request hook.
 	 */
 
-	new_trc->request_hook = migrator_find_request_hook(new_trc);
+	new_trc->request_hook = task_find_request_hook(new_trc);
 
 	if (new_trc->request_hook == NULL) {
 		ERROR_MSG("Could not find checkpoint request hook when run-time updating task \"%s\"\n",
@@ -522,130 +510,13 @@ int runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw)
 
 void migrator_task(void *arg)
 {
-#ifdef RUNTIME_UPDATING
-#ifdef RTUDEMO_UPDATING
-	task_register_cons *trc;
+	
+	migrator_loop();
 
-	while (1) {
-		vTaskDelay(1000/portTICK_RATE_MS);
-
-		if ((trc = task_find("rtuapp"))) {
-			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
-				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
-					  __func__, trc->name);
-				goto error;
-			}
-
-			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv2_elf_start;
-
-			INFO_MSG("Starting runtime update.\n");
-			if (!runtime_update(trc, new_sw)) {
-				ERROR_MSG("Runtime updating failed.\n");
-				goto error;
-			}
-			INFO_MSG("Runtime update complete. (-> v2)\n");
-		}
-
-		vTaskDelay(1000/portTICK_RATE_MS);
-
-		if ((trc = task_find("rtuapp"))) {
-			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
-				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
-					  __func__, trc->name);
-				goto error;
-			}
-
-			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv1_elf_start;
-
-			INFO_MSG("Starting runtime update.\n");
-			if (!runtime_update(trc, new_sw)) {
-				ERROR_MSG("Runtime updating failed.\n");
-				goto error;
-			}
-			INFO_MSG("Runtime update complete. (-> v1)\n");
-		}
-	}
-#endif /* RTUDEMO_UPDATING */
-#ifdef RTUCONT_UPDATING
-	task_register_cons *trc;
-
-	while (1) {
-#if 0
-		vTaskDelay(20000/portTICK_RATE_MS);
-
-		if ((trc = task_find("rtucont"))) {
-			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
-				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
-					  __func__, trc->name);
-				goto error;
-			}
-
-			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv2_elf_start;
-
-			INFO_MSG("Starting runtime update.\n");
-			if (!runtime_update(trc, new_sw)) {
-				ERROR_MSG("Runtime updating failed.\n");
-				goto error;
-			}
-			INFO_MSG("Runtime update complete. (-> v2)\n");
-		} else {
-			goto error;
-		}
-#endif
-		vTaskDelay(20000/portTICK_RATE_MS);
-
-		if ((trc = task_find("rtucont"))) {
-			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
-				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
-					  __func__, trc->name);
-				goto error;
-			}
-
-			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv3_elf_start;
-
-			INFO_MSG("Starting runtime update.\n");
-			if (!runtime_update(trc, new_sw)) {
-				ERROR_MSG("Runtime updating failed.\n");
-				goto error;
-			}
-			INFO_MSG("Runtime update complete. (-> v3)\n");
-		} else {
-			goto error;
-		}
-
-		vTaskDelay(20000/portTICK_RATE_MS);
-
-		if ((trc = task_find("rtucont"))) {
-			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
-				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
-					  __func__, trc->name);
-				goto error;
-			}
-
-			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv1_elf_start;
-
-			INFO_MSG("Starting runtime update.\n");
-			if (!runtime_update(trc, new_sw)) {
-				ERROR_MSG("Runtime updating failed.\n");
-				goto error;
-			}
-			INFO_MSG("Runtime update complete. (-> v1)\n");
-		} else {
-			goto error;
-		}
-
-
-	}
-#endif /* RTUCONT_UPDATING */
-error:
-	ERROR_MSG("Migrator in error state, going into infinite loop.\n");
+	ERROR_MSG("Migrator in error state, suspending.\n");
 	while (1)
-		;
-#else /* RUNTIME_UPDATING */
-	while(1) {
-		vTaskDelay(1000/portTICK_RATE_MS);
-	}
-#endif /* RUNTIME_UPDATING */
+		vTaskSuspend(NULL);
+
 }
 
 int migrator_start()

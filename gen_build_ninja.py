@@ -375,6 +375,7 @@ config_source_files = \
 
     'rtupid': get_ninja_set_of_files([
                 'System/arch/vexpress_novm/rtupid/main.c',
+                'System/arch/vexpress_novm/rtupid/migrator_loop.c',
                 'App/effects/field_effect.c',
                 'App/effects/Utils.c',
                 'Source/portable/MemMang/heap_3.c',
@@ -393,6 +394,7 @@ config_source_files = \
     (system_files - NinjaSet(
                 ["System/dwarfif.c",
                  "System/pointer_tracer.c",
+                 "System/migrator.c",
                  ])) +
     system_utility_files +
     freertos_files +

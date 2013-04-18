@@ -45,6 +45,51 @@
 #include <stdio.h>
 #include <string.h>
 
+int migrator_loop()
+{
+	task_register_cons *trc;
+
+	while (1) {
+		vTaskDelay(1000/portTICK_RATE_MS);
+
+		if ((trc = task_find("rtuapp"))) {
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				return 0;
+			}
+
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv2_elf_start;
+
+			INFO_MSG("Starting runtime update.\n");
+			if (!migrator_runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				return 0;
+			}
+			INFO_MSG("Runtime update complete. (-> v2)\n");
+		}
+
+		vTaskDelay(1000/portTICK_RATE_MS);
+
+		if ((trc = task_find("rtuapp"))) {
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				return 0;
+			}
+
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtuappv1_elf_start;
+
+			INFO_MSG("Starting runtime update.\n");
+			if (!migrator_runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				return 0;
+			}
+			INFO_MSG("Runtime update complete. (-> v1)\n");
+		}
+	}
+}
+
 int main()
 {
 	Elf32_Ehdr *simple_elfh = APPLICATION_ELF(simple);

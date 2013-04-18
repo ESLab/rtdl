@@ -157,6 +157,7 @@ RB_PROTOTYPE(task_register_tree_t, task_register_cons_t, tasks, task_register_co
 task_register_tree	*task_get_trc_root();
 task_register_cons	*task_find(const char *name);
 void			*task_get_section_address(task_register_cons *, Elf32_Half);
+request_hook_fn_t	 task_find_request_hook(task_register_cons *trc);
 int			 task_link(task_register_cons *trc);
 int			 task_alloc(task_register_cons *trc);
 int			 task_free(task_register_cons *trc);

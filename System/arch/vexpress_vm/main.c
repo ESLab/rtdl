@@ -51,7 +51,43 @@ portTASK_FUNCTION_PROTO(ohai_task, arg);
 
 typedef unsigned int uint32_t;
 
+int migrator_loop()
+{
+	task_register_cons *trc;
+	migration_struct	*ms    = (migration_struct *)data;
+	//xTaskHandle migration_check_msg_handle;
+	int i;
+
+	vTaskDelay(1000 * portCORE_ID());
+
+	while (1) {
+		vTaskDelay(10000);
+		if ((trc = task_find("field"))) {
+			INFO_MSG("%s: Found tunnel task, migrating...\n", __func__);
+
+			if (!task_wait_for_checkpoint(trc, cp_req_tm)) {
+				ERROR_MSG("%s: Failed to reach migration checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				continue;
+			}
+
+			if (!task_detach(trc)) {
+				ERROR_MSG("%s: Could not detach task.\n", __func__);
+				continue;
+			}
+
+			ms->target_core_id = (portCORE_ID() + 1) % 4;
+			ms->trc		   = trc;
+
+		} else {
+			INFO_MSG("%s: Did not find tunnel task, waiting...\n", __func__);
+		}
+	}
+
+}
+
 static uint32_t ReadValue(int function,int site,int position,int device)
+
 {
 	int wait=10000;
 

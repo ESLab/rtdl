@@ -25,28 +25,85 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 		   */
 /***********************************************************************************/
 
-#ifndef MIGRATOR_H
-#define MIGRATOR_H
+#define VX_MIGRATOR_LOOP VX_MIGRATOR_LOOP
+#define SYSTEM_MODULE VX_MIGRATOR_LOOP
 
-#include <task.h>
-#include <semphr.h>
+#include <FreeRTOS.h>
 
+#include <System/system.h>
 #include <System/task_manager.h>
-#include <System/elf.h>
+#include <System/migrator.h>
+#include <System/applications.h>
 
-#include <App/rtu.h>
+int migrator_loop()
+{
+	task_register_cons *trc;
 
-typedef struct migration_struct_t {
-	u_int8_t		 target_core_id;
-	task_register_cons	*trc;
-} migration_struct;
+	while (1) {
+#if 0
+		vTaskDelay(20000/portTICK_RATE_MS);
 
-extern xTaskHandle      migrator_task_handle;
-extern xSemaphoreHandle migrator_semaphore;
+		if ((trc = task_find("rtucont"))) {
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				return 0;
+			}
 
-void			migrator_task(void *arg);
-int			migrator_start();
-int			migrator_runtime_update(task_register_cons *trc, Elf32_Ehdr *new_sw);
-extern int		migrator_loop();
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv2_elf_start;
 
-#endif /* MIGRATOR_H */
+			INFO_MSG("Starting runtime update.\n");
+			if (!runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				return 0;
+			}
+			INFO_MSG("Runtime update complete. (-> v2)\n");
+		} else {
+			return 0;
+		}
+#endif
+		vTaskDelay(20000/portTICK_RATE_MS);
+
+		if ((trc = task_find("rtucont"))) {
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				return 0;
+			}
+
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv3_elf_start;
+
+			INFO_MSG("Starting runtime update.\n");
+			if (!migrator_runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				return 0;
+			}
+			INFO_MSG("Runtime update complete. (-> v3)\n");
+		} else {
+			return 0;
+		}
+
+		vTaskDelay(20000/portTICK_RATE_MS);
+
+		if ((trc = task_find("rtucont"))) {
+			if (!task_wait_for_checkpoint(trc, cp_req_rtu)) {
+				ERROR_MSG("%s: Failed to reach rtu checkpoint for task \"%s\"\n",
+					  __func__, trc->name);
+				return 0;
+			}
+
+			Elf32_Ehdr *new_sw = (Elf32_Ehdr *)&_rtucontv1_elf_start;
+
+			INFO_MSG("Starting runtime update.\n");
+			if (!migrator_runtime_update(trc, new_sw)) {
+				ERROR_MSG("Runtime updating failed.\n");
+				return 0;
+			}
+			INFO_MSG("Runtime update complete. (-> v1)\n");
+		} else {
+			return 0;
+		}
+
+
+	}
+}
