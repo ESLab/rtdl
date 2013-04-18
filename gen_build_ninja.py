@@ -26,6 +26,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                    #
 ###################################################################################
 
+
 import sys
 import glob
 import ninja_syntax
@@ -67,7 +68,7 @@ n.variable(key="mkimage", value="mkimage")
 n.variable(key="cflags",
            value=get_include_args(includedirs) +
            "-O0 -Wall -fmessage-length=0 " +
-           "-mcpu=cortex-a9 -g3 -Werror -fno-builtin-printf -fPIC -DDEBUG -DINFO")
+           "-mcpu=cortex-a9 -g3 -Werror -fno-builtin-printf -fPIC")
 
 n.rule(name = "cc",
        command = "$cc -MMD -MT $out -MF $out.d -c -gdwarf-3 $cflags $app_cflags $in -o $out",

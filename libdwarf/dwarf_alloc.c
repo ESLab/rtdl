@@ -368,11 +368,6 @@ _dwarf_find_memory(Dwarf_Alloc_Hdr alloc_hdr)
             /*  else fall thru , though it should be impossible to fall
                 thru. And represents a disastrous programming error if
                 we get here. */
-#ifdef DEBUG
-            fprintf(stderr, "libdwarf Internal error start %x end %x\n",
-                (int) alloc_area->aa_blob_start,
-                (int) alloc_area->aa_blob_end);
-#endif
         }
     }
 
@@ -418,11 +413,6 @@ _dwarf_find_memory(Dwarf_Alloc_Hdr alloc_hdr)
         if (alloc_area->aa_free_structs_in_chunk < 1) {
             /*  If we get here, there is a disastrous programming error
                 somewhere. */
-#ifdef DEBUG
-            fprintf(stderr,
-                "libdwarf Internal error: free structs in chunk %d\n",
-                (int) alloc_area->aa_free_structs_in_chunk);
-#endif
             return NULL;
         }
 
@@ -517,11 +507,6 @@ _dwarf_get_alloc(Dwarf_Debug dbg,
         } else {
             /*  If we get here, there is a disastrous programming error
                 somewhere. */
-#ifdef DEBUG
-            fprintf(stderr,
-                "libdwarf Internal error: type %d  unexpected\n",
-                (int) type);
-#endif
         }
     } else {
         alloc_hdr = &dbg->de_alloc_hdr[index];
@@ -561,11 +546,6 @@ _dwarf_get_alloc(Dwarf_Debug dbg,
                     error somewhere. */
 #ifdef DWARF_SIMPLE_MALLOC
                 _dwarf_simple_malloc_botch(3);
-#endif
-#ifdef DEBUG
-                fprintf(stderr,
-                    "libdwarf Internal error: Type %d  unexpected\n",
-                    (int) type);
 #endif
             }
         }
@@ -792,14 +772,6 @@ dwarf_dealloc(Dwarf_Debug dbg,
         /*  If we get here, the user has called dwarf_dealloc wrongly or 
             there is some other disastrous error. By leaking mem here we 
             try to be safe... */
-#ifdef DEBUG
-        fprintf(stderr,
-            "libdwarf Internal error: type %d hdr mismatch %lx %lx "
-            "area ptr %lx\n",
-            (int) type,
-            (long) alloc_area->aa_alloc_hdr,
-            (long) alloc_hdr, (long) alloc_area);
-#endif
         return;
     }
 
