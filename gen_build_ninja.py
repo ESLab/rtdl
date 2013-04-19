@@ -190,8 +190,6 @@ freertos_arm9_files = \
                 "portable/GCC/ARM9_AT91/aic.c",
                 "portable/GCC/ARM9_AT91/pit.c",
                 "portable/GCC/ARM9_AT91/portasm.S",
-                "portable/GCC/ARM9_AT91/board_lowlevel.c",
-                "portable/GCC/ARM9_AT91/board_memories.c",
                 "portable/GCC/ARM9_AT91/pio.c",
                 ]))
 
@@ -259,9 +257,20 @@ vexpress_vm_kernel_files = get_ninja_set_of_files(
             'binary_register.c',
             ]))
 vexpress_novm_boot_files = get_ninja_set_of_files(
-    map(lambda f: "System/arch/vexpress_novm/" + f,
-        ["boot/startup.S"]))
-
+    map(lambda f: "System/arch/vexpress_novm/" + f, [
+            "boot/startup.S",
+            ]))
+at91_novm_boot_files = get_ninja_set_of_files(
+    map(lambda f: "System/arch/arm9_novm/" + f, [
+            'boot/loader-startup.S',
+            'boot/loader.c',
+            ]))
+at91_novm_kernel_files = get_ninja_set_of_files(
+    map(lambda f: "System/arch/arm9_novm/" + f, [
+            'boot/board_lowlevel.c',
+            'boot/board_memories.c',
+            "startup.S",
+            ]))
 
 libdwarf_files = get_ninja_set_of_files(
     glob.glob('libdwarf/*.c'))
@@ -552,12 +561,13 @@ config_source_files = \
     NinjaSet(),
 
     'arm9_rtudemo': get_ninja_set_of_files([
-                'System/arch/arm9_novm/boot/startup.S',
                 'System/arch/arm9_novm/arm9_rtudemo/main.c',
                 'Source/portable/MemMang/heap_3.c',
                 ]) +
     freertos_files +
     freertos_arm9_files +
+    at91_novm_boot_files +
+    at91_novm_kernel_files +
     libdwarf_files +
     system_files +
     system_utility_files +
@@ -623,6 +633,10 @@ n.rule(name = "cscope",
 n.rule(name = "m4",
        command = "m4 $m4flags $in > $out",
        description = "M4 $out")
+
+n.rule(name = "dd",
+       command = "dd $ddflags if=$in of=$out",
+       description = "DD $out")
 
 ##########################
 # Build object files     #
@@ -730,18 +744,6 @@ gen_step_build("rtupid", config_source_files['rtupid'],
         "System/rtupid.2.ld",
         ], c)
 
-c = configs[6]
-
-gen_step_build("arm9_rtudemo", config_source_files['arm9_rtudemo'],
-               map(lambda f: builddir + f + "-arm9_rtudemo-arm9.ld",
-               c['include_apps']) + \
-               [
-                       builddir + "applications-arm9_rtudemo.ld",
-               ], [
-        "System/arm9_rtudemo.0.ld",
-        "System/arm9_rtudemo.1.ld",
-        "System/arm9_rtudemo.2.ld",
-        ], c)
 
 
  #######################
@@ -815,6 +817,74 @@ gen_kernel_boot_build("taskmigr_exp1", configs[4])
 #config_source_files["taskmigr_exp2"] = config_source_files["taskmigr_exp2"].get_flattened() - NinjaSet(["System/printf-stdarg.c"])
 gen_kernel_boot_build("taskmigr_exp2", configs[5])
 
+####################
+# AT91 Boot system #
+####################
+
+def gen_AT91_boot_build(name, c):
+    n.build(outputs   = bindir + "kernel-" + name + ".elf",
+            rule      = "link",
+            inputs    = [
+            ] +
+            list((config_source_files[name].get_flattened() -
+                  at91_novm_boot_files).get_object_files(c)) +
+            [],
+            variables = c + NinjaConfig({
+                'ldflags': '-nostartfiles -fPIC -Wl,-T,System/arch/arm9_novm/kernel.ld ' + c['arch_flags'],
+                }),
+            implicit  = [
+            "System/arch/arm9_novm/kernel.ld",
+            builddir + "applications-" + name + ".ld",
+            ] +
+            map(lambda f: builddir + f + "-" + name + "-" + c['arch'] + ".ld", c['include_apps']) +
+            [],
+            )
+    n.build(outputs   = builddir + "kernel-" + name + ".ld",
+            rule      = "app_ld",
+            inputs    = bindir + "kernel-" + name + ".elf")
+    n.build(outputs   = bindir + "kernel-" + name + "_nodbg.elf",
+            rule      = "objcopy",
+            inputs    = bindir + "kernel-" + name + ".elf",
+            variables = c + NinjaConfig({
+                'ocflags' : "-g",
+                }))
+    n.build(outputs   = builddir + "kernel-" + name + "_nodbg.ld",
+            rule      = "app_ld",
+            inputs    = bindir + "kernel-" + name + "_nodbg.elf")
+    n.build(outputs   = builddir + "system_arch_arm9_novm_boot_loader-" + name + ".ld",
+            rule      = "m4",
+            inputs    = "System/arch/arm9_novm/boot/loader.ld.m4",
+            variables = c + NinjaConfig({
+                'm4flags': "-DCONFIG=" + name,
+                }))
+    n.build(outputs   = bindir + "boot-" + name + ".elf",
+            rule      = "link",
+            inputs    = list((at91_novm_boot_files + system_utility_files).get_object_files(c)),
+            variables = c + NinjaConfig({
+                'ldflags': '-nostartfiles -fPIC -Wl,-T,' + builddir + "system_arch_arm9_novm_boot_loader-" + name + ".ld " + c['arch_flags']
+                }),
+            implicit  = [
+            builddir + "system_arch_arm9_novm_boot_loader-" + name + ".ld",
+            builddir + "kernel-" + name + ".ld" if debug_in_kernel else builddir + "kernel-" + name + "_nodbg.ld",
+            ])
+    n.build(outputs   = bindir + "boot-" + name + ".bin",
+            rule      = "objcopy",
+            inputs    = bindir + "boot-" + name + ".elf",
+            variables = c + NinjaConfig({
+                'ocflags': '-O binary',
+                })),
+    n.build(outputs   = bindir + "boot-" + name + ".uimg",
+            rule      = "mkimage",
+            inputs    = bindir + "boot-" + name + ".bin",
+            variables = c)
+
+gen_AT91_boot_build("arm9_rtudemo", configs[6])
+
+n.build(outputs   = bindir + "padded-arm9_rtudemo.bin",
+        rule      = "dd",
+        inputs    = bindir + "boot-arm9_rtudemo.bin",
+        variables = {'ddflags': "ibs=8M count=1 conv=sync"})
+
 ################
 # Misc. builds #
 ################
@@ -828,7 +898,8 @@ n.build(outputs = "cscope.out",
 
 n.default([
         bindir + "rtudemo.uimg",
-        bindir + "arm9_rtudemo.uimg",
+        bindir + "boot-arm9_rtudemo.uimg",
+        bindir + "padded-arm9_rtudemo.bin",
         bindir + "rtupid.uimg",
         "cloc_report.log",
         "cscope.out",

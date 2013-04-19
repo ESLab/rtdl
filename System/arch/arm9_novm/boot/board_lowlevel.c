@@ -125,7 +125,7 @@ void LowLevelInit(void)
     // Set flash wait states
     //----------------------
 	//REMOVED
-    //AT91C_BASE_EFC->EFC_FMR = 6 << 8;
+    AT91C_BASE_EFC->EFC_FMR = 6 << 8;
 
 //#if !defined(sdram)
     // Initialize main oscillator

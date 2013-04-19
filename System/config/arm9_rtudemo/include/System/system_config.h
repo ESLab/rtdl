@@ -8,7 +8,6 @@
 
 #define RUNTIME_UPDATING
 #define RTU_POINTER_TRACING
-#define HAS_SYSTEM_ELF_SYMBOL
 
 #if defined(LINKER) || defined(TASK_MANAGER)
 #undef DEBUG

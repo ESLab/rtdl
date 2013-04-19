@@ -2,13 +2,11 @@ ENTRY(Vector_Init);
 
 MEMORY
 {
-	ram (rwx) : ORIGIN = 0x10000, LENGTH = ( 64M - 0x10000 )
-	//flash (rx) : ORIGIN = 0x10000, LENGTH = ( 64M - 0x10000 )
-	//ram (rwx) : ORIGIN = 0x4001000, LENGTH = ( 128M - 0x1000 )
-	//sdram (rwx) : ORIGIN = 0x20000000, LENGTH = 512M
+	ram (rwx) : ORIGIN = 0x20000000, LENGTH = 0x10000000
+	flash (rx) : ORIGIN = 0x10000000, LENGTH = 0x10000000
 }
 
-PROVIDE(__stack = 0x10000);
+PROVIDE(__stack = 0x400000);
 
 SECTIONS
 {
@@ -24,7 +22,7 @@ SECTIONS
         *(.text*)
         *(.rodata*)
         _etext = .;
-    } > ram
+    } > flash
 
     .data : AT(ADDR(.text) + SIZEOF(.text))
     {
