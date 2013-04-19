@@ -44,6 +44,8 @@
 #include <stdlib.h>
 #include "dwarf_incl.h"
 
+#include "malloc_replace.h"
+
 struct ranges_entry {
    struct ranges_entry *next;
    Dwarf_Ranges cur;

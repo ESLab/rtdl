@@ -68,6 +68,7 @@
 #include "dwarf_weaks.h"
 #include "dwarf_harmless.h"
 
+#include "malloc_replace.h"
 
 static void _dwarf_free_special_error(Dwarf_Ptr space);
 

@@ -50,6 +50,8 @@
 #include "dwarf_frame.h"
 #include "dwarf_arange.h" /* Using Arange as a way to build a list */
 
+#include "malloc_replace.h"
+
 #define FDE_NULL_CHECKS_AND_SET_DBG(fde,dbg )          \
     do {                                               \
         if ((fde) == NULL) {                           \

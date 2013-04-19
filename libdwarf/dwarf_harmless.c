@@ -57,6 +57,7 @@
 #include "dwarf_frame.h"
 #include "dwarf_harmless.h"
 
+#include "malloc_replace.h"
 
 /*  The pointers returned here through errmsg_ptrs_array
     become invalidated by any call to libdwarf. Any call.

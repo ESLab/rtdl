@@ -61,6 +61,8 @@
 #include <string.h>
 #endif
 
+#include "malloc_replace.h"
+
 #define MINIMUM_POSSIBLE_PROLOG_LEN 10  /* 10 is based on */
 /*  the definition of the DWARF2/3 line table prolog. The value
     here should be >8 (accounting for a 64 bit read) and <= the

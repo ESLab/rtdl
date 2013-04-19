@@ -48,6 +48,8 @@
 #include <stdlib.h>
 #include "dwarf_line.h"
 
+#include "malloc_replace.h"
+
 static int
 is_path_separator(Dwarf_Small s)
 {

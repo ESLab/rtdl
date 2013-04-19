@@ -47,6 +47,8 @@
 #endif /* HAVE_STRING_H */
 #include <malloc.h>
 
+#include "malloc_replace.h"
+
 /*  When each block is allocated, there is a two-word structure
     allocated at the beginning so the block can go on a list.
     The address returned is the address *after* the two pointers
